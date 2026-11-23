@@ -1,11 +1,11 @@
 # Engine
 
-El binario `beacon`: CLI y servidor MCP sobre Spider. Toda decisión determinista vive aquí (`design`).
+El binario `beacon`: un CLI sobre Spider. Toda decisión determinista vive aquí (`design`).
 
 ## Interfaces
 
-- **CLI: la interfaz principal.** Se construye primero y todo lo demás se apoya en él: los hooks, Sentry y los agentes sin MCP lo llaman directamente.
-- **Servidor MCP: después** (Fase 5), como un envoltorio fino sobre las mismas operaciones. Las garantías no cambian de interfaz (`design`).
+- **CLI: la única interfaz.** Los agentes, los hooks y Sentry lo llaman directamente.
+- **Sin servidor MCP.** Las garantías viven en el binario y en CI, así que un servidor no añadiría ninguna. Las condiciones para reconsiderarlo están en `status`.
 - **Los hooks** ejecutan el CLI e inyectan el resultado en la sesión donde el agente lo permita: `beacon brief` al empezar y tras compactar el contexto, y `beacon context --hook` antes de editar un archivo (`anchor`). Así el agente recibe el estado sin tener que acordarse de pedirlo, que es lo que más ataca el riesgo central (`design`).
 - **Payloads largos:** `beacon record --json -` lee el registro por stdin, para evitar problemas de quoting en la shell.
 - **Permisos:** el agente suele pedir aprobación para cada comando nuevo, así que Anchor instala la regla que permite `beacon` (`anchor`).
@@ -54,23 +54,6 @@ Sin `--json`, la salida es texto breve para personas. Con `--json`, **todos los 
 | `beacon sentry ci` | Todo lo que corre el CI en una llamada (`sentry`) |
 | `beacon install [--dry-run]` | Instala en los agentes con copia de seguridad; `--dry-run` solo muestra qué cambiaría (`anchor`) |
 
-## Servidor MCP
-
-Meta: menos de 10 herramientas, por la degradación con muchas (`survey`, E5). Ocho:
-
-`beacon_brief`, `beacon_context`, `beacon_record`, `beacon_close`, `beacon_get`, `beacon_find`, `beacon_check`, `beacon_status`.
-
-Lo que el CLI tiene aparte se pliega así, sin agregar herramientas:
-
-- `ready` va dentro de `beacon_brief` y `beacon_status`: es una vista.
-- `claim` es `beacon_record` sobre una tarea (`owner` y `branch`): es una actualización de un registro, y el servidor también escribe el claim local.
-- `diff` y `stale` salen en `beacon_status`.
-- Las aprobaciones y las atestaciones (con su `evidence`) se guardan con `beacon_record`.
-- `verify`, `fmt`, `doctor`, `migrate`, `render`, `stats`, `sentry` e `install` quedan solo en el CLI y en CI.
-- `context --hook` no tiene equivalente MCP: los hooks llaman al CLI (`anchor`).
-
-El servidor es **residente**: carga el grafo una vez y recarga solo lo cambiado (`layout`). Queda un hueco libre bajo el tope de 10. Devuelve el mismo sobre que el CLI.
-
 ## Mensajes (P7)
 
 Cada bloqueo dice exactamente qué hacer, y lo que dice funciona. Un mensaje solo nombra un comando si ejecutarlo resuelve el bloqueo (`tenets`). Ese texto va en `hint`.
@@ -81,4 +64,4 @@ El binario registra **localmente** en `.git/beacon/` (`layout`) cuándo un bloqu
 
 ## Render
 
-`beacon render` genera vistas Markdown bajo demanda para personas y para agentes sin MCP (resumen del proyecto, una capability con sus promesas, preguntas abiertas). **No se versionan**: se regeneran desde los registros.
+`beacon render` genera vistas Markdown bajo demanda para personas (resumen del proyecto, una capability con sus promesas, preguntas abiertas). **No se versionan**: se regeneran desde los registros.

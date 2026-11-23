@@ -5,9 +5,9 @@
 | Componente | Responsabilidad | Detalle en |
 |---|---|---|
 | **Spider** | Registros, grafo de relaciones en memoria y señales (bloqueos, rojos, deriva, frescura) | `spider`, `layout`, `ledger` |
-| **Engine** | CLI (`--json` en todo; la interfaz principal), servidor MCP (después del CLI), ejecución de checks, niveles de cambio, riesgo, flujo y vistas Markdown (Render) | `engine`, `pledge`, `deltas`, `method` |
-| **Render** | Vistas Markdown legibles para personas y para agentes sin MCP; forma parte de Engine | `engine` |
-| **Anchor** | Instala Beacon en cada agente: guía del método, hooks (incluida la reinyección), permisos y, cuando exista, MCP | `anchor` |
+| **Engine** | CLI (`--json` en todo; la única interfaz), ejecución de checks, niveles de cambio, riesgo, flujo y vistas Markdown (Render) | `engine`, `pledge`, `deltas`, `method` |
+| **Render** | Vistas Markdown legibles para personas; forma parte de Engine | `engine` |
+| **Anchor** | Instala Beacon en cada agente: guía del método, hooks (incluida la reinyección) y permisos | `anchor` |
 | **Sentry** | Git hooks y CI: ejecuta checks, también sobre la fusión, y verifica aprobaciones | `sentry` |
 
 Los nombres siguen la metáfora de la telaraña: Spider es la tela, Anchor son las líneas de anclaje que la fijan al entorno (cada agente es un punto de amarre).
@@ -18,7 +18,7 @@ Se separan como **módulos con frontera limpia dentro de un solo binario y un so
 
 ### Interfaces
 
-El **CLI** es la interfaz principal: lo usan los hooks, Sentry y cualquier agente con una shell. El **servidor MCP** se construye después como un envoltorio fino sobre las mismas operaciones de Engine; no tiene lógica propia (`engine`).
+El **CLI** es la única interfaz: lo usan los agentes, los hooks y Sentry. No hay servidor MCP, porque no añadiría garantías y sumaría otra superficie que mantener (`engine`, `status`).
 
 ## Dónde se hace cumplir el método
 

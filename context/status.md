@@ -12,7 +12,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Nombre | **Beacon**, con carpeta `.beacon/` y prefijo de ids `bc-`. Se mantiene pese a la colisión con el producto de Asymptote Labs (ver Riesgos) | `layout` |
 | Componentes | Spider, Engine (con Render), Anchor, Sentry; módulos en un binario y un repo | `design` |
 | Nombre de Sentry | Se mantiene, pese a coincidir con la herramienta de errores; Guard descartado | `sentry` |
-| Interfaces | CLI primero (la principal); servidor MCP después, con 8 herramientas y `ready` y `claim` plegados | `engine` |
+| Interfaz | **Solo CLI**, sin servidor MCP. Se reconsidera únicamente si un agente importante no tiene terminal o si se mide latencia real que moleste en repos grandes | `engine` |
 | Salida `--json` | Un sobre uniforme `{ok, data, signals, hint}`; códigos de salida 0 (ok), 1 (error de uso) y 2 (bloqueado o recurso ocupado) | `engine` |
 | `beacon check` | Sin argumentos, solo lo relacionado con los cambios; con un id o con `--all` | `engine` |
 | Idioma de los mensajes | Inglés fijo, igual que las claves y la guía del método | `design` |
@@ -54,7 +54,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Hooks y reinyección | Donde el agente tenga el evento: `beacon brief` al empezar y tras compactar, y `beacon context --hook` antes de editar (una vez por archivo y sesión, con tope `limits.hook`). Los eventos de cada agente se verifican al implementar | `anchor` |
 | Instalación | `beacon install` con `--dry-run`, copia de seguridad en `.git/beacon/backups/`, solo archivos del repo y resumen final | `anchor` |
 | Agentes | Ola 1: Claude Code, Codex, Cursor. Ola 2: OpenCode, Gemini CLI, Copilot | `anchor` |
-| Hooks de Codex | Soportados (`SessionStart`, `Stop`, y `PreCompact` y `PostCompact` para la reinyección); el hook llama al CLI, no al MCP | `anchor` |
+| Hooks de Codex | Soportados (`SessionStart`, `Stop`, y `PreCompact` y `PostCompact` para la reinyección); el hook llama al CLI | `anchor` |
 | Idioma | Claves, guía del método y mensajes del binario en inglés; contenido de los registros en cualquier idioma | `design` |
 | Fricción | Medida solo en local | `engine` |
 | Benchmark de fricción | Protocolo aprobado: condiciones A (sin Beacon), B (solo guía), C (completo) y D (C sin reinyección); piloto de 10 tareas, 3 repeticiones y un agente (90 sesiones); métricas de proceso, integridad, fricción, resultado y costo. El arnés se construye pronto y el benchmark se corre en la Fase 6 | `survey` 7.6 |
@@ -87,7 +87,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | **El agente no llama a las herramientas** | El central: las garantías cubren promesas, no que la memoria se use. Los hooks que inyectan el `brief` y el contexto lo reducen (`design`, `anchor`), pero la obediencia decae dentro de la sesión (E7) y los hooks pueden no ejecutarse |
 | Sobreingeniería | Se construye todo sin recorte, así que hay que vigilar el alcance |
 | Evidencia débil | Fuentes de vendedores, benchmarks sintéticos, hipótesis de cognición; ningún estudio muestra que las specs reduzcan defectos (E9) y Beacon tampoco lo ha mostrado (`survey`) |
-| Arranque lento | Con el CLI como interfaz principal cada llamada carga el estado, y los hooks de reinyección llaman más veces. Medido en sintético: unos 150 a 200 ms con 500 capabilities; los repos reales pueden ser más lentos (`layout`) |
+| Arranque lento | Con el CLI como única interfaz cada llamada carga el estado, y los hooks de reinyección llaman más veces. Medido en sintético: unos 150 a 200 ms con 500 capabilities; los repos reales pueden ser más lentos (`layout`) |
 | Ruido de los hooks | Inyectar antes de cada edición puede cansar o gastar contexto; por eso hay tope, una vez por archivo y sesión, y se mide (`anchor`) |
 | Marcado del actor no infalible | El agente corre con el mismo usuario del sistema; la garantía real es la review del PR por una persona (`deltas`) |
 | Fatiga del nivel 3 | Demasiados síes se desactivan (`deltas`); las capturas base pueden sumar (ver Abierto) |
@@ -111,5 +111,5 @@ Sin recorte de producto; el orden sigue las dependencias.
 | 2 | **Engine (CLI):** `--json` con el sobre uniforme (`brief`, `context` con `--hook`, `record` con stdin, `close`, `get`, `find`), niveles y `diff` (incluidas las capturas base), `check` con ejecutores, `ready` y `claim` con claim local y escritura atómica de `.git/beacon/`; prueba de ramas largas |
 | 3 | **Anchor sobre el CLI:** guía del método, hooks con reinyección, permisos y marca del actor para Claude Code, luego Codex y Cursor; `beacon install` con `--dry-run` y copias; guía de redacción de promesas; arnés del benchmark; uso del propio Beacon en su desarrollo |
 | 4 | **Sentry:** pre-commit, `beacon sentry ci` y plantilla de GitHub Actions (con `merge_group`); arranque, `attest` con `--evidence`, `verify`; ejecutores de ejemplo para UI |
-| 5 | **Servidor MCP** (8 herramientas), **Render**, frescura de guides, archivo, `stale` |
+| 5 | **Render**, frescura de guides, archivo, `stale` |
 | 6 | Segunda ola de agentes, `stats`, correr el benchmark de fricción |

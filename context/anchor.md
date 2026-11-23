@@ -9,7 +9,6 @@ Adaptadores que instalan Beacon en cada agente. Son **transporte opaco**: no tom
 3. **Permiso para `beacon`:** la regla que evita que el agente pida aprobación en cada comando.
 4. **Marca del actor:** hace que los comandos del agente corran con `BEACON_ACTOR=agent:<nombre>` (por hook o por la configuración del agente, donde lo permita). Es un marcado, no una prueba (`ledger`, `deltas`).
 5. **Comandos** nativos si el agente los admite.
-6. **Configuración MCP** del agente, cuando exista el servidor (Fase 5, `engine`).
 
 ## Hooks y reinyección
 
@@ -43,7 +42,7 @@ Reglas de la inyección antes de editar, para que no se vuelva ruido:
 
 ## Bloque de guía del método
 
-Es el texto que se instala en el archivo de instrucciones de cada agente. Usa los comandos del CLI; cuando se instale el servidor MCP, Anchor reemplaza los comandos por los nombres de las herramientas.
+Es el texto que se instala en el archivo de instrucciones de cada agente. Usa los comandos del CLI.
 
 ```markdown
 <!-- BEGIN BEACON (managed block: do not edit inside) -->
@@ -67,14 +66,14 @@ When Beacon blocks something, its message says exactly what to do. Follow it.
 
 **Primera ola:** Claude Code, Codex, Cursor. **Segunda ola:** OpenCode, Gemini CLI, Copilot.
 
-| Agente | Instrucciones | MCP (Fase 5) | Notas |
-|---|---|---|---|
-| Claude Code | `CLAUDE.md`; lee `AGENTS.md` solo si no hay `CLAUDE.md` (desde v2.1.277, no en Bedrock, Vertex ni Foundry) | Sí | Poner el bloque en `AGENTS.md` y que `CLAUDE.md` lo importe con `@AGENTS.md` |
-| Codex | `AGENTS.md` (tope de 32 KiB en el primer turno) | `config.toml` | Hooks soportados, ver abajo |
-| Cursor | `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/*.mdc` | `mcp.json` (tope de 40 herramientas) | `hooks.json` |
-| OpenCode | `AGENTS.md` primario, `CLAUDE.md` de respaldo; campo `instructions` | Sí | — |
-| Gemini CLI | `GEMINI.md` (configurable) | Sí | Hooks desde v0.26 |
-| Copilot | `.github/copilot-instructions.md` | Sí | — |
+| Agente | Instrucciones | Notas |
+|---|---|---|
+| Claude Code | `CLAUDE.md`; lee `AGENTS.md` solo si no hay `CLAUDE.md` (desde v2.1.277, no en Bedrock, Vertex ni Foundry) | Poner el bloque en `AGENTS.md` y que `CLAUDE.md` lo importe con `@AGENTS.md` |
+| Codex | `AGENTS.md` (tope de 32 KiB en el primer turno) | Hooks soportados, ver abajo |
+| Cursor | `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/*.mdc` | `hooks.json` |
+| OpenCode | `AGENTS.md` primario, `CLAUDE.md` de respaldo; campo `instructions` | — |
+| Gemini CLI | `GEMINI.md` (configurable) | Hooks desde v0.26 |
+| Copilot | `.github/copilot-instructions.md` | — |
 
 Las capacidades de cada agente cambian rápido: verificar contra su documentación al implementar cada adaptador, incluido su mecanismo de permisos (paso 3 de "Qué instala"), cómo pasar `BEACON_ACTOR` a sus comandos (paso 4) y qué eventos de hook existen (sección "Hooks y reinyección"). Además, el bloque de guía se prueba **agente por agente**, porque el cumplimiento de las mismas instrucciones varía entre agentes (`survey`, E8).
 
@@ -86,5 +85,5 @@ Verificado el 2026-11-22 en la documentación de Codex (developers.openai.com/co
 - Eventos útiles para Beacon: `SessionStart` (con matcher `startup|resume`), `Stop`, y para la reinyección `PreCompact` y `PostCompact`. También existen `UserPromptSubmit` y `SessionEnd`. No verifiqué si hay un evento antes de editar archivos.
 - Los comandos corren con el directorio de la sesión como cwd. Conviene resolver la ruta desde la raíz de git (`git rev-parse --show-toplevel`), porque Codex puede lanzarse desde un subdirectorio.
 - Codex pide revisar y confiar los hooks nuevos o modificados desde `/hooks`. Instalar o actualizar el hook de Beacon exige ese paso, y `beacon install` debe avisarlo.
-- `SessionStart` puede correr antes de que el servidor MCP esté listo, así que el hook llama al **CLI** (`beacon brief`), no a la herramienta MCP.
+- El hook de `SessionStart` llama al **CLI** (`beacon brief`).
 - Un usuario reportó (issue #35863 del repo de Codex) que en Codex Desktop un hook de `SessionStart` aparece en la interfaz pero no se ejecuta. Es coherente con la regla de que los hooks son recordatorio y no garantía (`design`).

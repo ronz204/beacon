@@ -20,7 +20,7 @@ Las respuestas actuales caen en dos extremos: procesos pesados (muchos documento
 - **Ligero:** se habla normal, el trabajo pequeño no tiene ceremonia y solo el trabajo grande deja registro.
 - **Fiable:** lo prometido se comprueba con código, fuera del modelo. El estado del proyecto vive en registros estructurados, no en Markdown que el agente edita a mano.
 - **Orientado a producto:** el agente conoce la meta activa y avisa cuando una petición se aleja de ella.
-- **Agnóstico:** el núcleo es un binario (CLI primero y servidor MCP después) que cualquier agente puede usar. Las integraciones con cada agente son adaptadores finos.
+- **Agnóstico:** el núcleo es un binario de línea de comandos que cualquier agente con terminal puede usar. Las integraciones con cada agente son adaptadores finos.
 - **Ecosistema propio:** la memoria y el grafo de tareas son parte de Beacon, sin depender de otras herramientas.
 
 ## Contratos vivos
@@ -43,7 +43,7 @@ Es la respuesta a que las specs se pudren y se comprueban solo al final (`survey
 ## Para quién
 
 - Personas solas y equipos.
-- Cualquier agente de código que pueda ejecutar comandos o hablar MCP, y que lea un archivo de instrucciones.
+- Cualquier agente de código que pueda ejecutar comandos y lea un archivo de instrucciones.
 - Proyecto personal sin prisa comercial: se puede apuntar alto.
 
 ## Qué no es

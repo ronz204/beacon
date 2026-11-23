@@ -101,7 +101,7 @@ Una persona puede editar el YAML a mano. El binario valida en el siguiente coman
 
 ## Carga en memoria
 
-Todo el estado está en los archivos. Al arrancar, el binario los lee y arma el grafo en memoria. Como el CLI es la interfaz principal (`engine`), **cada llamada paga esa carga**.
+Todo el estado está en los archivos. Al arrancar, el binario los lee y arma el grafo en memoria. Como el CLI es la única interfaz (`engine`), **cada llamada paga esa carga**.
 
 Medición en Go con `gopkg.in/yaml.v3` v3.0.1 (2026-11-22). Cada archivo es una capability con 10 promesas; se decodifica a structs conservando campos desconocidos, se arma el índice de ids y de rutas y se resuelve una consulta de contexto. Máquina de 2 núcleos, caché de archivos caliente, mediana de 7 corridas:
 
@@ -134,7 +134,5 @@ Mitigaciones dentro del proceso:
 1. **Parseo en paralelo**, un worker por núcleo: entre 1,3 y 1,7 veces más rápido con 2 núcleos.
 2. **Consultas a git en lote** (ver arriba).
 3. **Lectura perezosa:** `context <paths>` no necesita los cuerpos de las guides ni `archive/`, solo el índice de rutas.
-4. **El servidor MCP, cuando exista, es residente:** carga una vez y mantiene el grafo; el arranque deja de contar para el agente.
-5. **Recarga incremental** en ese servidor: relee solo los archivos que cambiaron (fecha de modificación y tamaño).
 
 Como los hooks de reinyección (`anchor`) llaman al CLI con más frecuencia, esa latencia por llamada importa más: se mide en el benchmark de fricción (`status`).

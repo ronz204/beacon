@@ -21,7 +21,7 @@ Reglas medibles de simplicidad:
 1. **Cero comandos que aprender para el usuario.** Se habla con el agente.
 2. **Valor en la primera sesión.** El arranque en un repo existente da contexto útil en minutos.
 3. **Ninguna ceremonia en el trabajo pequeño.**
-4. **Pocas herramientas para el agente.** Menos de 10 herramientas MCP.
+4. **Una sola herramienta para el agente:** el CLI `beacon`, sin servidor MCP.
 5. **Una pregunta por decisión importante.** Nunca un formulario.
 6. **Una sola dependencia:** el binario. Sin Node, Python, Docker ni servidores.
 

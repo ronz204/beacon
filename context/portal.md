@@ -29,7 +29,7 @@ Los seis primeros archivos del primer camino bastan para entender el proyecto co
 | `pledge` | ¿Cómo se verifican las promesas? |
 | `deltas` | ¿Qué cambios necesitan aprobación y cómo se detectan? |
 | `method` | ¿Cómo trabaja el agente, paso a paso, y cómo se arranca en un repo existente? |
-| `engine` | ¿Qué comandos y herramientas MCP existen? |
+| `engine` | ¿Qué comandos existen? |
 | `anchor` | ¿Cómo se instala Beacon en cada agente? |
 | `sentry` | ¿Qué se hace cumplir en git y CI? |
 | `status` | ¿Qué está decidido, qué está abierto, qué riesgos hay y qué se construye primero? |
