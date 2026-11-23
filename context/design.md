@@ -4,8 +4,8 @@
 
 | Componente | Responsabilidad | Detalle en |
 |---|---|---|
-| **Spider** | Registros, grafo de relaciones en memoria y señales (bloqueos, rojos, deriva, frescura) | `spider`, `storage`, `records` |
-| **Engine** | CLI (`--json` en todo; la interfaz principal), servidor MCP (después del CLI), ejecución de checks, niveles de cambio, riesgo, flujo y vistas Markdown (Render) | `engine`, `contracts`, `changes`, `workflow` |
+| **Spider** | Registros, grafo de relaciones en memoria y señales (bloqueos, rojos, deriva, frescura) | `spider`, `layout`, `ledger` |
+| **Engine** | CLI (`--json` en todo; la interfaz principal), servidor MCP (después del CLI), ejecución de checks, niveles de cambio, riesgo, flujo y vistas Markdown (Render) | `engine`, `pledge`, `deltas`, `method` |
 | **Render** | Vistas Markdown legibles para personas y para agentes sin MCP; forma parte de Engine | `engine` |
 | **Anchor** | Instala Beacon en cada agente: guía del método, hooks (incluida la reinyección), permisos y, cuando exista, MCP | `anchor` |
 | **Sentry** | Git hooks y CI: ejecuta checks, también sobre la fusión, y verifica aprobaciones | `sentry` |
@@ -26,14 +26,14 @@ Capas, de más fuerte a más débil:
 
 1. **Sentry (CI y git hooks):** no dependen de que el agente coopere. Un PR con una promesa violada, o una promesa debilitada sin aprobar, no pasa; y la cola de merge comprueba el resultado de la fusión.
 2. **Binario:** las operaciones validan. Un cambio de nivel 3 sin confirmación no se guarda.
-3. **Hooks nativos del agente:** recordatorios y reinyección donde existan. Al empezar y tras compactar el contexto ejecutan `beacon brief`; antes de editar un archivo inyectan lo que aplica a él. El agente recibe el estado sin tener que pedirlo, y se refresca durante la sesión porque la obediencia a las instrucciones decae con ella (`research`, E7). Un extra donde existan.
+3. **Hooks nativos del agente:** recordatorios y reinyección donde existan. Al empezar y tras compactar el contexto ejecutan `beacon brief`; antes de editar un archivo inyectan lo que aplica a él. El agente recibe el estado sin tener que pedirlo, y se refresca durante la sesión porque la obediencia a las instrucciones decae con ella (`survey`, E7). Un extra donde existan.
 4. **Guía en el prompt:** orienta el flujo. Es lo único que depende de la obediencia del modelo.
 
 Las garantías viven en las capas 1 y 2, que funcionan con **cualquier** agente. La capa 4 solo orienta.
 
 **Límite:** nada de esto garantiza que el agente *llame* a las herramientas. Las capas 1 y 2 aseguran que las promesas se cumplan y no se debiliten, pero que la memoria se llene y se use depende de que el agente invoque `brief`, `context` y `record` (`status`, riesgos).
 
-**Otro límite:** el binario no puede distinguir con certeza a la persona del agente, porque corren con el mismo usuario del sistema. El marcado del actor ayuda, pero la garantía real en equipo es la revisión del PR por una persona (`changes`).
+**Otro límite:** el binario no puede distinguir con certeza a la persona del agente, porque corren con el mismo usuario del sistema. El marcado del actor ayuda, pero la garantía real en equipo es la revisión del PR por una persona (`deltas`).
 
 ## Qué decide el código y qué el modelo
 

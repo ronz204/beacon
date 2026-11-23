@@ -6,11 +6,11 @@ Beacon es un método de trabajo para agentes de código que comprueba con códig
 
 | Si quieres... | Lee, en este orden |
 |---|---|
-| Entender qué es Beacon y cómo se comporta | `vision` → `principles` → `architecture` → `contracts` → `changes` → `workflow` |
-| Entender cómo se guardan los datos | `storage` → `records` → `guides` → `spider` |
+| Entender qué es Beacon y cómo se comporta | `vision` → `tenets` → `design` → `pledge` → `deltas` → `method` |
+| Entender cómo se guardan los datos | `layout` → `ledger` → `guides` → `spider` |
 | Entender cómo se conecta con agentes, git y CI | `engine` → `anchor` → `sentry` |
 | Saber en qué punto está el proyecto | `status` |
-| Consultar el porqué o un término | `research`, `reference` |
+| Consultar el porqué o un término | `survey`, `reference` |
 
 Los seis primeros archivos del primer camino bastan para entender el proyecto completo.
 
@@ -19,16 +19,16 @@ Los seis primeros archivos del primer camino bastan para entender el proyecto co
 | Archivo | Responde a |
 |---|---|
 | `vision` | ¿Qué es Beacon, para quién, y qué son los contratos vivos? |
-| `principles` | ¿Qué reglas guían todas las decisiones? |
-| `research` | ¿Qué hacen otras herramientas y qué evidencia sostiene las decisiones? |
-| `architecture` | ¿Qué componentes hay y dónde se hace cumplir el método? |
-| `storage` | ¿Cómo se guarda el estado en el repo? |
-| `records` | ¿Qué tipos de registro existen y cómo son? |
+| `tenets` | ¿Qué reglas guían todas las decisiones? |
+| `survey` | ¿Qué hacen otras herramientas y qué evidencia sostiene las decisiones? |
+| `design` | ¿Qué componentes hay y dónde se hace cumplir el método? |
+| `layout` | ¿Cómo se guarda el estado en el repo? |
+| `ledger` | ¿Qué tipos de registro existen y cómo son? |
 | `guides` | ¿Cómo se maneja el contexto orientativo y qué entra al `brief`? |
 | `spider` | ¿Cómo funciona la memoria activa y qué señales emite? |
-| `contracts` | ¿Cómo se verifican las promesas? |
-| `changes` | ¿Qué cambios necesitan aprobación y cómo se detectan? |
-| `workflow` | ¿Cómo trabaja el agente, paso a paso, y cómo se arranca en un repo existente? |
+| `pledge` | ¿Cómo se verifican las promesas? |
+| `deltas` | ¿Qué cambios necesitan aprobación y cómo se detectan? |
+| `method` | ¿Cómo trabaja el agente, paso a paso, y cómo se arranca en un repo existente? |
 | `engine` | ¿Qué comandos y herramientas MCP existen? |
 | `anchor` | ¿Cómo se instala Beacon en cada agente? |
 | `sentry` | ¿Qué se hace cumplir en git y CI? |

@@ -26,26 +26,26 @@ Engram y Beads se pueden usar junto a Beacon, pero Beacon no depende de ellos.
 
 | De | Idea | Dónde vive |
 |---|---|---|
-| ODD | El tamaño se decide por reanudabilidad; solo el trabajo grande deja registro | `workflow` |
-| ODD | Pasar trabajo por referencia, nunca parafraseado | `workflow` |
-| ODD | Preguntar solo decisiones de producto reales, de una en una; nunca pedir permiso para seguir | `workflow` |
-| ODD | Delegar solo con un motivo con nombre | `workflow` |
-| ODD | Un test por regla pedida y uno por comportamiento existente tocado | `workflow` |
-| ODD | Estado visible: Working, Checking, Ready, Needs your decision | `workflow` |
+| ODD | El tamaño se decide por reanudabilidad; solo el trabajo grande deja registro | `method` |
+| ODD | Pasar trabajo por referencia, nunca parafraseado | `method` |
+| ODD | Preguntar solo decisiones de producto reales, de una en una; nunca pedir permiso para seguir | `method` |
+| ODD | Delegar solo con un motivo con nombre | `method` |
+| ODD | Un test por regla pedida y uno por comportamiento existente tocado | `method` |
+| ODD | Estado visible: Working, Checking, Ready, Needs your decision | `method` |
 | Gentle-AI | Fuente canónica renderizada en la configuración nativa de cada agente, con bloques gestionados idempotentes | `anchor` |
 | Gentle-AI | Al actualizar, borrar solo lo que coincide con lo instalado; lo editado se conserva | `anchor` |
 | Gentle-AI | Adaptadores sin decisiones: toda decisión en un binario | `anchor` |
-| Gentle-AI | El agente puede subir el riesgo, nunca bajarlo; la revisión no toma el control de la entrega | `changes` |
+| Gentle-AI | El agente puede subir el riesgo, nunca bajarlo; la revisión no toma el control de la entrega | `deltas` |
 | Gentle-AI | Medir la fricción: en banda, fuera de banda, callejón sin salida | `engine` |
 | Engram | Revisión por antigüedad según el tipo | `guides` |
 | Engram | Revelado progresivo: primero un resumen, luego el detalle | `spider` |
-| Engram | Formato What / Why / Where para decisiones | `records` |
-| Beads | Grafo de dependencias tipado y "qué está listo" calculado por código | `spider`, `records` |
-| Beads | Ids por hash para que las ramas no choquen; hijos jerárquicos | `storage` |
+| Engram | Formato What / Why / Where para decisiones | `ledger` |
+| Beads | Grafo de dependencias tipado y "qué está listo" calculado por código | `spider`, `ledger` |
+| Beads | Ids por hash para que las ramas no choquen; hijos jerárquicos | `layout` |
 | Beads | `--json` en todo; instrucciones al agente en pocas líneas | `engine`, `anchor` |
-| Beads | Claim al tomar una tarea | `workflow` |
-| Beads | El estado viaja en git, en el mismo commit que el código | `storage` |
-| Graphiti | Los hechos se cierran, no se borran | `principles` |
+| Beads | Claim al tomar una tarea | `method` |
+| Beads | El estado viaja en git, en el mismo commit que el código | `layout` |
+| Graphiti | Los hechos se cierran, no se borran | `tenets` |
 
 ## 3. Lo que evitamos
 
@@ -86,12 +86,12 @@ En la taxonomía de Böckeler (sección 7), Beacon apunta a **spec-anchored con 
 
 ## 5. Lecciones de los autores de Gentle-AI
 
-- "Las buenas decisiones humanas no sobreviven al contacto con un agente a menos que algo las haga cumplir." (`principles` P2)
+- "Las buenas decisiones humanas no sobreviven al contacto con un agente a menos que algo las haga cumplir." (`tenets` P2)
 - "Un guard que nadie llama no es un guard." Un control documentado y testeado puede no estar conectado a nada.
 - "La sobreingeniería es más difícil de quitar que un bug." Su primera revisión la sobreconstruyó el agente al inferir requisitos que nadie pidió.
-- "Un mensaje solo puede nombrar un comando si ejecutarlo resuelve el bloqueo." (`principles` P7)
-- "Apunta el instrumento hacia ti mismo primero." (`principles` P8)
-- Un sistema que obliga a ceremonia para cambiar una coma se desinstala en tres días. (`changes`)
+- "Un mensaje solo puede nombrar un comando si ejecutarlo resuelve el bloqueo." (`tenets` P7)
+- "Apunta el instrumento hacia ti mismo primero." (`tenets` P8)
+- Un sistema que obliga a ceremonia para cambiar una coma se desinstala en tres días. (`deltas`)
 
 ## 6. Evidencia que sostiene decisiones
 
@@ -100,13 +100,13 @@ En la taxonomía de Böckeler (sección 7), Beacon apunta a **spec-anchored con 
 | E1 | **Menos contexto, pero preciso, rinde más.** En el sistema Hindsight el mismo modelo de 20B pasó de 39,0 % con todo el historial a 83,6 % con una porción curada. Estudios de "context rot" muestran que el rendimiento baja al crecer el contexto aunque no se llene la ventana. Otro midió que el cumplimiento de restricciones cayó de 73 % en el turno 5 a 33 % en el 16 | Media (papers y blogs) | `context` devuelve solo lo que aplica a esos archivos; el `brief` es mínimo (`spider`, `guides`) |
 | E2 | **Los archivos de contexto en prosa ayudan poco.** En un estudio de ETH Zurich (Gloaguen et al., ICLR 2026) los generados por un modelo tienden a bajar la tasa de éxito (cerca de 3 % en promedio) y suben el costo de 20 a 23 %; los escritos por humanos mejoran ~4 % en promedio. Los autores recomiendan omitir los generados y describir solo requisitos mínimos. Releído en el paper el 2026-11-22 | Media-alta (estudio revisado) | El bloque que instala Anchor es de 20 a 30 líneas (`anchor`) |
 | E3 | **La guía de Anthropic para `CLAUDE.md`** apunta a menos de 200 líneas y lo trata como contexto, no como mecanismo de cumplimiento (para eso están los hooks) | Alta (documentación oficial) | Lo que debe cumplirse lo hace cumplir el binario o Sentry, no el texto |
-| E4 | **La interfaz importa más que el sustrato.** LangSmith muestra al agente un filesystem sobre una base de datos; la memoria de los agentes gestionados de Anthropic se monta sobre un filesystem; Letta superó a Mem0 en LoCoMo con un archivo y grep (Letta mide a su competidor) | Baja a media (vendedores) | El agente ve operaciones sobre registros; que sean archivos sirve para versionar y compartir (`storage`) |
+| E4 | **La interfaz importa más que el sustrato.** LangSmith muestra al agente un filesystem sobre una base de datos; la memoria de los agentes gestionados de Anthropic se monta sobre un filesystem; Letta superó a Mem0 en LoCoMo con un archivo y grep (Letta mide a su competidor) | Baja a media (vendedores) | El agente ve operaciones sobre registros; que sean archivos sirve para versionar y compartir (`layout`) |
 | E5 | **Demasiadas herramientas MCP degradan al agente.** La precisión de selección baja desde unas 20 a 50 herramientas visibles; OpenAI recomienda mantenerse muy por debajo de 20; Cursor limita a 40. Kiro responde con "Powers", que activan herramientas MCP solo cuando la conversación las necesita | Media (blogs que coinciden) | Menos de 10 herramientas MCP (`engine`) |
-| E6 | **Las specs se pudren y se comprueban solo al final.** Un estudio de 2026 sobre 470.795 archivos de spec concluye que el detalle de implementación hace que se pudran y que la comprobación spec-código se hace al terminar el cambio, no de forma continua (solo se leyó el resumen) | Baja a media (muestra sesgada hacia vendedores) | Los contratos vivos (`vision`, `contracts`) |
+| E6 | **Las specs se pudren y se comprueban solo al final.** Un estudio de 2026 sobre 470.795 archivos de spec concluye que el detalle de implementación hace que se pudran y que la comprobación spec-código se hace al terminar el cambio, no de forma continua (solo se leyó el resumen) | Baja a media (muestra sesgada hacia vendedores) | Los contratos vivos (`vision`, `pledge`) |
 | E7 | **La obediencia a las instrucciones decae dentro de la sesión, y reorganizar el archivo no lo arregla.** Estudio factorial de 1.650 sesiones de Claude Code (16.050 funciones, dos bases TypeScript, sobre todo Sonnet 4.6): cada función adicional generada se asoció con ~5,6 % menos de probabilidad (odds) de cumplir. Tamaño, posición, arquitectura de archivos y contradicciones no mostraron efecto detectable. El decaimiento se halló durante el análisis (exploratorio) y la tarea era una anotación trivial | Media-baja (un autor, exploratorio, un modelo principal; solo leí el abstract) | Reinyectar contexto durante la sesión y hacer cumplir con código, no pulir el prompt (`anchor`; propuesta R1 en `status`) |
 | E8 | **Resolver la tarea no es cumplir las reglas del proyecto.** OctoBench (ACL 2026, ocho modelos): hay una brecha sistemática entre resolver la tarea y cumplir las instrucciones del scaffold; las restricciones de skills son un cuello de botella persistente frente a las de memoria; el cumplimiento varía entre Claude Code, Kilo y Droid | Media (solo leí el abstract) | Las garantías no pueden depender del prompt; el bloque de guía se prueba agente por agente (`anchor`) |
 | E9 | **No hay evidencia de que las specs reduzcan defectos.** Estudio de ESEM 2026 (Hill): 88.052 PRs fusionados de 119 repos de código abierto; ninguna de las cinco hipótesis se sostuvo tras emparejar por complejidad, porque tener una spec funciona como indicador de tarea difícil. Límites del propio autor: el 97,5 % de las "specs" eran referencias a tickets, no artefactos de herramientas SDD, así que las herramientas no quedaron probadas; sugiere que las specs aún pueden servir como registro de intención | Media (un autor, observacional, análisis post hoc; paper leído) | No prometer menos defectos por tener specs: el valor es lo comprobado. Beacon tampoco tiene esa evidencia, y de ahí el benchmark propio (sección 7.6) |
-| E10 | **Taxonomía y problemas de SDD** (Böckeler, Thoughtworks; el Radar de nov 2025 lo pone en "Assess"). Tres niveles: spec-first, spec-anchored y spec-as-source. Todas las herramientas que probó son spec-first y dejan vago el mantenimiento a largo plazo. Problemas: revisar Markdown verboso cuesta más que revisar código, el tamaño del proceso no se ajusta a la tarea, el agente a veces ignora instrucciones y duplica código existente, y el brownfield es difícil | Media-alta (análisis de práctica de una autora) | Confirma el hueco: promesas vivas y ancladas, y proceso proporcional (`workflow`, P3) |
+| E10 | **Taxonomía y problemas de SDD** (Böckeler, Thoughtworks; el Radar de nov 2025 lo pone en "Assess"). Tres niveles: spec-first, spec-anchored y spec-as-source. Todas las herramientas que probó son spec-first y dejan vago el mantenimiento a largo plazo. Problemas: revisar Markdown verboso cuesta más que revisar código, el tamaño del proceso no se ajusta a la tarea, el agente a veces ignora instrucciones y duplica código existente, y el brownfield es difícil | Media-alta (análisis de práctica de una autora) | Confirma el hueco: promesas vivas y ancladas, y proceso proporcional (`method`, P3) |
 
 ## 7. Ronda de investigación del 2026-11-22
 
@@ -117,7 +117,7 @@ Cubre los siete temas pendientes. Lo que cambia en el diseño está como propues
 | Fuente | Qué aporta | Equivalente en Beacon | Cambio propuesto |
 |---|---|---|---|
 | **ADR** (Nygard; MADR 4.0.0, sept 2024) | Título, estado (proposed, accepted, rejected, deprecated, o superseded con enlace al sucesor), contexto, **opciones consideradas con pros y contras** y resultado. Sus autores insisten en que las opciones descartadas son clave para entender la decisión | `decision`: `what`, `why`, `where`, `supersedes`, `status` | Falta registrar las alternativas descartadas (R4) |
-| **arc42** | Doce secciones (metas, restricciones, contexto, estrategia, bloques, vista de ejecución, despliegue, conceptos transversales, decisiones, calidad, riesgos y deuda, glosario). Lema de viajar ligero: quitar lo que nadie necesita; docs-as-code | Metas: `goal`. Bloques: `capability`. Decisiones: `decision`. Calidad: promesas. Restricciones, conceptos, riesgos y glosario: guides de tipo architecture, convention y domain | Ninguno en el esquema. Sirve como esqueleto opcional de la guide de arquitectura que produce el arranque (`workflow`) |
+| **arc42** | Doce secciones (metas, restricciones, contexto, estrategia, bloques, vista de ejecución, despliegue, conceptos transversales, decisiones, calidad, riesgos y deuda, glosario). Lema de viajar ligero: quitar lo que nadie necesita; docs-as-code | Metas: `goal`. Bloques: `capability`. Decisiones: `decision`. Calidad: promesas. Restricciones, conceptos, riesgos y glosario: guides de tipo architecture, convention y domain | Ninguno en el esquema. Sirve como esqueleto opcional de la guide de arquitectura que produce el arranque (`method`) |
 | **C4** | Diagramas por niveles (contexto, contenedores, componentes, código), con modelo como código | Una capability se parece a un contenedor o componente, pero describe comportamiento, no estructura | No se adopta. `render` podría emitir un diagrama Mermaid de capabilities y relaciones (baja prioridad) |
 | **PRD para agentes** (Osmani, Makerkit, Augment) | Poco pero preciso: qué y por qué antes que cómo; criterios de aceptación **comprobables con entradas y salidas concretas**; **qué no se incluye** (non-goals); casos borde (permisos, límites de tasa), que el agente no construye si nadie los pide | Los criterios de aceptación son las promesas, con la ventaja de que se ejecutan | Falta registrar lo que **no** se hace (R5) y una guía de redacción de promesas (R6) |
 
@@ -151,7 +151,7 @@ Solo leí el README; no los documentos enlazados (Review and Architecture, Telem
 - Hay conflictos que Git no ve: dos cambios que fusionan limpio pero dejan el proyecto roto, como renombrar una función en un archivo y llamarla con el nombre viejo en otro (descripción de Collide, vendedor; plausible por naturaleza).
 - Un análisis sobre el equipo de agentes de Claude Code señala que varios agentes comparten un `MEMORY.md` sin bloqueos ni estrategia de merge (blog).
 
-**Qué ya cubre el diseño:** un archivo por registro, ids por hash y listas ordenadas (`storage`) reducen los conflictos de texto; `.git/beacon/` se comparte entre worktrees (`storage`).
+**Qué ya cubre el diseño:** un archivo por registro, ids por hash y listas ordenadas (`layout`) reducen los conflictos de texto; `.git/beacon/` se comparte entre worktrees (`layout`).
 
 **Huecos que salen de cruzar esto con el diseño** (inferencia mía, no de una fuente):
 
@@ -179,7 +179,7 @@ Cómo encaja en los estados de Beacon (propuesta R7):
 | "No cambió visualmente" | Captura contra una base guardada en git | Holds solo en el sentido de "igual a la base aprobada" |
 | "Se ve bien" | El agente deja evidencia (captura o video): es `observed`; la persona atesta | Attested, con la evidencia enlazada |
 
-Beacon no trae navegador: la documentación de `contracts` incluye ejemplos de ejecutores (Playwright, regresión visual).
+Beacon no trae navegador: la documentación de `pledge` incluye ejemplos de ejecutores (Playwright, regresión visual).
 
 ### 7.6 Benchmark propio de fricción: protocolo
 

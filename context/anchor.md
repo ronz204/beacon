@@ -4,16 +4,16 @@ Adaptadores que instalan Beacon en cada agente. Son **transporte opaco**: no tom
 
 ## Qué instala
 
-1. **Bloque de guía del método:** unas 20 líneas en inglés (`research`, E2), siete reglas (ver abajo).
-2. **Hooks** donde el agente los soporte (ver "Hooks y reinyección"). Son recordatorio, no garantía (`architecture`).
+1. **Bloque de guía del método:** unas 20 líneas en inglés (`survey`, E2), siete reglas (ver abajo).
+2. **Hooks** donde el agente los soporte (ver "Hooks y reinyección"). Son recordatorio, no garantía (`design`).
 3. **Permiso para `beacon`:** la regla que evita que el agente pida aprobación en cada comando.
-4. **Marca del actor:** hace que los comandos del agente corran con `BEACON_ACTOR=agent:<nombre>` (por hook o por la configuración del agente, donde lo permita). Es un marcado, no una prueba (`records`, `changes`).
+4. **Marca del actor:** hace que los comandos del agente corran con `BEACON_ACTOR=agent:<nombre>` (por hook o por la configuración del agente, donde lo permita). Es un marcado, no una prueba (`ledger`, `deltas`).
 5. **Comandos** nativos si el agente los admite.
 6. **Configuración MCP** del agente, cuando exista el servidor (Fase 5, `engine`).
 
 ## Hooks y reinyección
 
-La obediencia a las instrucciones decae a lo largo de la sesión, y reorganizar el archivo de instrucciones no lo arregla (`research`, E7 y E8). Por eso Anchor no se limita a un recordatorio al empezar: donde el agente tenga el evento, reinyecta el estado en los momentos en que se pierde o importa.
+La obediencia a las instrucciones decae a lo largo de la sesión, y reorganizar el archivo de instrucciones no lo arregla (`survey`, E7 y E8). Por eso Anchor no se limita a un recordatorio al empezar: donde el agente tenga el evento, reinyecta el estado en los momentos en que se pierde o importa.
 
 | Momento | Qué corre | Por qué |
 |---|---|---|
@@ -24,8 +24,8 @@ La obediencia a las instrucciones decae a lo largo de la sesión, y reorganizar 
 
 Reglas de la inyección antes de editar, para que no se vuelva ruido:
 
-- **Una vez por archivo y sesión:** `--hook` recuerda en `.git/beacon/` qué ya inyectó (`storage`); la sesión la identifica el hook con lo que el agente le pase.
-- **Con tope** de `limits.hook` líneas (20 por defecto, `records`); lo que no cabe se resume con un aviso, igual que el `brief` (`spider`).
+- **Una vez por archivo y sesión:** `--hook` recuerda en `.git/beacon/` qué ya inyectó (`layout`); la sesión la identifica el hook con lo que el agente le pase.
+- **Con tope** de `limits.hook` líneas (20 por defecto, `ledger`); lo que no cabe se resume con un aviso, igual que el `brief` (`spider`).
 - **Sin salida** cuando no hay nada nuevo que decir.
 - Se mide: el binario cuenta cuánto se inyectó y cuántas veces, y el benchmark compara con y sin esta reinyección (`status`).
 
@@ -37,7 +37,7 @@ Reglas de la inyección antes de editar, para que no se vuelva ruido:
 - Al actualizar o desinstalar, borra **solo lo que coincide byte a byte** con lo instalado; lo que la persona editó se conserva.
 - `beacon install` detecta qué agentes hay en el repo.
 - **`--dry-run`:** muestra qué archivos crearía o cambiaría y cómo quedarían, sin tocar nada.
-- **Copia de seguridad:** antes de modificar un archivo existente guarda una copia en `.git/beacon/backups/` (`storage`). Así una instalación que sale mal se deshace y no depende de que el archivo estuviera en git.
+- **Copia de seguridad:** antes de modificar un archivo existente guarda una copia en `.git/beacon/backups/` (`layout`). Así una instalación que sale mal se deshace y no depende de que el archivo estuviera en git.
 - **Solo toca archivos del repo** (`CLAUDE.md`, `AGENTS.md`, `.codex/`, `.cursor/`, la configuración de permisos del proyecto). Lo que haga falta en la configuración de usuario del agente lo **imprime** para que la persona decida.
 - Termina con un **resumen** de lo cambiado y de lo que el agente pide revisar, por ejemplo los hooks nuevos de Codex, que hay que confiar desde `/hooks`.
 
@@ -76,7 +76,7 @@ When Beacon blocks something, its message says exactly what to do. Follow it.
 | Gemini CLI | `GEMINI.md` (configurable) | Sí | Hooks desde v0.26 |
 | Copilot | `.github/copilot-instructions.md` | Sí | — |
 
-Las capacidades de cada agente cambian rápido: verificar contra su documentación al implementar cada adaptador, incluido su mecanismo de permisos (paso 3 de "Qué instala"), cómo pasar `BEACON_ACTOR` a sus comandos (paso 4) y qué eventos de hook existen (sección "Hooks y reinyección"). Además, el bloque de guía se prueba **agente por agente**, porque el cumplimiento de las mismas instrucciones varía entre agentes (`research`, E8).
+Las capacidades de cada agente cambian rápido: verificar contra su documentación al implementar cada adaptador, incluido su mecanismo de permisos (paso 3 de "Qué instala"), cómo pasar `BEACON_ACTOR` a sus comandos (paso 4) y qué eventos de hook existen (sección "Hooks y reinyección"). Además, el bloque de guía se prueba **agente por agente**, porque el cumplimiento de las mismas instrucciones varía entre agentes (`survey`, E8).
 
 ### Hooks de Codex
 
@@ -87,4 +87,4 @@ Verificado el 2026-11-22 en la documentación de Codex (developers.openai.com/co
 - Los comandos corren con el directorio de la sesión como cwd. Conviene resolver la ruta desde la raíz de git (`git rev-parse --show-toplevel`), porque Codex puede lanzarse desde un subdirectorio.
 - Codex pide revisar y confiar los hooks nuevos o modificados desde `/hooks`. Instalar o actualizar el hook de Beacon exige ese paso, y `beacon install` debe avisarlo.
 - `SessionStart` puede correr antes de que el servidor MCP esté listo, así que el hook llama al **CLI** (`beacon brief`), no a la herramienta MCP.
-- Un usuario reportó (issue #35863 del repo de Codex) que en Codex Desktop un hook de `SessionStart` aparece en la interfaz pero no se ejecuta. Es coherente con la regla de que los hooks son recordatorio y no garantía (`architecture`).
+- Un usuario reportó (issue #35863 del repo de Codex) que en Codex Desktop un hook de `SessionStart` aparece en la interfaz pero no se ejecuta. Es coherente con la regla de que los hooks son recordatorio y no garantía (`design`).

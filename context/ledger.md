@@ -1,6 +1,6 @@
 # Registros
 
-Modelo de datos. Cómo se guardan (carpetas, ids, formato) está en `storage`.
+Modelo de datos. Cómo se guardan (carpetas, ids, formato) está en `layout`.
 
 ## Tipos
 
@@ -8,26 +8,26 @@ Modelo de datos. Cómo se guardan (carpetas, ids, formato) está en `storage`.
 |---|---|---|
 | **goal** | La meta actual del producto, su criterio de éxito y lo que no se hace | Por la persona |
 | **capability** | Una parte del sistema: nombre, intención, `paths` y sus promesas dentro | A través de sus promesas |
-| **promise** (dentro de una capability) | Algo que la capability garantiza, con su forma de verificarse (`contracts`) | **Sí** |
+| **promise** (dentro de una capability) | Algo que la capability garantiza, con su forma de verificarse (`pledge`) | **Sí** |
 | **decision** | Qué se decidió, por qué, dónde aplica y qué alternativas se descartaron; puede reemplazar a otra | No; se revisa por antigüedad |
 | **question** | Algo que todavía no se sabe; puede bloquear trabajo | No |
 | **guide** | Contexto orientativo en prosa (`guides`) | No; se revisa por antigüedad |
 | **work** | Un trabajo grande en curso: petición textual, log, promesas que implementa | Por sus promesas |
 | **task** | Un nodo del grafo de un work, con dependencias y claim | Se cierra al pasar el check de su promesa |
 
-No hay un tipo especial de capability para diseño de UI: una capability de UI es una capability normal con un ejecutor visual y promesas manuales (`contracts`).
+No hay un tipo especial de capability para diseño de UI: una capability de UI es una capability normal con un ejecutor visual y promesas manuales (`pledge`).
 
 ## Campos comunes
 
-**Todos los campos son de una sola palabra**, en inglés (`architecture`). Todos los registros YAML llevan:
+**Todos los campos son de una sola palabra**, en inglés (`design`). Todos los registros YAML llevan:
 
 | Campo | Qué es |
 |---|---|
 | `id` | Hash (`bc-a1b2`). En las guides sale del nombre del archivo |
 | `created` | Fecha `YYYY-MM-DD`. Es fija: nunca cambia, así que no mete ruido en los diffs. Se guarda porque sacarla de git es lento y falla con renombres y clones superficiales |
 | `author` | El actor que lo escribió (ver abajo) |
-| `closed` y `reason` | Fecha y motivo al cerrar; solo aparecen en `archive/` (`storage`) |
-| `approved` | `{by, at, via}` cuando un cambio de nivel 3 recibió un sí (`changes`). `via` solo aparece si un agente transmitió el sí de la persona |
+| `closed` y `reason` | Fecha y motivo al cerrar; solo aparecen en `archive/` (`layout`) |
+| `approved` | `{by, at, via}` cuando un cambio de nivel 3 recibió un sí (`deltas`). `via` solo aparece si un agente transmitió el sí de la persona |
 
 - Las promesas dentro de una capability solo llevan `id`, `approved`, `closed` y `reason`; el resto lo hereda de la capability y git guarda el detalle.
 - **No se guarda `updated`**: sale de git, y guardarlo ensuciaría cada diff.
@@ -40,11 +40,11 @@ No hay un tipo especial de capability para diseño de UI: una capability de UI e
 - Si existe la variable de entorno `BEACON_ACTOR` (por ejemplo `agent:claude-code`), ese es el actor. La pone Anchor en los comandos del agente (`anchor`).
 - Si no, el actor es la persona: `human:<user.name de git>`.
 
-Es un **marcado, no una prueba**: el agente corre con el mismo usuario del sistema y podría saltárselo. La garantía real en equipo es la revisión del PR por una persona (`changes`, `sentry`).
+Es un **marcado, no una prueba**: el agente corre con el mismo usuario del sistema y podría saltárselo. La garantía real en equipo es la revisión del PR por una persona (`deltas`, `sentry`).
 
 ## Relaciones
 
-Las relaciones son **campos tipados** en el registro que corresponde, no una lista genérica. Así el YAML es más corto, el binario valida qué relación es válida en cada tipo y las listas se ordenan por id (`storage`).
+Las relaciones son **campos tipados** en el registro que corresponde, no una lista genérica. Así el YAML es más corto, el binario valida qué relación es válida en cada tipo y las listas se ordenan por id (`layout`).
 
 | Campo | Qué conecta | ¿Bloquea? | Va en |
 |---|---|---|---|
@@ -85,12 +85,12 @@ Además de los campos comunes, cada tipo tiene estos. Los `status` son enumeraci
 | task | `title`, `parent`, `status`: open, claimed o done | `blocks`, `implements`, `owner`, `branch` |
 | guide | `title`, `kind` (`guides`) | `applies`, `always`, `review`, `reviewed`, `tags`, `audience`, `status` |
 
-- `check` es `{runner, ...parámetros}` o `{manual: <pasos>}` (`contracts`).
-- `attested` es `{by, at, commit}` y, si la persona lo indica, `evidence`: una ruta o un enlace a lo que se revisó (una captura, un video). Beacon no guarda el archivo, solo la referencia (`contracts`).
+- `check` es `{runner, ...parámetros}` o `{manual: <pasos>}` (`pledge`).
+- `attested` es `{by, at, commit}` y, si la persona lo indica, `evidence`: una ruta o un enlace a lo que se revisó (una captura, un video). Beacon no guarda el archivo, solo la referencia (`pledge`).
 - `nongoals` es una lista de textos: lo que esa meta o capability **no** hace, para que el agente no lo construya sin que nadie lo pida.
 - `rejected` es una lista de textos: las alternativas descartadas y por qué, para que el agente no vuelva a proponerlas (`spider`).
 
-Los campos desconocidos se conservan al reescribir y las versiones nuevas del esquema se migran con `beacon migrate` (`storage`).
+Los campos desconocidos se conservan al reescribir y las versiones nuevas del esquema se migran con `beacon migrate` (`layout`).
 
 ## config.yaml
 
@@ -120,17 +120,17 @@ agents: [claude-code, codex, cursor]
 
 | Clave | Qué es | Cambiarla es |
 |---|---|---|
-| `schema` | Versión del esquema (`storage`) | Nivel 3 |
-| `runners` | Los **ejecutores**: pocos y revisados. Los registros solo pasan parámetros (`contracts`). Un ejecutor visual declara en `baseline` los globs de sus capturas base | Nivel 3 |
+| `schema` | Versión del esquema (`layout`) | Nivel 3 |
+| `runners` | Los **ejecutores**: pocos y revisados. Los registros solo pasan parámetros (`pledge`). Un ejecutor visual declara en `baseline` los globs de sus capturas base | Nivel 3 |
 | `review` | Plazo de revisión por tipo de guide y de decisión (`guides`) | Nivel 1 |
 | `limits` | Largo máximo en líneas de una guide, del `brief` y de lo que un hook inyecta a mitad de sesión (`spider`, `anchor`); valores iniciales que se ajustan con el uso | Nivel 1 |
 | `agents` | Agentes instalados (`anchor`) | Nivel 1 |
 
-Solo `runners` y `schema` son sensibles porque solo los ejecutores corren código en CI (`changes`, `sentry`). Cambiar los archivos que cubre un `baseline` también es de nivel 3, pero se detecta en el diff del repo y no en `config.yaml` (`changes`).
+Solo `runners` y `schema` son sensibles porque solo los ejecutores corren código en CI (`deltas`, `sentry`). Cambiar los archivos que cubre un `baseline` también es de nivel 3, pero se detecta en el diff del repo y no en `config.yaml` (`deltas`).
 
 ## Ejemplos
 
-Los ejemplos siguen la regla de comillas de `beacon fmt` (`storage`): los valores con `:` van entrecomillados.
+Los ejemplos siguen la regla de comillas de `beacon fmt` (`layout`): los valores con `:` van entrecomillados.
 
 **Meta**
 
@@ -227,4 +227,4 @@ implements: bc-c3d4
 status: open            # open | claimed | done  (con owner y branch al reclamarla)
 ```
 
-Los campos opcionales ausentes se omiten. La petición del `work` se guarda textual para que cualquier sesión pueda reanudar desde ella (`workflow`).
+Los campos opcionales ausentes se omiten. La petición del `work` se guarda textual para que cualquier sesión pueda reanudar desde ella (`method`).

@@ -4,7 +4,7 @@ El **contexto orientativo** del proyecto: producto, dominio, arquitectura, conve
 
 ## Formato
 
-Markdown con frontmatter YAML. Los metadatos son livianos: dos campos obligatorios y el resto opcional con defaults por tipo. Todos son de una sola palabra (`records`).
+Markdown con frontmatter YAML. Los metadatos son livianos: dos campos obligatorios y el resto opcional con defaults por tipo. Todos son de una sola palabra (`ledger`).
 
 ```markdown
 ---
@@ -27,13 +27,13 @@ directo con el worker; todo pasa por la cola.
 | `audience` | No | `agent`, `human` o `both` |
 | `status` | No | `draft` o `current` |
 
-- El `id` sale del nombre del archivo (`storage`).
+- El `id` sale del nombre del archivo (`layout`).
 - Las relaciones solo cuando hacen falta.
 - La **intención narrativa** de una funcionalidad (el "qué queremos y por qué" para una persona) vive en una guide enlazada a la capability con `refers`. El YAML de la capability tiene solo una línea de intención.
 
 ## Carga: qué entra y cuándo
 
-El contexto debe ser poco y preciso (`research`, E1 y E2).
+El contexto debe ser poco y preciso (`survey`, E1 y E2).
 
 **El `brief` (lo que entra siempre al empezar una sesión):**
 
@@ -55,9 +55,9 @@ La segunda señal es determinista y sin modelo. Aparece en `beacon stale` y en e
 
 **Fecha base:** `reviewed`. Si falta, en una guide se usa la fecha del último commit que tocó el archivo y en una decisión su `created`. Una revisión es un cambio de nivel 1: la persona confirma que sigue vigente y el agente actualiza `reviewed`.
 
-**Plazos por defecto** (`review` en `config.yaml`, `records`): convención 6 meses, arquitectura 12, producto 12, dominio 12, runbook 6. Las decisiones también se revisan por antigüedad, con 6 meses. Son valores iniciales sin evidencia detrás: la señal fuerte es el cambio de código, y los plazos se ajustan con el uso.
+**Plazos por defecto** (`review` en `config.yaml`, `ledger`): convención 6 meses, arquitectura 12, producto 12, dominio 12, runbook 6. Las decisiones también se revisan por antigüedad, con 6 meses. Son valores iniciales sin evidencia detrás: la señal fuerte es el cambio de código, y los plazos se ajustan con el uso.
 
 ## Mantenimiento
 
-- `beacon doctor` avisa cuando una guide supera el máximo de `limits.guide` líneas (`records`); las largas se parten.
+- `beacon doctor` avisa cuando una guide supera el máximo de `limits.guide` líneas (`ledger`); las largas se parten.
 - Una guide obsoleta se **borra** (git guarda la historia); no pasa a `archive/`.

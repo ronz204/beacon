@@ -13,7 +13,7 @@ Los agentes de código (Claude Code, Codex, Cursor, OpenCode y otros) escriben r
 - Un cambio nuevo puede romper algo viejo sin que nadie lo note.
 - No saben a dónde va el producto, así que construyen lo que se les pide aunque se aleje de la meta.
 
-Las respuestas actuales caen en dos extremos: procesos pesados (muchos documentos y ceremonia, que se pudren) o guías ligeras en prompts (nada obliga al agente a cumplir, y la verificación la reporta el propio agente). El detalle está en `research`.
+Las respuestas actuales caen en dos extremos: procesos pesados (muchos documentos y ceremonia, que se pudren) o guías ligeras en prompts (nada obliga al agente a cumplir, y la verificación la reporta el propio agente). El detalle está en `survey`.
 
 ## Cómo lo atacamos
 
@@ -29,10 +29,10 @@ Lo que cada parte del sistema promete (sus *promesas*) es un **contrato vivo**:
 
 - Se **verifica de forma continua** por código, no solo al terminar un cambio.
 - **No se borra:** cuando deja de valer se cierra con fecha y motivo.
-- **No se debilita sin un sí humano:** el binario detecta el cambio, no el modelo (`changes`).
-- **Avisa cuando envejece:** si el código cambió desde la última comprobación, aparece como deriva (`contracts`).
+- **No se debilita sin un sí humano:** el binario detecta el cambio, no el modelo (`deltas`).
+- **Avisa cuando envejece:** si el código cambió desde la última comprobación, aparece como deriva (`pledge`).
 
-Es la respuesta a que las specs se pudren y se comprueban solo al final (`research`).
+Es la respuesta a que las specs se pudren y se comprueban solo al final (`survey`).
 
 ## Pitch
 

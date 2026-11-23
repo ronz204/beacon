@@ -29,13 +29,13 @@
 - **`records/` y `archive/` separados.** Todo lo activo cuelga de `records/`.
 - **Una capability con sus promesas por archivo.** Las promesas son pequeñas y se editan y leen juntas. Decisiones y preguntas van sueltas, una por archivo, porque se leen y se cierran de forma independiente. Los registros activos son decenas o cientos de archivos, no miles.
 - **Todo lo que hay en `.beacon/` se versiona.** Lo que no se comparte vive fuera, en `.git/beacon/` (ver abajo).
-- La forma de cada registro, el esquema y `config.yaml` están en `records`; la de las guides, en `guides`.
+- La forma de cada registro, el esquema y `config.yaml` están en `ledger`; la de las guides, en `guides`.
 
 ## Estado local
 
 Lo que no se comparte vive en `.git/beacon/`, dentro del directorio común de git (`git rev-parse --git-common-dir`), y no en `.beacon/`:
 
-- `results.json`: resultados de los checks por promesa y commit (`contracts`).
+- `results.json`: resultados de los checks por promesa y commit (`pledge`).
 - `claims.json`: los claims de tareas de este clon, visibles a todos sus worktrees (ver abajo).
 - Las métricas de fricción (`engine`).
 - Lo que los hooks ya inyectaron en cada sesión, para no repetirlo (`anchor`).
@@ -48,8 +48,8 @@ Git no puede commitearlo por accidente, no hay nada que añadir al `.gitignore` 
 Los worktrees de un mismo repo comparten `.git/beacon/`, y varias sesiones de agente pueden escribir al mismo tiempo. Por eso:
 
 - **Toda escritura en `.git/beacon/` es atómica:** se escribe un archivo temporal en el mismo directorio y se renombra sobre el definitivo, para que nadie lea un archivo a medias.
-- **Los resultados van por commit y promesa** (`contracts`), así que compartirlos entre worktrees es seguro: dos worktrees en el mismo commit producen el mismo resultado.
-- **Los claims se guardan también aquí** (`claims.json`), porque un claim escrito solo en un registro versionado es invisible para un worktree vecino hasta que se commitee y se fusione. `beacon claim` escribe en los dos sitios: el claim local avisa a las sesiones de esta máquina al instante, y `owner` y `branch` en el registro avisan al equipo cuando la rama sube (`workflow`).
+- **Los resultados van por commit y promesa** (`pledge`), así que compartirlos entre worktrees es seguro: dos worktrees en el mismo commit producen el mismo resultado.
+- **Los claims se guardan también aquí** (`claims.json`), porque un claim escrito solo en un registro versionado es invisible para un worktree vecino hasta que se commitee y se fusione. `beacon claim` escribe en los dos sitios: el claim local avisa a las sesiones de esta máquina al instante, y `owner` y `branch` en el registro avisan al equipo cuando la rama sube (`method`).
 - El formato exacto de estos archivos (por ejemplo un archivo por commit) se decide al construir; el requisito es la escritura atómica.
 - `beacon doctor` limpia claims de ramas o worktrees que ya no existen.
 
@@ -63,7 +63,7 @@ Los worktrees de un mismo repo comparten `.git/beacon/`, y varias sesiones de ag
 
 - Los registros estructurados son **YAML**; las guides son Markdown con frontmatter YAML.
 - **Estricto:** sin anclas ni alias y sin claves de combinación (`<<`).
-- **Sin tipos implícitos:** el parser lee cada valor por el tipo que dice el esquema (`records`). `beacon fmt` entrecomilla **solo lo que otra herramienta podría reinterpretar**: `yes`, `no`, `on`, `off`, `null`, números (`1.0`), strings vacíos, valores con `:` o `#`, con espacios al inicio o al final, o con caracteres de flujo (`,`, `{`, `}`, `[`, `]`) dentro de un mapa en línea. Las fechas (`2026-11-22`) y las enumeraciones (`status: active`) van sin comillas.
+- **Sin tipos implícitos:** el parser lee cada valor por el tipo que dice el esquema (`ledger`). `beacon fmt` entrecomilla **solo lo que otra herramienta podría reinterpretar**: `yes`, `no`, `on`, `off`, `null`, números (`1.0`), strings vacíos, valores con `:` o `#`, con espacios al inicio o al final, o con caracteres de flujo (`,`, `{`, `}`, `[`, `]`) dentro de un mapa en línea. Las fechas (`2026-11-22`) y las enumeraciones (`status: active`) van sin comillas.
 - **`beacon fmt`** formatea de forma canónica: orden fijo de claves, un campo por línea, listas ordenadas por id. Un formato canónico da diffs pequeños y estables.
 - El binario valida contra un esquema y, si algo no encaja, dice cómo arreglarlo.
 
@@ -90,7 +90,7 @@ Los worktrees de un mismo repo comparten `.git/beacon/`, y varias sesiones de ag
 
 ## Edición humana
 
-Una persona puede editar el YAML a mano. El binario valida en el siguiente comando y en el pre-commit, y los cambios de nivel 3 se detectan igual comparando con la versión de git (`changes`).
+Una persona puede editar el YAML a mano. El binario valida en el siguiente comando y en el pre-commit, y los cambios de nivel 3 se detectan igual comparando con la versión de git (`deltas`).
 
 ## Versionado del esquema
 

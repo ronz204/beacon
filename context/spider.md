@@ -15,7 +15,7 @@ Una estructura así:
 
 ## Qué hace Spider
 
-Carga los registros (`storage`, `records`), arma el grafo de relaciones en memoria y calcula, **sin modelo**, lo que el resto del sistema necesita. Engine expone estos cálculos como comandos y herramientas (`engine`).
+Carga los registros (`layout`, `ledger`), arma el grafo de relaciones en memoria y calcula, **sin modelo**, lo que el resto del sistema necesita. Engine expone estos cálculos como comandos y herramientas (`engine`).
 
 ## Qué calcula
 
@@ -23,11 +23,11 @@ Carga los registros (`storage`, `records`), arma el grafo de relaciones en memor
 |---|---|---|
 | `brief` | Meta activa con sus `nongoals`, bloqueos y rojos, trabajo en curso, índice de guides | Lee goal, preguntas abiertas, estado de las promesas, works activos y guides; con tope de líneas (ver abajo) |
 | `context <paths>` | Todo lo que aplica a esos archivos: capabilities cuyos `paths` coinciden (con sus `nongoals`), sus promesas con estado, decisiones con esos `where` (con sus alternativas `rejected`), guides con `applies` coincidente o `always`, preguntas relacionadas y las señales | **Recuperación por relación:** coincidencia de globs y recorrido de relaciones, no búsqueda de texto |
-| `context --hook <paths>` | Lo mismo, pero solo lo que la sesión todavía no recibió, con tope de `limits.hook` líneas | Igual que `context`, más el registro local de lo ya inyectado (`storage`, `anchor`) |
-| `ready` | Trabajo y tareas sin bloqueos, por rama | Recorre `blocks` y `parent`; al cerrar un bloqueo se desbloquean los dependientes; tiene en cuenta los claims locales (`workflow`) |
-| `drift` | Promesas que pasaron pero cuyo código cambió desde el último check | Compara el commit del último resultado (`contracts`) con los cambios de git bajo sus `paths` |
+| `context --hook <paths>` | Lo mismo, pero solo lo que la sesión todavía no recibió, con tope de `limits.hook` líneas | Igual que `context`, más el registro local de lo ya inyectado (`layout`, `anchor`) |
+| `ready` | Trabajo y tareas sin bloqueos, por rama | Recorre `blocks` y `parent`; al cerrar un bloqueo se desbloquean los dependientes; tiene en cuenta los claims locales (`method`) |
+| `drift` | Promesas que pasaron pero cuyo código cambió desde el último check | Compara el commit del último resultado (`pledge`) con los cambios de git bajo sus `paths` |
 | `stale` | Decisiones y guides que superaron su plazo de revisión o cuyo código cambió mucho | `reviewed` más `review`, y cambio de código desde la última revisión (`guides`) |
-| `diff` | Qué cambió en el estado desde un commit, clasificado por nivel (1, 2 o 3), incluidas las capturas base | Compara los registros actuales con los de git y los archivos de `baseline` (`changes`) |
+| `diff` | Qué cambió en el estado desde un commit, clasificado por nivel (1, 2 o 3), incluidas las capturas base | Compara los registros actuales con los de git y los archivos de `baseline` (`deltas`) |
 
 **Revelado progresivo:** primero un resumen (`brief`), luego lo que aplica a lo que se toca (`context`), y solo si hace falta el detalle de un registro (`get`).
 
@@ -35,14 +35,14 @@ Los `nongoals` y los `rejected` aparecen en `context` porque son lo que más ayu
 
 ## Cómo consulta git
 
-Spider consulta git **en lote**, nunca una vez por promesa (`storage` tiene las mediciones):
+Spider consulta git **en lote**, nunca una vez por promesa (`layout` tiene las mediciones):
 
 - **Deriva:** una consulta `git diff --name-only <base>..HEAD` por cada commit base distinto entre los resultados guardados (suelen ser pocos). El cruce con los `paths` se hace en memoria.
 - **Frescura:** una consulta `git log --since=<la fecha de revisión más antigua> --name-only`, y el conteo de cambios por glob también en memoria.
 
 ## El tope del brief
 
-El `brief` tiene un tope de `limits.brief` líneas (60 por defecto, `records`). La meta activa siempre entra. Si el resto no cabe, se recorta por **prioridad fija**:
+El `brief` tiene un tope de `limits.brief` líneas (60 por defecto, `ledger`). La meta activa siempre entra. Si el resto no cabe, se recorta por **prioridad fija**:
 
 1. Bloqueos y rojos.
 2. Trabajo en curso.

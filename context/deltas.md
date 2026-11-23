@@ -26,7 +26,7 @@ Es conservadora: puede pedir un sí por un typo, pero nunca deja pasar un debili
 
 ### Capturas base
 
-Un ejecutor visual declara en `config.yaml` los globs de sus capturas base (`baseline`, `records`). Para el binario, esos archivos son parte de lo prometido: una regresión visual pasa porque la captura nueva coincide con la base, así que regrabar la base es la forma más fácil de "arreglar" una regresión sin arreglarla.
+Un ejecutor visual declara en `config.yaml` los globs de sus capturas base (`baseline`, `ledger`). Para el binario, esos archivos son parte de lo prometido: una regresión visual pasa porque la captura nueva coincide con la base, así que regrabar la base es la forma más fácil de "arreglar" una regresión sin arreglarla.
 
 - La detección es mecánica: un diff de git que toque un archivo cubierto por algún `baseline` es nivel 3, sin mirar la imagen.
 - Se aprueba como cualquier otro nivel 3 (ver abajo), y la persona ve en el PR qué capturas cambiaron.
@@ -47,7 +47,7 @@ La promesa dice *"tras 5 intentos fallidos la cuenta se bloquea 15 minutos"*. Pa
 
 No hay un sistema propio de aprobaciones; se reutiliza lo que git ya hace.
 
-- **En solo:** la persona dice sí en el chat y el agente lo transmite con `beacon record --approve`. El binario guarda `approved: {by, at, via}` en el registro afectado: `by` es la persona (`human:<user.name de git>`) y `via` es el agente que transmitió el sí (`records`, sección Actor). Para una captura base, que no es un registro, el sí queda en el registro de la capability o promesa afectada.
+- **En solo:** la persona dice sí en el chat y el agente lo transmite con `beacon record --approve`. El binario guarda `approved: {by, at, via}` en el registro afectado: `by` es la persona (`human:<user.name de git>`) y `via` es el agente que transmitió el sí (`ledger`, sección Actor). Para una captura base, que no es un registro, el sí queda en el registro de la capability o promesa afectada.
 - **En equipo:** Sentry exige en el PR dos cosas (`sentry`): que cada cambio de nivel 3 traiga un `approved.by` humano, y que el PR tenga una review aprobada de una persona con permiso sobre `.beacon/records/capabilities/**` (CODEOWNERS o review obligatoria del hosting). Las capturas base se protegen igual: la review de la persona sobre esos archivos es la garantía.
 - **Qué garantiza y qué no:** el campo `approved` es un **marcado, no una prueba**, porque el agente corre con el mismo usuario del sistema y podría escribir un sí que la persona no dio. Lo que sí es una garantía en equipo es la revisión del PR por una persona: ahí se ve el diff clasificado por nivel. En uso personal la protección es la confianza y que todo queda a la vista.
 
