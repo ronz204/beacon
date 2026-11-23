@@ -10,7 +10,7 @@ Beacon es un método de trabajo para agentes de código que comprueba con códig
 | Entender cómo se guardan los datos | `layout` → `ledger` → `guides` → `spider` |
 | Entender cómo se conecta con agentes, git y CI | `engine` → `anchor` → `sentry` |
 | Saber en qué punto está el proyecto | `status` |
-| Consultar el porqué o un término | `survey`, `reference` |
+| Consultar el porqué o un término | `survey`, `legend` |
 
 Los seis primeros archivos del primer camino bastan para entender el proyecto completo.
 
@@ -33,7 +33,7 @@ Los seis primeros archivos del primer camino bastan para entender el proyecto co
 | `anchor` | ¿Cómo se instala Beacon en cada agente? |
 | `sentry` | ¿Qué se hace cumplir en git y CI? |
 | `status` | ¿Qué está decidido, qué está abierto, qué riesgos hay y qué se construye primero? |
-| `reference` | ¿Qué significa un término y de dónde salió una fuente? |
+| `legend` | ¿Qué significa un término y de dónde salió una fuente? |
 
 ## Reglas de esta KB
 

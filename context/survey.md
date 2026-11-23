@@ -1,6 +1,6 @@
 # Investigación
 
-Lo que sabemos de otras herramientas y de la evidencia, **solo lo que sostiene una decisión actual**. Las fuentes están en `reference`.
+Lo que sabemos de otras herramientas y de la evidencia, **solo lo que sostiene una decisión actual**. Las fuentes están en `legend`.
 
 **Confianza:** casi todo viene de documentación de proyectos, blogs o estudios de vendedores. No hay evaluaciones independientes de ODD, Engram ni Beads. Sirve para orientar, no para blindar decisiones. La ronda del 2026-11-22 (sección 7) añade cuatro estudios con método explícito, pero ninguno prueba lo que Beacon promete.
 
