@@ -40,6 +40,11 @@ func (id RecordID) String() string {
 	return id.value
 }
 
+func (id RecordID) Root() RecordID {
+	root, _, _ := strings.Cut(id.value, ".")
+	return RecordID{value: root}
+}
+
 func (id RecordID) Parent() (RecordID, bool) {
 	cut := strings.LastIndexByte(id.value, '.')
 
