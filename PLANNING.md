@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. El siguiente paso es el 4.
+> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. El paso 4 está hecho y el siguiente es el 5.
 
 ## 1. Panorama
 
@@ -78,8 +78,8 @@ beacon/
 │  │  ├─ error.go                    # 4  · Error[C], códigos y detalles
 │  │  ├─ actor.go                    # 4  · human:<nombre>, agent:<nombre>
 │  │  ├─ date.go                     # 4  · fecha YYYY-MM-DD
-│  │  ├─ glob.go                     # 4  · PathGlob y contrato PathMatcher
-│  │  └─ identity.go                 # 4  · formato de ids y contrato IDIssuer
+│  │  ├─ glob.go                     # 4  · PathGlob; PathMatcher en 15
+│  │  └─ identity.go                 # 4  · RecordID; IDIssuer en 13
 │  │
 │  ├─ system/                        # I/O compartido, sin lógica de Beacon
 │  │  ├─ git.go                      # 21 · ejecuta git sin shell
@@ -264,10 +264,10 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 
 **Forma de trabajo en todos los pasos:** primero el test que falla, luego el código mínimo, y al final `go test ./...` en verde.
 
-### Paso 4. Kernel
+### Paso 4. Kernel (hecho)
 
 - **Objetivo:** tener las piezas puras que todo lo demás usa.
-- **Construye:** `Error[C]` con código estable y detalles; `Actor`; fecha; `PathGlob`; formato de ids `bc-<hex>` con hijos `.1`, `.1.1`; y los contratos `PathMatcher` e `IDIssuer`.
+- **Construye:** `Error[C]` con código estable y detalles; `Actor`; fecha; `PathGlob`; y formato de ids `bc-<hex>` con hijos `.1`, `.1.1`. Los contratos `IDIssuer` y `PathMatcher` se agregan cuando los usan los pasos 13 y 15.
 - **Cuidado:** un id de la forma `bc-91cd.1` debe saber quién es su padre, porque la jerarquía de tareas depende de eso.
 - **Hecho cuando:** cada parser acepta sus ejemplos válidos, rechaza los inválidos y falla con un código estable.
 
@@ -345,7 +345,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 ### Paso 13. Ids y slugs
 
 - **Objetivo:** crear registros nuevos con nombres estables.
-- **Construye:** `driver/random/random.go` y la generación de `<id>-<slug>.<ext>`.
+- **Construye:** el contrato `IDIssuer` en `kernel`, `driver/random/random.go` y la generación de `<id>-<slug>.<ext>`.
 - **Reglas clave:** el slug sale del título, en minúsculas y con guiones, y normaliza acentos (`Pagos sin fricción` da `pagos-sin-friccion`).
 - **Depende de:** D2.
 - **Hecho cuando:** un choque simulado reintenta, y un espacio lleno hace crecer el id.
@@ -366,9 +366,9 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 ### Paso 15. Globs y `doctor`
 
 - **Objetivo:** saber qué registros aplican a una ruta y diagnosticar el estado completo.
-- **Construye:** `driver/match/match.go` y `action/doctor.go`.
+- **Construye:** el contrato `PathMatcher` en `kernel`, `driver/match/match.go` y `action/doctor.go`.
 - **Reglas de globs:** `*`, `**`, `?`, `{a,b}`; desde la raíz; con `/`; sensibles a mayúsculas; sin negaciones.
-- **Cuidado:** en Windows, las rutas se normalizan a `/` antes de comparar.
+- **Cuidado:** en Windows, las rutas se normalizan a `/` antes de comparar. Los corchetes se rechazan, así que `app/[id]/page.tsx` se escribe `app/*/page.tsx` hasta que haga falta un escape.
 - **`doctor` en esta fase:** valida esquema, formato y grafo, y avisa de guides que superan `limits.guide`. La ayuda con conflictos se agrega al usarlo en ramas reales, y la limpieza de claims en el paso 22.
 - **Hecho cuando:** `doctor` reporta todos los problemas de un `.beacon/` roto con su solución.
 
