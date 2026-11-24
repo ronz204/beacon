@@ -20,6 +20,18 @@ func (e Error[C]) WithCause(cause error) Error[C] {
 	return e
 }
 
+func (e Error[C]) failureCode() string {
+	return string(e.Code)
+}
+
+func (e Error[C]) failureMessage() string {
+	return e.Message
+}
+
+func (e Error[C]) failureDetails() map[string]any {
+	return e.Details
+}
+
 type ErrorCatalog[C ~string] map[C]string
 
 func (c ErrorCatalog[C]) Fail(
