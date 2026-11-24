@@ -148,18 +148,17 @@ func fitHook(
 	var emitted []string
 
 	for index, candidate := range items {
-		reserve := 0
-		if index < len(items)-1 {
-			reserve = 1
-		}
+		reserve := min(len(items)-index-1, 1)
+		room := limit - len(result.Lines) - reserve
+		first := len(result.Lines) == 0
 
-		if len(result.Lines)+len(candidate.lines)+reserve > limit {
+		if first {
+			keep := min(len(candidate.lines), max(room, 1))
+			candidate.lines = candidate.lines[:keep]
+		}
+		if !first && len(candidate.lines) > room {
 			result.Omitted = len(items) - index
-			result.Lines = append(result.Lines, fmt.Sprintf(
-				"%d more, run beacon context %s",
-				result.Omitted,
-				strings.Join(paths, " "),
-			))
+			result.Lines = appendSummary(result, limit, paths)
 			break
 		}
 
@@ -168,4 +167,18 @@ func fitHook(
 	}
 
 	return result, emitted
+}
+
+func appendSummary(result HookResult, limit int, paths []string) []string {
+	if len(result.Lines) >= limit {
+		return result.Lines
+	}
+
+	summary := fmt.Sprintf(
+		"%d more, run beacon context %s",
+		result.Omitted,
+		strings.Join(paths, " "),
+	)
+
+	return append(result.Lines, summary)
 }
