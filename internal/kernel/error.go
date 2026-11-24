@@ -55,6 +55,7 @@ const (
 	KernelHistoryFailed   KernelCode = "history_failed"
 	KernelIDIssueFailed   KernelCode = "id_issue_failed"
 	KernelRecordIDInvalid KernelCode = "record_id_invalid"
+	KernelSessionInvalid  KernelCode = "session_invalid"
 	KernelTextInvalid     KernelCode = "text_invalid"
 )
 
@@ -68,6 +69,7 @@ var kernelErrors = ErrorCatalog[KernelCode]{
 	KernelHistoryFailed:   "the git history could not be read",
 	KernelIDIssueFailed:   "a new record id could not be issued",
 	KernelRecordIDInvalid: "record id must look like bc-a1b2 or bc-a1b2.1",
+	KernelSessionInvalid:  "session id must be 1 to 128 letters, digits, . _ -",
 	KernelTextInvalid:     "text must not be blank",
 }
 
