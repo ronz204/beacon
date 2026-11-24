@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 a 14 están hechos y el siguiente es el 15.
+> **Estado: Fase 1 cerrada el 2026-11-23.** `beacon fmt` y `beacon doctor` funcionan sobre un `.beacon/` real. Las decisiones D1 a D4 están registradas en la KB. El siguiente es el Bloque 3, desde el paso 17.
 
 ## 1. Panorama
 
@@ -83,7 +83,9 @@ beacon/
 │  │  ├─ text.go                     # 5  · texto obligatorio de registros
 │  │  ├─ approval.go                 # 5  · approved: by, at, via
 │  │  ├─ presence.go                 # 7  · IsMissing para campos opcionales
-│  │  └─ failure.go                  # 10 · fallo de un archivo con su línea
+│  │  ├─ failure.go                  # 10 · fallo de un archivo con su línea
+│  │  ├─ formatter.go                # 15 · contrato RecordFormatter
+│  │  └─ describe.go                 # 15 · código, mensaje y ubicación de un fallo
 │  │
 │  ├─ system/                        # I/O compartido, sin lógica de Beacon
 │  │  ├─ git.go                      # 21 · ejecuta git sin shell
@@ -94,7 +96,8 @@ beacon/
 │  │  └─ internal/
 │  │     ├─ handle/
 │  │     │  ├─ doctor.go             # 16 · beacon doctor
-│  │     │  └─ format.go             # 16 · beacon fmt
+│  │     │  ├─ format.go             # 16 · beacon fmt
+│  │     │  └─ project.go            # 16 · ubicar .beacon/ y textos de hallazgos
 │  │     └─ output/
 │  │        └─ output.go             # 16 · sobre --json y códigos de salida
 │  │
@@ -182,7 +185,7 @@ beacon/
 │           ├─ random/
 │           │  └─ random.go          # 13 · IDIssuer real
 │           ├─ match/
-│           │  └─ match.go           # 15 · PathMatcher con doublestar
+│           │  └─ match.go           # 15 · PathMatcher sobre regexp
 │           ├─ double/
 │           │  └─ double.go          # 17 · contratos en memoria para tests
 │           ├─ commit/
@@ -380,21 +383,25 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 - **Depende de:** D3.
 - **Hecho cuando:** cada error tiene un test y el recorrido de vecinos es determinista.
 
-### Paso 15. Globs y `doctor`
+### Paso 15. Globs y `doctor` (hecho)
 
 - **Objetivo:** saber qué registros aplican a una ruta y diagnosticar el estado completo.
 - **Construye:** el contrato `PathMatcher` en `kernel`, `driver/match/match.go` y `action/doctor.go`.
+- **Decisión:** los globs se implementan a mano. Las llaves se expanden (máximo 64 combinaciones) y cada alternativa se traduce a `regexp`, que corre en tiempo lineal. Una comparación con 400.000 casos contra `doublestar` v4.10.4 mostró que esa librería no es coherente con `**` dentro de llaves (`a/**` coincide con `a`, pero `a/{**,b}` no).
+- **Límite conocido:** una alternativa vacía pegada a una barra, como `{a,}/b`, genera un segmento vacío y su resultado puede diferir de `doublestar`.
+- **`doctor` no valida el grafo si un registro falló al cargar**, porque reportaría referencias rotas que en realidad son consecuencia del primer error.
 - **Reglas de globs:** `*`, `**`, `?`, `{a,b}`; desde la raíz; con `/`; sensibles a mayúsculas; sin negaciones.
 - **Cuidado:** en Windows, las rutas se normalizan a `/` antes de comparar. Los corchetes se rechazan, así que `app/[id]/page.tsx` se escribe `app/*/page.tsx` hasta que haga falta un escape.
 - **`doctor` en esta fase:** valida esquema, formato y grafo, y avisa de guides que superan `limits.guide`. La ayuda con conflictos se agrega al usarlo en ramas reales, y la limpieza de claims en el paso 22.
 - **Hecho cuando:** `doctor` reporta todos los problemas de un `.beacon/` roto con su solución.
 
-### Paso 16. Fachada y CLI mínimo
+### Paso 16. Fachada y CLI mínimo (hecho)
 
 - **Objetivo:** cerrar la Fase 1 con algo ejecutable.
 - **Construye:** `spider.go`, `router`, `cmd/beacon/main.go` y las pruebas de `specifies/`.
 - **Comandos:** `beacon fmt` y `beacon doctor`, con `--json` y códigos de salida 0, 1 y 2.
-- **Medición:** repetir la carga de 500 archivos y comparar con los ~100 ms de `layout`.
+- **Medición:** repetir la carga de 500 archivos y comparar con los ~100 ms de `layout`. **Resultado:** unos 70 ms con carga más grafo, anotado en `layout`.
+- **CLI:** `spf13/cobra` v1.10.2. Los errores de uso también devuelven el sobre `--json` con código 1.
 - **Hecho cuando:** los tests e2e corren el binario real, y el tiempo medido queda anotado aunque no alcance la referencia.
 
 ## 6. Bloque 3: cálculos de Spider
