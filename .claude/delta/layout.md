@@ -29,6 +29,7 @@
 - **`records/` y `archive/` separados.** Todo lo activo cuelga de `records/`.
 - **Una capability con sus promesas por archivo.** Las promesas son pequeñas y se editan y leen juntas. Decisiones y preguntas van sueltas, una por archivo, porque se leen y se cierran de forma independiente. Los registros activos son decenas o cientos de archivos, no miles.
 - **Todo lo que hay en `.beacon/` se versiona.** Lo que no se comparte vive fuera, en `.git/beacon/` (ver abajo).
+- **Cómo se encuentra:** cada comando busca `.beacon/` desde la carpeta actual hacia arriba y se detiene en la raíz del repo (la carpeta con `.git`), para no tomar el `.beacon/` de un directorio superior que pertenece a otro proyecto.
 - La forma de cada registro, el esquema y `config.yaml` están en `ledger`; la de las guides, en `guides`.
 
 ## Estado local
@@ -68,7 +69,7 @@ Los worktrees de un mismo repo comparten `.git/beacon/`, y varias sesiones de ag
 - **`beacon fmt`** formatea de forma canónica: orden fijo de claves, un campo por línea, listas de ids y promesas ordenadas por id. Un formato canónico da diffs pequeños y estables.
 - **En línea o en bloque:** `check`, `approved`, `attested` y las listas de ids, globs y etiquetas van en línea. Las listas de texto (`nongoals`, `rejected`, `log`) y `promises` van en bloque, y conservan su orden salvo `promises`. `request` usa un bloque literal cuando tiene saltos de línea, sin alterar su contenido.
 - **Orden de claves:** el de la tabla. Los campos desconocidos van después de los conocidos, en orden alfabético y sin cambios por dentro.
-- **Alcance de `fmt`:** formatea los registros y el frontmatter de las guides, sin tocar su cuerpo ni `config.yaml`. Conserva los comentarios YAML junto a su clave, escribe LF y no toca un archivo inválido. `.beacon/**` lleva `text eol=lf` en `.gitattributes`.
+- **Alcance de `fmt`:** formatea los registros y el frontmatter de las guides, sin tocar su cuerpo ni `config.yaml`. Conserva los comentarios YAML junto a su clave, deja en bloque una sección que tiene comentarios, nunca parte líneas largas, escribe LF y no toca un archivo inválido. Formatea hasta que la salida no cambia (máximo 3 pasadas); si no se estabiliza o el contenido cambiaría, no escribe y lo reporta. `.beacon/**` lleva `text eol=lf` en `.gitattributes`.
 
 | Tipo | Orden |
 |---|---|
