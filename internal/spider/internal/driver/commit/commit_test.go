@@ -263,3 +263,32 @@ func TestStateChangesRejectsUnsafeRevision(t *testing.T) {
 		requireHistoryFailure(t, err)
 	}
 }
+
+func TestListBranchesAndWorktrees(t *testing.T) {
+	box := newSandbox(t)
+	box.write("src/a.go", "first")
+	box.commit("2026-01-10")
+	box.git("", "branch", "feat/sample-a")
+
+	repository := commit.NewRepository(box.root)
+	branches, err := repository.ListBranches(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	names := make([]string, 0, len(branches))
+	for _, branch := range branches {
+		names = append(names, branch.String())
+	}
+	if !slices.Contains(names, "feat/sample-a") {
+		t.Fatalf("branches = %v", names)
+	}
+
+	worktrees, err := repository.ListWorktrees(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(worktrees) != 1 {
+		t.Fatalf("worktrees = %v", worktrees)
+	}
+}
