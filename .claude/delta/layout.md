@@ -148,6 +148,8 @@ La deriva y la frescura (`spider`) dependen de git. Medición del 2026-11-22 en 
 | `git status --porcelain` | 8 ms |
 | Una consulta por capability (`git log -1 -- <path>`), 500 capabilities | 1.147 ms |
 
+**Medición con el código real (2026-11-24):** un repo de 500 capabilities con 10 promesas cada una, 1.000 archivos, 50 commits y 30 archivos editados sin commitear. El análisis completo (carga, grafo, verificación, deriva y frescura con git real) y `context` de un archivo tardan unos **155 ms** (mediana de 3 corridas de 10, en un i7-13620H con Windows, donde lanzar procesos es más caro). Queda dentro de la meta de 150 a 200 ms.
+
 **Conclusión de diseño:** las consultas van **en lote**, no una por promesa. Una por commit base distinto más una de frescura, y el cruce con los `paths` se hace en memoria. Con 500 capabilities, el CLI completo (carga más git) queda en el orden de 150 a 200 ms.
 
 **Límites de la medición:** archivos y repos sintéticos y uniformes, caché caliente, coincidencia de rutas por prefijo (no globs completos). Los repos reales tienen árboles y diffs más grandes, y `git status` puede tardar más.
