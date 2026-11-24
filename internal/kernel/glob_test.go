@@ -1,6 +1,7 @@
 package kernel_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/ronz204/beacon/internal/kernel"
@@ -35,6 +36,19 @@ func TestParsePathGlobAccepts(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParsePathGlobLimitsBraceExpansion(t *testing.T) {
+	atLimit := strings.Repeat("{a,b}", 6)
+	overLimit := strings.Repeat("{a,b}", 7)
+
+	if _, err := kernel.ParsePathGlob(atLimit); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := kernel.ParsePathGlob(overLimit)
+
+	requireKernelCode(t, err, kernel.KernelGlobInvalid)
 }
 
 func TestParsePathGlobTrims(t *testing.T) {
