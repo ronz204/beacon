@@ -25,6 +25,15 @@ func TestRecordFailureLocatesTheFile(t *testing.T) {
 	}
 }
 
+func TestRecordIDIssueFailureKeepsCause(t *testing.T) {
+	err := kernel.FailRecordIDIssue(io.EOF)
+
+	requireKernelCode(t, err, kernel.KernelIDIssueFailed)
+	if !errors.Is(err, io.EOF) {
+		t.Fatal("cause is not reachable")
+	}
+}
+
 func TestRecordFailureExposesKernelCause(t *testing.T) {
 	_, cause := kernel.ParseCalendarDate("2026-02-30")
 
