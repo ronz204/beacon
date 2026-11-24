@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 a 10 están hechos y el siguiente es el 11.
+> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 a 12 están hechos y el siguiente es el 13.
 
 ## 1. Panorama
 
@@ -62,7 +62,7 @@ router / engine    comandos del CLI
 - **Ejecutar checks, clasificar niveles y calcular riesgo:** son de Engine.
 - **`record`, `close`, `claim` como comandos completos:** son de Engine (Fase 2). Spider les da la lectura, la validación y la escritura de bajo nivel.
 - **Archivo mensual (`archive/`):** Fase 5. Hasta entonces nada se archiva, así que una referencia ausente es una referencia rota. Cuando exista, la validación del grafo deberá consultarlo.
-- **`render`, Anchor y Sentry:** fases posteriores.
+- **`render`, Anchor y Sentry:** fases posteriores. `beacon install` deberá agregar `.beacon/** text eol=lf` a `.gitattributes` (`anchor`).
 
 ## 2. Estructura objetivo
 
@@ -87,7 +87,7 @@ beacon/
 │  │
 │  ├─ system/                        # I/O compartido, sin lógica de Beacon
 │  │  ├─ git.go                      # 21 · ejecuta git sin shell
-│  │  └─ atomic.go                   # 22 · archivo temporal + renombrado
+│  │  └─ atomic.go                   # 12 · archivo temporal + renombrado
 │  │
 │  ├─ router/                        # CLI
 │  │  ├─ router.go                   # 16 · Run(args, stdin, stdout, stderr) int
@@ -159,7 +159,6 @@ beacon/
 │        │
 │        ├─ action/                  # casos de uso
 │        │  ├─ load.go               # 10 · carga todo y acumula errores
-│        │  ├─ format.go             # 12 · fmt
 │        │  ├─ validate.go           # 14 · validación del conjunto
 │        │  ├─ doctor.go             # 15
 │        │  ├─ signals.go            # 17
@@ -339,20 +338,20 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
   - El nombre del archivo debe coincidir con el `id` del registro.
 - **Hecho cuando:** un `.beacon/` de ejemplo carga los 7 tipos, un directorio con varios errores los reporta todos y los fixtures `invalid/` restantes fallan con su error, salvo los dos de `config/`, que son del paso 11.
 
-### Paso 11. `config.yaml`
+### Paso 11. `config.yaml` (hecho)
 
 - **Objetivo:** leer la configuración que Spider necesita.
 - **Construye:** `driver/record/config.go`.
 - **Reglas clave:** lee `schema`, `limits` y `review`; aplica los valores por defecto; **rechaza un esquema más nuevo** que el del binario; conserva `runners`, `agents` y cualquier campo desconocido.
 - **Hecho cuando:** `schema: 2` falla con un mensaje que dice cómo resolverlo.
 
-### Paso 12. `fmt` canónico
+### Paso 12. `fmt` canónico (hecho)
 
 - **Objetivo:** que un registro tenga una sola forma posible en disco, para que los diffs sean pequeños.
-- **Construye:** `driver/record/format.go` y `action/format.go`.
+- **Construye:** `driver/record/format.go` y `system/atomic.go`. No hay `action/format.go`, porque no coordinaría nada: `spider.go` llamará directo a `Store.Format`.
 - **Reglas clave:** orden fijo de claves; listas por id; comillas solo donde otra herramienta podría reinterpretar; escritura atómica.
 - **Cuidado:**
-  - Definir dónde van los campos desconocidos: se propone **después de los conocidos, en orden alfabético**.
+  - Los campos desconocidos van **después de los conocidos, en orden alfabético**, y los comentarios YAML se conservan junto a su clave.
   - Los ejemplos de `ledger` usan mapas en línea (`check: {runner: ...}`). Los fixtures `canonical/` deciden exactamente cuándo.
   - **Saltos de línea en Windows:** git ya está convirtiendo LF a CRLF en este repo. `fmt` debe escribir LF, y `.beacon/**` necesita `text eol=lf` en `.gitattributes`, o cada archivo parecería modificado.
 - **Hecho cuando:** formatear dos veces da el mismo resultado byte a byte y ningún campo desconocido se pierde.
@@ -457,7 +456,7 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
 ### Paso 22. Estado local
 
 - **Objetivo:** compartir estado entre worktrees sin riesgo.
-- **Construye:** `system/atomic.go`, `driver/states`, claims locales, `context --hook` y la limpieza de claims en `doctor`.
+- **Construye:** `driver/states`, claims locales, `context --hook` y la limpieza de claims en `doctor`.
 - **Reglas clave:** toda escritura en `.git/beacon/` es atómica, y la ruta sale de `git rev-parse --git-common-dir`.
 - **Cuidado:** en Windows, renombrar sobre un archivo que otro proceso tiene abierto puede fallar, así que hace falta reintentar y probarlo con escritores concurrentes.
 - **Hecho cuando:** varios procesos escriben a la vez sin dejar un archivo a medias, y `--hook` no repite lo ya inyectado.
