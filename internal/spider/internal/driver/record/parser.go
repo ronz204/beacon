@@ -40,7 +40,9 @@ func ParseGuide(file string, data []byte) (ParsedGuide, error) {
 
 func normalizeText(data []byte) string {
 	text := strings.TrimPrefix(string(data), byteOrderMark)
-	return strings.ReplaceAll(text, "\r\n", "\n")
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+
+	return strings.ReplaceAll(text, "\r", "\n")
 }
 
 func splitFrontmatter(text string) (string, string, bool) {

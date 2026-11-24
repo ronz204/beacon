@@ -20,6 +20,8 @@ const (
 	stringTag      = "!!str"
 	yamlIndicators = "*&!%@`?|>[{'\",]}"
 	flowCharacters = ",{}[]"
+
+	maximumRenderPasses = 3
 )
 
 var (
@@ -99,12 +101,39 @@ type formatTarget struct {
 }
 
 func FormatRecord(file, folder string, data []byte) ([]byte, error) {
-	document, err := parseDocument(file, normalizeText(data), 0)
-	if err != nil {
-		return nil, err
+	return renderStable(file, normalizeText(data), 0, recordKeyOrders[folder])
+}
+
+func renderStable(
+	file string,
+	text string,
+	offset int,
+	order []string,
+) ([]byte, error) {
+	current := text
+
+	for pass := range maximumRenderPasses {
+		document, err := parseDocument(file, current, offset)
+		if err != nil && pass > 0 {
+			return nil, failAt(RecordFormatUnsafe, file, 1).WithCause(err)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		output, err := renderDocument(file, document, order)
+		if err != nil {
+			return nil, err
+		}
+		if string(output) == current {
+			return output, nil
+		}
+
+		current = string(output)
+		offset = 0
 	}
 
-	return renderDocument(file, document, recordKeyOrders[folder])
+	return nil, failAt(RecordFormatUnsafe, file, 1)
 }
 
 func FormatGuide(file string, data []byte) ([]byte, error) {
@@ -113,12 +142,7 @@ func FormatGuide(file string, data []byte) ([]byte, error) {
 		return nil, failAt(RecordFrontmatterMissing, file, 1)
 	}
 
-	document, err := parseDocument(file, front, frontmatterOffset)
-	if err != nil {
-		return nil, err
-	}
-
-	rendered, err := renderDocument(file, document, guideKeys)
+	rendered, err := renderStable(file, front, frontmatterOffset, guideKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -253,17 +277,45 @@ func renderDocument(
 func encodeDocument(document *yaml.Node) ([]byte, error) {
 	var buffer bytes.Buffer
 
-	encoder := yaml.NewEncoder(&buffer)
-	encoder.SetIndent(2)
-
-	if err := encoder.Encode(document); err != nil {
+	dumper, err := yaml.NewDumper(
+		&buffer,
+		yaml.WithV3Defaults(),
+		yaml.WithIndent(2),
+		yaml.WithLineWidth(-1),
+	)
+	if err != nil {
 		return nil, err
 	}
-	if err := encoder.Close(); err != nil {
+
+	if err := dumper.Dump(document); err != nil {
+		return nil, err
+	}
+	if err := dumper.Close(); err != nil {
 		return nil, err
 	}
 
 	return buffer.Bytes(), nil
+}
+
+func inlineStyle(node *yaml.Node) yaml.Style {
+	if hasComments(node) {
+		return 0
+	}
+
+	return yaml.FlowStyle
+}
+
+func hasComments(node *yaml.Node) bool {
+	for _, child := range node.Content {
+		if child.HeadComment != "" || child.LineComment != "" {
+			return true
+		}
+		if child.FootComment != "" || hasComments(child) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func contentLines(document *yaml.Node) []string {
@@ -361,7 +413,7 @@ func canonicalSequence(name string, sequence *yaml.Node) {
 	case name == "promises":
 		canonicalPromises(sequence)
 	case slices.Contains(flowLists, name):
-		sequence.Style = yaml.FlowStyle
+		sequence.Style = inlineStyle(sequence)
 		canonicalItems(sequence, true)
 		if slices.Contains(sortedLists, name) {
 			sortByValue(sequence)
@@ -414,13 +466,13 @@ func promiseID(item *yaml.Node) string {
 func canonicalSection(name string, section *yaml.Node) {
 	switch name {
 	case "check":
-		section.Style = yaml.FlowStyle
+		section.Style = inlineStyle(section)
 		canonicalCheck(section)
 	case "approved":
-		section.Style = yaml.FlowStyle
+		section.Style = inlineStyle(section)
 		canonicalMapping(section, approvedKeys)
 	case "attested":
-		section.Style = yaml.FlowStyle
+		section.Style = inlineStyle(section)
 		canonicalMapping(section, attestedKeys)
 	}
 }
