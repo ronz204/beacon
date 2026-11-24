@@ -5,8 +5,18 @@ import (
 	"unicode/utf8"
 )
 
+const maximumGlobExpansions = 64
+
 type PathGlob struct {
 	value string
+}
+
+type PathMatcher interface {
+	MatchPath(glob PathGlob, path string) (bool, error)
+}
+
+func FailPathGlob(glob PathGlob, cause error) KernelError {
+	return invalidValue(KernelGlobInvalid, glob.String()).WithCause(cause)
 }
 
 func ParsePathGlob(raw string) (PathGlob, error) {
@@ -38,6 +48,8 @@ func isPathGlob(value string) bool {
 	case !hasRepoRelativeShape(value):
 		return false
 	case !hasFlatBraces(value):
+		return false
+	case !isWithinExpansionLimit(value):
 		return false
 	}
 
@@ -72,6 +84,28 @@ func hasFlatBraces(value string) bool {
 	}
 
 	return depth == 0
+}
+
+func isWithinExpansionLimit(value string) bool {
+	total, choices := 1, 0
+
+	for _, char := range value {
+		switch {
+		case char == '{':
+			choices = 1
+		case char == ',' && choices > 0:
+			choices++
+		case char == '}':
+			total *= choices
+			choices = 0
+		}
+
+		if total > maximumGlobExpansions {
+			return false
+		}
+	}
+
+	return true
 }
 
 func hasValidSegments(value string) bool {
