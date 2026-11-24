@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: Fase 1 cerrada el 2026-11-23.** `beacon fmt` y `beacon doctor` funcionan sobre un `.beacon/` real. Las decisiones D1 a D4 están registradas en la KB. El siguiente es el Bloque 3, desde el paso 17.
+> **Estado: Fase 1 cerrada el 2026-11-23.** `beacon fmt` y `beacon doctor` funcionan sobre un `.beacon/` real. Las decisiones D1 a D4 están registradas en la KB. Los pasos 17 y 18 del Bloque 3 están hechos y el siguiente es el 19.
 
 ## 1. Panorama
 
@@ -117,7 +117,7 @@ beacon/
 │        │  │  ├─ capability_errors.go      # 5
 │        │  │  ├─ capability_policies.go    # 5
 │        │  │  ├─ capability_repository.go  # 10
-│        │  │  ├─ capability_proofs.go      # 17 · contrato ProofReader
+│        │  │  ├─ capability_proofs.go      # 17 · contrato ProofReader y resultados
 │        │  │  └─ capability_changes.go     # 21 · contrato ChangeReader
 │        │  │
 │        │  ├─ memory/               # lo que el proyecto sabe
@@ -408,7 +408,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 
 Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una rama nueva, `feat/spider-queries`. Engine solo tendrá que exponerlo.
 
-### Paso 17. Señales
+### Paso 17. Señales (hecho)
 
 - **Objetivo:** que el estado avise sin que se le pregunte.
 - **Construye:** `signal_vos.go`, `signal_policies.go`, `action/signals.go`, el contrato `ProofReader` y `driver/double`.
@@ -425,13 +425,16 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
 | Pendiente de sí | Engine | Clasificación por niveles (D4) |
 
 - **Hecho cuando:** cada señal tiene un caso que aparece y otro que no.
+- **Cómo quedó:** el estado de cada promesa (`Holds`, `Attested`, `Unverified`, `Violated`) lo calcula `ledger.VerifyPromise` a partir del resultado de su check. Las señales de grafo (bloqueo y tensión) viven en `thread`; las que dependen de promesas (rojo, sin comprobar aquí, sin alcance) se calculan en `action/signals.go`. Una pregunta abierta es un nodo `Unfinished` del grafo.
+- **Pendiente:** todavía no hay `ProofReader` real, porque los resultados de checks los produce Engine. Hasta entonces solo existe el doble en memoria, y `context` no se expone en el CLI.
 
-### Paso 18. `context <paths>`
+### Paso 18. `context <paths>` (hecho)
 
 - **Objetivo:** entregar todo lo que aplica a unos archivos.
 - **Devuelve:** capabilities coincidentes con sus `nongoals`, promesas con estado, decisiones con sus `rejected`, guides con `applies` coincidente o `always`, preguntas relacionadas y señales.
 - **Regla clave:** recuperación por globs y relaciones, nunca por búsqueda de texto. No necesita los cuerpos de las guides que no apliquen ni `archive/`.
 - **Hecho cuando:** un archivo sin dueño recibe solo la meta y las guides `always`.
+- **Cómo quedó:** `context` devuelve las metas activas, las capabilities cuyos `paths` coinciden (con el estado de cada promesa), las decisiones activas con `where` coincidente, las guides `always`, con `applies` coincidente o que refieren a una capability tocada, las preguntas abiertas conectadas con lo tocado o con el trabajo que lo implementa, y las señales de todo eso. Las fallas del grafo no detienen `context`: las reporta `doctor`.
 
 ### Paso 19. `ready`
 
