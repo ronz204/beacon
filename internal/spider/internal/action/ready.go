@@ -17,29 +17,39 @@ type readiness struct {
 	blocked     map[kernel.RecordID]bool
 	openWorks   map[kernel.RecordID]bool
 	openParents map[kernel.RecordID]bool
+	claims      map[kernel.RecordID]agenda.TaskClaim
 	branch      agenda.TaskBranch
 }
 
 func Ready(
 	ctx context.Context,
 	repositories Repositories,
+	claims agenda.ClaimRepository,
 	branch agenda.TaskBranch,
 ) (ReadyResult, []error) {
 	snapshot := Load(ctx, repositories)
 	graph, _ := Validate(snapshot)
+	failures := snapshot.Failures
 
-	return readyWork(snapshot, graph, branch), snapshot.Failures
+	local, err := claims.ListClaims(ctx)
+	if err != nil {
+		failures = append(failures, err)
+	}
+
+	return readyWork(snapshot, graph, local, branch), failures
 }
 
 func readyWork(
 	snapshot Snapshot,
 	graph thread.Graph,
+	local []agenda.TaskClaim,
 	branch agenda.TaskBranch,
 ) ReadyResult {
 	state := readiness{
 		blocked:     blockedTargets(graph),
 		openWorks:   make(map[kernel.RecordID]bool),
 		openParents: openParents(snapshot.Tasks),
+		claims:      claimsByTask(local),
 		branch:      branch,
 	}
 
@@ -98,7 +108,7 @@ func (r readiness) allows(task agenda.Task) bool {
 	switch {
 	case err != nil:
 		return false
-	case !r.isAvailable(task):
+	case !r.isAvailable(task, id):
 		return false
 	case !r.openWorks[id.Root()]:
 		return false
@@ -109,7 +119,29 @@ func (r readiness) allows(task agenda.Task) bool {
 	return !r.isBlocked(id)
 }
 
-func (r readiness) isAvailable(task agenda.Task) bool {
+func claimsByTask(
+	claims []agenda.TaskClaim,
+) map[kernel.RecordID]agenda.TaskClaim {
+	index := make(map[kernel.RecordID]agenda.TaskClaim, len(claims))
+
+	for _, claim := range claims {
+		if id, err := recordIDOf(claim.Task); err == nil {
+			index[id] = claim
+		}
+	}
+
+	return index
+}
+
+func (r readiness) isAvailable(task agenda.Task, id kernel.RecordID) bool {
+	if task.Status() == agenda.TaskDone {
+		return false
+	}
+
+	if claim, found := r.claims[id]; found {
+		return claim.Branch == r.branch
+	}
+
 	switch task.Status() {
 	case agenda.TaskOpen:
 		return true

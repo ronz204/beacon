@@ -7,15 +7,18 @@ import (
 	"slices"
 
 	"github.com/ronz204/beacon/internal/kernel"
+	"github.com/ronz204/beacon/internal/spider/internal/domain/agenda"
 	"github.com/ronz204/beacon/internal/spider/internal/domain/memory"
 )
 
 const (
 	CodeNotCanonical = "record_not_canonical"
 	CodeGuideTooLong = "guide_too_long"
+	CodeClaimRemoved = "claim_removed"
 
 	notCanonicalMessage = "run beacon fmt to format this record"
 	guideTooLongMessage = "split this guide into smaller guides"
+	claimRemovedMessage = "removed a claim whose branch or worktree is gone"
 )
 
 type FindingSeverity string
@@ -38,6 +41,8 @@ type Finding struct {
 type DoctorInput struct {
 	Repositories   Repositories
 	Formatter      kernel.RecordFormatter
+	Claims         agenda.ClaimRepository
+	Workspace      agenda.WorkspaceReader
 	GuideLimit     int
 	ConfigFailures []error
 }
@@ -54,8 +59,14 @@ func Doctor(ctx context.Context, input DoctorInput) []Finding {
 	changed, formatFailures := input.Formatter.Format(ctx, false)
 	failures = append(failures, formatFailures...)
 
+	removed, err := pruneIfPossible(ctx, input)
+	if err != nil {
+		failures = append(failures, err)
+	}
+
 	findings := FindingsFrom(failures)
 	findings = append(findings, canonicalFindings(changed)...)
+	findings = append(findings, claimFindings(removed)...)
 	findings = append(
 		findings,
 		guideFindings(snapshot.Guides, input.GuideLimit)...,
@@ -154,6 +165,35 @@ func sortedFindings(findings []Finding) []Finding {
 			cmp.Compare(a.Code, b.Code),
 		)
 	})
+
+	return findings
+}
+
+func pruneIfPossible(
+	ctx context.Context,
+	input DoctorInput,
+) ([]agenda.TaskClaim, error) {
+	if input.Claims == nil || input.Workspace == nil {
+		return nil, nil
+	}
+
+	return PruneClaims(ctx, input.Claims, input.Workspace)
+}
+
+func claimFindings(claims []agenda.TaskClaim) []Finding {
+	findings := make([]Finding, 0, len(claims))
+
+	for _, claim := range claims {
+		findings = append(findings, Finding{
+			Severity: FindingWarning,
+			Code:     CodeClaimRemoved,
+			Message:  claimRemovedMessage,
+			Details: map[string]any{
+				"task":   claim.Task.String(),
+				"branch": claim.Branch.String(),
+			},
+		})
+	}
 
 	return findings
 }

@@ -7,7 +7,9 @@ import (
 
 	"github.com/ronz204/beacon/internal/kernel"
 	"github.com/ronz204/beacon/internal/spider/internal/action"
+	"github.com/ronz204/beacon/internal/spider/internal/driver/commit"
 	"github.com/ronz204/beacon/internal/spider/internal/driver/record"
+	"github.com/ronz204/beacon/internal/spider/internal/driver/states"
 )
 
 const (
@@ -86,8 +88,10 @@ func (p Project) Format(ctx context.Context) FormatResult {
 
 func (p Project) Doctor(ctx context.Context) []Finding {
 	config, configFailures := p.store.LoadConfig()
+	repository := commit.NewRepository(p.root)
+	claims, err := states.Open(ctx, p.root)
 
-	findings := action.Doctor(ctx, action.DoctorInput{
+	input := action.DoctorInput{
 		Repositories: action.Repositories{
 			Goals:        p.store,
 			Capabilities: p.store,
@@ -100,9 +104,13 @@ func (p Project) Doctor(ctx context.Context) []Finding {
 		Formatter:      p.store,
 		GuideLimit:     config.Limits.Guide,
 		ConfigFailures: configFailures,
-	})
+	}
+	if err == nil {
+		input.Claims = claims
+		input.Workspace = repository
+	}
 
-	return p.relativeFindings(findings)
+	return p.relativeFindings(action.Doctor(ctx, input))
 }
 
 func (p Project) relativeFindings(findings []Finding) []Finding {
