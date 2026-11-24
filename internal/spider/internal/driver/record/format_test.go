@@ -193,6 +193,38 @@ func TestFormatGuideKeepsBodyBytes(t *testing.T) {
 	}
 }
 
+func TestFormatNeverWrapsLongValues(t *testing.T) {
+	long := strings.Repeat("palabra ", 40) + "fin"
+	input := "id: bc-7f3a\nintent: " + long + "\npromises:\n" +
+		"  - id: bc-c3d4\n    check: {manual: " + long + "}\n"
+
+	got := formatText(t, caps, input)
+
+	if !strings.Contains(got, "intent: "+long+"\n") {
+		t.Fatalf("intent wrapped:\n%s", got)
+	}
+	if !strings.Contains(got, "check: {manual: "+long+"}\n") {
+		t.Fatalf("check wrapped:\n%s", got)
+	}
+}
+
+func TestFormatKeepsCommentedSectionsAsBlocks(t *testing.T) {
+	input := "id: bc-7f3a\npaths:\n  # main code\n  - src/**\npromises:\n" +
+		"  - id: bc-c3d4\n    check:\n      # owner team\n      runner: x\n"
+
+	got := formatText(t, caps, input)
+
+	if !strings.Contains(got, "paths:\n  # main code\n  - src/**\n") {
+		t.Fatalf("paths changed:\n%s", got)
+	}
+	if !strings.Contains(got, "    check:\n      # owner team\n") {
+		t.Fatalf("check changed:\n%s", got)
+	}
+	if again := formatText(t, caps, got); again != got {
+		t.Fatalf("not idempotent:\n%s", again)
+	}
+}
+
 func TestFormatKeepsComments(t *testing.T) {
 	input := "# head note\n\nstatus: active # inline note\nid: bc-0001\n"
 
