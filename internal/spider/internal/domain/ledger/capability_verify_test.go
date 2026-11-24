@@ -100,7 +100,8 @@ func TestVerifyPromise(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := ledger.VerifyPromise(c.promise, c.outcome, c.found)
+			result := ledger.ProofResult{Outcome: c.outcome, Commit: "9f3c2ab"}
+			got := ledger.VerifyPromise(c.promise, result, c.found)
 
 			if got.Status() != c.status {
 				t.Fatalf("status = %q, want %q", got.Status(), c.status)
@@ -108,6 +109,34 @@ func TestVerifyPromise(t *testing.T) {
 			if got.NotRunHere() != c.notRunHere {
 				t.Fatalf("not run here = %v", got.NotRunHere())
 			}
+			if got.Drifted() {
+				t.Fatal("verification must start without drift")
+			}
 		})
+	}
+}
+
+func TestVerificationKeepsEvidenceCommit(t *testing.T) {
+	passed := ledger.ProofResult{Outcome: ledger.ProofPassed, Commit: "abc1234"}
+
+	holds := ledger.VerifyPromise(automaticPromise(t), passed, true)
+	attested := ledger.VerifyPromise(manualPromise(t, true), passed, false)
+	violated := ledger.VerifyPromise(
+		automaticPromise(t),
+		ledger.ProofResult{Outcome: ledger.ProofFailed, Commit: "abc1234"},
+		true,
+	)
+
+	if holds.Commit() != "abc1234" {
+		t.Fatalf("holds commit = %q", holds.Commit())
+	}
+	if attested.Commit() != "9f3c2ab" {
+		t.Fatalf("attested commit = %q", attested.Commit())
+	}
+	if violated.Commit() != "" {
+		t.Fatalf("violated commit = %q", violated.Commit())
+	}
+	if !holds.WithDrift().Drifted() {
+		t.Fatal("WithDrift must mark drift")
 	}
 }
