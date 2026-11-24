@@ -3,6 +3,7 @@ package match
 import (
 	"regexp"
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	"github.com/ronz204/beacon/internal/kernel"
@@ -16,14 +17,17 @@ const (
 	oneCharacter   = `[^/]`
 )
 
-type Matcher struct{}
-
-func NewMatcher() Matcher {
-	return Matcher{}
+type Matcher struct {
+	mutex    sync.Mutex
+	patterns map[kernel.PathGlob]*regexp.Regexp
 }
 
-func (Matcher) MatchPath(glob kernel.PathGlob, path string) (bool, error) {
-	pattern, err := regexp.Compile(globExpression(glob.String()))
+func NewMatcher() *Matcher {
+	return &Matcher{patterns: make(map[kernel.PathGlob]*regexp.Regexp)}
+}
+
+func (m *Matcher) MatchPath(glob kernel.PathGlob, path string) (bool, error) {
+	pattern, err := m.compiled(glob)
 	if err != nil {
 		return false, kernel.FailPathGlob(glob, err)
 	}
@@ -31,6 +35,24 @@ func (Matcher) MatchPath(glob kernel.PathGlob, path string) (bool, error) {
 	normalized := strings.ReplaceAll(path, `\`, "/")
 
 	return pattern.MatchString(normalized), nil
+}
+
+func (m *Matcher) compiled(glob kernel.PathGlob) (*regexp.Regexp, error) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	if pattern, found := m.patterns[glob]; found {
+		return pattern, nil
+	}
+
+	pattern, err := regexp.Compile(globExpression(glob.String()))
+	if err != nil {
+		return nil, err
+	}
+
+	m.patterns[glob] = pattern
+
+	return pattern, nil
 }
 
 func globExpression(glob string) string {
