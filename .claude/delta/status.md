@@ -68,7 +68,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 
 **No queda nada de diseño abierto.** Las propuestas R1 a R9 que salieron de la investigación del 2026-11-22 se aprobaron ese mismo día y ya están aplicadas en los archivos de arriba (`survey` las llama "propuestas": ese texto es el de la fecha de la investigación). Lo que sigue son detalles de implementación que se resuelven al construir cada fase:
 
-- El formato exacto de `results.json`, de `claims.json` y del archivo `.jsonl`.
+- El formato exacto de `results.json` y del archivo `.jsonl` (`claims.json` e `injected.json` ya están definidos en `layout`).
 - Qué hook sirve en cada agente para reinyectar antes de editar y tras compactar, y cómo identificar la sesión (R1).
 - El nombre y el comportamiento exactos del evento `merge_group` de GitHub (`sentry`).
 - Si el nivel 3 de las capturas base resulta demasiado ruidoso; se mide en la fricción y se afina el `baseline`.
