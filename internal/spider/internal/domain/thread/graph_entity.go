@@ -7,6 +7,7 @@ import (
 )
 
 type Graph struct {
+	nodes map[kernel.RecordID]GraphNode
 	edges []GraphEdge
 }
 
@@ -18,7 +19,12 @@ func NewGraph(nodes []GraphNode, edges []GraphEdge) (Graph, []error) {
 	failures = append(failures, cycleFailures(valid)...)
 	failures = append(failures, hierarchyFailures(index)...)
 
-	return Graph{edges: valid}, failures
+	return Graph{nodes: index, edges: valid}, failures
+}
+
+func (g Graph) Node(id kernel.RecordID) (GraphNode, bool) {
+	node, found := g.nodes[id]
+	return node, found
 }
 
 func (g Graph) Neighbors(id kernel.RecordID) []GraphEdge {
