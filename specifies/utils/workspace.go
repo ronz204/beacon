@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -47,4 +48,15 @@ func ReadFile(t *testing.T, path string) string {
 	}
 
 	return string(data)
+}
+
+func Git(t *testing.T, directory string, args ...string) {
+	t.Helper()
+
+	command := exec.Command("git", args...)
+	command.Dir = directory
+
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, output)
+	}
 }

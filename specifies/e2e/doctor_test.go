@@ -247,3 +247,24 @@ func TestUsageErrorsExitWithOne(t *testing.T) {
 		})
 	}
 }
+
+func TestDoctorRemovesClaimsOfGoneBranches(t *testing.T) {
+	root := utils.NewWorkspace(t)
+	utils.Git(t, root, "init", "-q")
+	claims := `{"version":1,"claims":[{"task":"bc-91cd.1",` +
+		`"branch":"feat/gone","worktree":"/nowhere","day":"2026-11-24"}]}`
+	path := utils.WriteFile(t, root, ".git/beacon/claims.json", claims)
+
+	result := utils.Beacon(t, root, "doctor", "--json")
+	parsed := parseEnvelope(t, result.Stdout)
+
+	if result.Code != 0 || !parsed.OK {
+		t.Fatalf("result = %+v", result)
+	}
+	if !strings.Contains(string(parsed.Data), "claim_removed") {
+		t.Fatalf("data = %s", parsed.Data)
+	}
+	if strings.Contains(utils.ReadFile(t, path), "bc-91cd.1") {
+		t.Fatal("the claim should have been removed")
+	}
+}
