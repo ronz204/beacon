@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 a 8 están hechos y el siguiente es el 9.
+> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 a 9 están hechos y el siguiente es el 10.
 
 ## 1. Panorama
 
@@ -171,6 +171,7 @@ beacon/
 │        │
 │        └─ driver/
 │           ├─ record/               # YAML en .beacon/
+│           │  ├─ errors.go          # 9  · errores con archivo y línea
 │           │  ├─ parser.go          # 9  · YAML estricto
 │           │  ├─ store.go           # 10 · lectura y escritura
 │           │  ├─ mapper.go          # 10 · YAML a dominio y de vuelta
@@ -316,14 +317,14 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
   - `canonical/`: pares de entrada y salida esperada de `fmt`.
 - **Hecho cuando:** cada regla de `layout` tiene al menos un fixture.
 
-### Paso 9. Parser YAML estricto
+### Paso 9. Parser YAML estricto (hecho)
 
 - **Objetivo:** leer YAML sin que el parser adivine tipos.
 - **Construye:** `driver/record/parser.go`, que trabaja sobre el árbol de nodos.
 - **Reglas clave:** rechaza anclas, alias, `<<` y claves duplicadas; `version: 1.0` se lee como el tipo que diga el esquema; todo error lleva archivo, línea y una forma de arreglarlo (P7).
 - **Cuidado:** `yaml.Unmarshal` lee solo el primer documento y acepta tags propios, así que el parser debe rechazar por su cuenta varios documentos, tags personalizados y archivos vacíos.
 - **Depende de:** D1.
-- **Hecho cuando:** todos los fixtures `invalid/` fallan con el error esperado.
+- **Hecho cuando:** los fixtures `invalid/` de estructura YAML fallan con el error y la línea esperados. Los de esquema y dominio se cubren en el paso 10, porque necesitan el mapper.
 
 ### Paso 10. Carga de `.beacon/`
 
@@ -335,7 +336,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
   - **Un archivo roto no detiene la carga:** se juntan todos los errores.
   - Los campos desconocidos se quedan en el driver y se reescriben sin cambios.
   - El nombre del archivo debe coincidir con el `id` del registro.
-- **Hecho cuando:** un `.beacon/` de ejemplo carga los 7 tipos y un directorio con varios errores los reporta todos.
+- **Hecho cuando:** un `.beacon/` de ejemplo carga los 7 tipos, un directorio con varios errores los reporta todos y los fixtures `invalid/` restantes fallan con su error.
 
 ### Paso 11. `config.yaml`
 
