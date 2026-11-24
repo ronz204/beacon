@@ -16,6 +16,8 @@ Los nombres siguen la metáfora de la telaraña: Spider es la tela, Anchor son l
 
 Se separan como **módulos con frontera limpia dentro de un solo binario y un solo repo**. Spider es una librería con interfaz estable (registros, relaciones, señales) y Engine la consume. Si algún día Spider sirve por sí solo, se extrae entonces. Si hace falta otro componente, se agrega.
 
+Dentro de Spider, los registros viven en los contextos `ledger`, `memory` y `agenda`, y el grafo con sus señales en `thread`, que solo conoce ids y relaciones tipadas. La estructura de carpetas está en el `README.md`.
+
 ### Interfaces
 
 El **CLI** es la única interfaz: lo usan los agentes, los hooks y Sentry. No hay servidor MCP, porque no añadiría garantías y sumaría otra superficie que mantener (`engine`, `status`).

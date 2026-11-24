@@ -62,14 +62,15 @@ Los worktrees de un mismo repo comparten `.git/beacon/`, y varias sesiones de ag
 ## Formato: YAML estricto
 
 - Los registros estructurados son **YAML**; las guides son Markdown con frontmatter YAML.
-- **Estricto:** sin anclas ni alias y sin claves de combinación (`<<`).
+- **Librería:** `go.yaml.in/yaml/v4` (v4.0.0), la línea mantenida por la organización YAML; `gopkg.in/yaml.v3` está archivada. Se trabaja sobre nodos para conservar estilos, líneas y campos desconocidos.
+- **Estricto:** sin anclas ni alias, sin claves de combinación (`<<`) y sin claves duplicadas. La librería no rechaza estas últimas al leer nodos, así que las valida el binario.
 - **Sin tipos implícitos:** el parser lee cada valor por el tipo que dice el esquema (`ledger`). `beacon fmt` entrecomilla **solo lo que otra herramienta podría reinterpretar**: `yes`, `no`, `on`, `off`, `null`, números (`1.0`), strings vacíos, valores con `:` o `#`, con espacios al inicio o al final, o con caracteres de flujo (`,`, `{`, `}`, `[`, `]`) dentro de un mapa en línea. Las fechas (`2026-11-22`) y las enumeraciones (`status: active`) van sin comillas.
 - **`beacon fmt`** formatea de forma canónica: orden fijo de claves, un campo por línea, listas ordenadas por id. Un formato canónico da diffs pequeños y estables.
 - El binario valida contra un esquema y, si algo no encaja, dice cómo arreglarlo.
 
 ## Ids y nombres
 
-- **Ids por hash** (`bc-a1b2`): estables y sin choques entre ramas. Crecen en longitud si el espacio se llena.
+- **Ids aleatorios** (`bc-a1b2`): 4 caracteres hexadecimales de `crypto/rand`, estables una vez creados. Si el id ya existe se reintenta, y crecen en longitud si el espacio se llena. No se calculan del contenido, para que dos ramas con el mismo título no choquen.
 - Hijos jerárquicos: `bc-91cd.1`, `bc-91cd.1.1`.
 - El slug lo genera el binario a partir del título.
 - El prefijo es `bc-` y la carpeta es `.beacon/`.
@@ -77,7 +78,7 @@ Los worktrees de un mismo repo comparten `.git/beacon/`, y varias sesiones de ag
 ## Merges y conflictos
 
 - Un conflicto ocurre solo si dos personas tocan **el mismo archivo**; `beacon doctor` ayuda a resolverlo.
-- Las listas internas (promesas dentro de una capability) van **ordenadas por id**. Como los ids son hashes, dos personas que añaden promesas distintas casi nunca insertan en el mismo punto y git las fusiona sin conflicto.
+- Las listas internas (promesas dentro de una capability) van **ordenadas por id**. Como los ids son aleatorios, dos personas que añaden promesas distintas casi nunca insertan en el mismo punto y git las fusiona sin conflicto.
 - Los borrados son borrados de archivo: git los entiende.
 - Hay conflictos que git no ve: dos cambios que fusionan limpio pero rompen el proyecto. Esos solo los detecta un CI que corra sobre el **resultado de la fusión** (`sentry`).
 
@@ -113,6 +114,8 @@ Medición en Go con `gopkg.in/yaml.v3` v3.0.1 (2026-11-22). Cada archivo es una 
 | 5.000 | 50.000 | 11,2 MB | 839 ms | 542 ms |
 
 Es de 2 a 3 veces más rápido que la medición anterior en Python con libyaml (20 ms, 210 ms y 2 s para 50, 500 y 5.000 archivos). Con decenas de capabilities el arranque no se nota; con cientos sigue por debajo de 100 ms y solo con miles de archivos se siente en cada llamada de CLI.
+
+Esta tabla se midió con `gopkg.in/yaml.v3`, hoy archivada. En una prueba del 2026-11-23, solo de parseo a nodos, v3.0.6 y v4.0.0 tardaron prácticamente lo mismo (42 y 41 ms para 500 archivos). La carga completa con v4 se vuelve a medir al cerrar la Fase 1.
 
 ### Consultas a git
 

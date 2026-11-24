@@ -151,7 +151,7 @@ Solo leí el README; no los documentos enlazados (Review and Architecture, Telem
 - Hay conflictos que Git no ve: dos cambios que fusionan limpio pero dejan el proyecto roto, como renombrar una función en un archivo y llamarla con el nombre viejo en otro (descripción de Collide, vendedor; plausible por naturaleza).
 - Un análisis sobre el equipo de agentes de Claude Code señala que varios agentes comparten un `MEMORY.md` sin bloqueos ni estrategia de merge (blog).
 
-**Qué ya cubre el diseño:** un archivo por registro, ids por hash y listas ordenadas (`layout`) reducen los conflictos de texto; `.git/beacon/` se comparte entre worktrees (`layout`).
+**Qué ya cubre el diseño:** un archivo por registro, ids aleatorios y listas ordenadas (`layout`) reducen los conflictos de texto; `.git/beacon/` se comparte entre worktrees (`layout`).
 
 **Huecos que salen de cruzar esto con el diseño** (inferencia mía, no de una fuente):
 

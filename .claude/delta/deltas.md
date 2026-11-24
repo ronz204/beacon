@@ -34,7 +34,7 @@ Un ejecutor visual declara en `config.yaml` los globs de sus capturas base (`bas
 
 ## Quién detecta
 
-El binario, no el modelo:
+El binario, no el modelo. Spider detecta qué cambió (`spider`) y Engine asigna el nivel:
 
 - Cuando el cambio pasa por una operación del agente, compara el registro antes y después.
 - En el pre-commit y en el CI compara contra la versión de git, así que también se detectan las ediciones manuales.

@@ -20,7 +20,7 @@ Sin `--json`, la salida es texto breve para personas. Con `--json`, **todos los 
 ```
 
 - `data`: el resultado del comando.
-- `signals`: las señales de Spider que aplican (`spider`).
+- `signals`: las señales de Spider que aplican (`spider`), incluida "Pendiente de sí", cuyo nivel asigna Engine.
 - `hint`: el siguiente paso exacto cuando algo bloquea, o `null` (P7).
 - Si `ok` es `false`, `data` es `null` y aparece `error: {code, message}`.
 
@@ -42,7 +42,7 @@ Sin `--json`, la salida es texto breve para personas. Con `--json`, **todos los 
 | `beacon status` | Estado general: rojos, deriva, bloqueos, pendientes de sí |
 | `beacon ready` | Trabajo y tareas sin bloqueos, por rama |
 | `beacon claim <task>` | Reclama una tarea (consultivo): escribe el claim local en `.git/beacon/` y `owner` y `branch` en el registro. Si otro worktree o rama ya la reclamó, sale con código 2 y dice cuál (`method`, `layout`) |
-| `beacon diff` | Cambios de estado desde un commit, por nivel, incluidas las capturas base (`deltas`) |
+| `beacon diff` | Cambios de estado desde un commit, incluidas las capturas base: Spider los detecta y Engine los clasifica por nivel (`spider`, `deltas`) |
 | `beacon verify` | Checks relacionados más revisión independiente (riesgo alto) |
 | `beacon attest [--evidence <ruta o enlace>]` | Atestaciones manuales al cerrar la sesión; `--evidence` guarda la referencia a lo revisado (`pledge`) |
 | `beacon stale` | Guides y decisiones desactualizadas |

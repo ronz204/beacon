@@ -29,11 +29,16 @@ beacon/
 │  │     ├─ domain/
 │  │     │  ├─ ledger/          # goal, capability
 │  │     │  ├─ memory/          # decision, question, guide
-│  │     │  └─ agenda/          # work, task, claim
+│  │     │  ├─ agenda/          # work, task, claim
+│  │     │  └─ thread/          # grafo, relaciones y señales
 │  │     ├─ action/             # load, validate, fmt, doctor, brief, context
 │  │     └─ driver/
 │  │        ├─ record/          # YAML en .beacon/
-│  │        └─ commit/          # consultas a git
+│  │        ├─ commit/          # consultas a git
+│  │        ├─ random/          # generación de ids
+│  │        ├─ match/           # globs
+│  │        ├─ double/          # contratos en memoria para tests
+│  │        └─ states/          # estado local en .git/beacon/
 │  ├─ engine/                   # checks, niveles de cambio, riesgo y vistas
 │  │  ├─ engine.go
 │  │  └─ internal/

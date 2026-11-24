@@ -22,7 +22,8 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Estado local | En `.git/beacon/`, no en `.beacon/`: resultados de checks, claims locales, métricas de fricción, lo ya inyectado por los hooks y copias de seguridad. Escritura atómica porque los worktrees lo comparten | `layout` |
 | Formato | YAML estricto con `beacon fmt`; guides en Markdown con frontmatter | `layout`, `guides` |
 | Comillas | `beacon fmt` entrecomilla solo lo que otra herramienta podría reinterpretar | `layout` |
-| Ids | Hash (`bc-xxxx`) con hijos jerárquicos | `layout` |
+| Librería YAML | `go.yaml.in/yaml/v4` v4.0.0, porque `gopkg.in/yaml.v3` está archivada | `layout` |
+| Ids | Aleatorios (`bc-xxxx`, 4 hex de `crypto/rand`), con reintento, crecimiento e hijos jerárquicos | `layout` |
 | Esquema | `schema: 1`, `beacon migrate`, campos desconocidos preservados; esquema por tipo definido | `layout`, `ledger` |
 | Campos | Una sola palabra, en inglés. Comunes: `id`, `created`, `author`, `closed` con `reason`, `approved`; sin `updated`. Opcionales nuevos: `nongoals` (goal y capability), `rejected` (decision), `evidence` (dentro de `attested`) | `ledger` |
 | Relaciones | Campos tipados (`implements`, `blocks`, `parent`, `supersedes`, `serves`, `origin`, `refers`), sin lista genérica | `ledger` |
@@ -36,7 +37,8 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Guides | Metadatos livianos de una palabra; el `brief` es mínimo, el resto bajo demanda | `guides` |
 | Tope del `brief` | `limits.brief` líneas; se recorta por prioridad fija y con aviso | `spider` |
 | Frescura | `review` (duración) y `reviewed` (fecha); plazos por tipo de 6 y 12 meses, valores iniciales | `guides` |
-| Spider | Estructura activa con señales | `spider` |
+| Spider | Estructura activa con señales; el grafo vive en el contexto `thread` | `spider`, `design` |
+| Frontera de `diff` | Spider detecta qué cambió y Engine lo clasifica por nivel | `spider`, `deltas`, `engine` |
 | Checks | Ejecutores en `config.yaml` más parámetros; sin shell | `pledge` |
 | Redacción de promesas | Guía, no regla: resultado observable con entradas y salidas concretas, una cosa por promesa, EARS opcional. `beacon record` la devuelve al proponer una promesa | `pledge`, `anchor` |
 | Resultados de checks | Locales en `.git/beacon/results.json`, recalculados en CI; sin resultado local es Unverified con razón `not-run-here` | `pledge` |
@@ -102,7 +104,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 
 ## Orden de construcción
 
-Sin recorte de producto; el orden sigue las dependencias.
+Sin recorte de producto; el orden sigue las dependencias. El plan detallado de Spider está en `PLANNING.md`.
 
 | Fase | Contenido |
 |---|---|

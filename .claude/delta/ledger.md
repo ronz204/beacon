@@ -23,7 +23,7 @@ No hay un tipo especial de capability para diseño de UI: una capability de UI e
 
 | Campo | Qué es |
 |---|---|
-| `id` | Hash (`bc-a1b2`). En las guides sale del nombre del archivo |
+| `id` | Aleatorio (`bc-a1b2`, `layout`). En las guides sale del nombre del archivo |
 | `created` | Fecha `YYYY-MM-DD`. Es fija: nunca cambia, así que no mete ruido en los diffs. Se guarda porque sacarla de git es lento y falla con renombres y clones superficiales |
 | `author` | El actor que lo escribió (ver abajo) |
 | `closed` y `reason` | Fecha y motivo al cerrar; solo aparecen en `archive/` (`layout`) |
