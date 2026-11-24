@@ -284,11 +284,15 @@ func TestListBranchesAndWorktrees(t *testing.T) {
 		t.Fatalf("branches = %v", names)
 	}
 
-	worktrees, err := repository.ListWorktrees(context.Background())
-	if err != nil {
-		t.Fatal(err)
+	ctx := context.Background()
+	exists, err := repository.WorktreeExists(ctx, box.root)
+	if err != nil || !exists {
+		t.Fatalf("existing worktree = %v, err = %v", exists, err)
 	}
-	if len(worktrees) != 1 {
-		t.Fatalf("worktrees = %v", worktrees)
+
+	gone := filepath.Join(box.root, "gone")
+	exists, err = repository.WorktreeExists(ctx, gone)
+	if err != nil || exists {
+		t.Fatalf("missing worktree = %v, err = %v", exists, err)
 	}
 }

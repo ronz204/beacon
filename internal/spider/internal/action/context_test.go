@@ -200,22 +200,15 @@ func TestSignalsReportUnscopedPromises(t *testing.T) {
 			"  - id: bc-c3d5\n    text: Sample\n" +
 			"    check: {runner: test-go, target: x}\n    status: active\n",
 	})
-	snapshot := action.Load(context.Background(), repositories(root))
-	graph, failures := action.Validate(snapshot)
-	if len(failures) != 0 {
-		t.Fatalf("failures = %v", failures)
-	}
-
-	verifications, failures := action.Verify(
+	analysis, failures := action.Analyze(
 		context.Background(),
-		snapshot,
-		double.Proofs{},
+		sourcesFor(root, nil),
 	)
 	if len(failures) != 0 {
 		t.Fatalf("failures = %v", failures)
 	}
 
-	signals := action.Signals(snapshot, graph, verifications)
+	signals := analysis.Signals
 
 	if !hasSignal(signals, thread.SignalUnscoped, "bc-c3d4") {
 		t.Fatalf("missing unscoped signal: %+v", signals)

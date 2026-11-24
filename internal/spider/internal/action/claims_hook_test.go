@@ -201,3 +201,21 @@ func TestHookRespectsTheLimit(t *testing.T) {
 		t.Fatal("omitted items must arrive on the next call")
 	}
 }
+
+func TestHookDeliversAnItemLargerThanTheLimit(t *testing.T) {
+	log := double.Injections{}
+
+	first := hookOf(t, log, 1, "src/auth/login.go")
+	if len(first.Lines) != 1 {
+		t.Fatalf("lines = %q", first.Lines)
+	}
+
+	for range 20 {
+		hookOf(t, log, 1, "src/auth/login.go")
+	}
+
+	last := hookOf(t, log, 1, "src/auth/login.go")
+	if len(last.Lines) != 0 {
+		t.Fatalf("the hook never settles: %q", last.Lines)
+	}
+}
