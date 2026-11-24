@@ -27,8 +27,8 @@ Take the first rung that fully solves the task:
 - A bug fix starts by finding every caller of what is touched, then fixes the root cause once, in the shared code.
 - Code that is moved or merged keeps its validation and error handling.
 - Between options of equal size, take the one that is correct on edge cases. A one-liner that needs decoding is not short.
-- Comment only the why the code cannot show, in one line.
-- A shortcut with a known limit gets a comment: `shortcut: <the limit>, <when to upgrade>`, so the ceiling is visible to the next reader.
+- Source carries no comments: names and structure explain the code.
+- A shortcut with a known limit is recorded in the project's plan or knowledge base, with when to upgrade it, so the ceiling stays visible to the next reader.
 
 ## Never cut
 

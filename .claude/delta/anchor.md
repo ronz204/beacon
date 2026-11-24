@@ -37,7 +37,8 @@ Reglas de la inyección antes de editar, para que no se vuelva ruido:
 - `beacon install` detecta qué agentes hay en el repo.
 - **`--dry-run`:** muestra qué archivos crearía o cambiaría y cómo quedarían, sin tocar nada.
 - **Copia de seguridad:** antes de modificar un archivo existente guarda una copia en `.git/beacon/backups/` (`layout`). Así una instalación que sale mal se deshace y no depende de que el archivo estuviera en git.
-- **Solo toca archivos del repo** (`CLAUDE.md`, `AGENTS.md`, `.codex/`, `.cursor/`, la configuración de permisos del proyecto). Lo que haga falta en la configuración de usuario del agente lo **imprime** para que la persona decida.
+- **Saltos de línea:** agrega `.beacon/** text eol=lf` a `.gitattributes`, para que en Windows los registros no aparezcan como modificados (`layout`).
+- **Solo toca archivos del repo** (`CLAUDE.md`, `AGENTS.md`, `.gitattributes`, `.codex/`, `.cursor/`, la configuración de permisos del proyecto). Lo que haga falta en la configuración de usuario del agente lo **imprime** para que la persona decida.
 - Termina con un **resumen** de lo cambiado y de lo que el agente pide revisar, por ejemplo los hooks nuevos de Codex, que hay que confiar desde `/hooks`.
 
 ## Bloque de guía del método

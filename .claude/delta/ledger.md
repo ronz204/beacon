@@ -58,6 +58,15 @@ Las relaciones son **campos tipados** en el registro que corresponde, no una lis
 
 **Un hecho vive en un solo registro y los demás lo refieren, no lo copian.** Así no hay contradicciones entre registros.
 
+### Jerarquía de tareas
+
+`parent` apunta siempre al **work raíz**, también en una subtarea. La tarea padre sale del id: `bc-91cd.1.1` pertenece al work `bc-91cd` y su tarea padre es `bc-91cd.1`.
+
+- **Sin huérfanas:** una subtarea solo es válida si su tarea padre existe, en `records/` o en `archive/`.
+- **El bloqueo se hereda:** si una tarea está bloqueada, sus subtareas también.
+- **Se trabaja en las hojas:** una tarea con subtareas abiertas no aparece en `ready`.
+- **No se cierra antes que sus hijas:** una tarea no puede estar `done` con subtareas `open` o `claimed`. Una subtarea que ya no hace falta se descarta con `beacon close`, indicando el motivo.
+
 ## Paths
 
 `paths` son **una pista de alcance, no una propiedad del código**: no hace falta saber a qué capability pertenece cada línea. Lo mismo vale para `where` (decisiones) y `applies` (guides).

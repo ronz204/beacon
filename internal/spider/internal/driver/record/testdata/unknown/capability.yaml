@@ -1,0 +1,16 @@
+id: bc-7f3a
+created: 2026-11-22
+author: "agent:sample-agent"
+name: Inicio de sesión
+intent: Entrar sin exponer si la cuenta existe.
+promises:
+  - id: bc-c3d4
+    text: Tras 5 intentos la cuenta se bloquea.
+    check: {runner: test-node, target: auth/lockout}
+    status: active
+    approved: {by: "human:jane", at: 2026-11-22, device: laptop}
+    weight: 3
+owners: [equipo-auth, equipo-core]
+metadata:
+  nested:
+    level: 2

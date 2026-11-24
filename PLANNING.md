@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. El siguiente paso es el 4.
+> **Estado: Fase 1 cerrada el 2026-11-23.** `beacon fmt` y `beacon doctor` funcionan sobre un `.beacon/` real. Las decisiones D1 a D4 están registradas en la KB. El siguiente es el Bloque 3, desde el paso 17.
 
 ## 1. Panorama
 
@@ -62,7 +62,7 @@ router / engine    comandos del CLI
 - **Ejecutar checks, clasificar niveles y calcular riesgo:** son de Engine.
 - **`record`, `close`, `claim` como comandos completos:** son de Engine (Fase 2). Spider les da la lectura, la validación y la escritura de bajo nivel.
 - **Archivo mensual (`archive/`):** Fase 5. Hasta entonces nada se archiva, así que una referencia ausente es una referencia rota. Cuando exista, la validación del grafo deberá consultarlo.
-- **`render`, Anchor y Sentry:** fases posteriores.
+- **`render`, Anchor y Sentry:** fases posteriores. `beacon install` deberá agregar `.beacon/** text eol=lf` a `.gitattributes` (`anchor`).
 
 ## 2. Estructura objetivo
 
@@ -78,19 +78,26 @@ beacon/
 │  │  ├─ error.go                    # 4  · Error[C], códigos y detalles
 │  │  ├─ actor.go                    # 4  · human:<nombre>, agent:<nombre>
 │  │  ├─ date.go                     # 4  · fecha YYYY-MM-DD
-│  │  ├─ glob.go                     # 4  · PathGlob y contrato PathMatcher
-│  │  └─ identity.go                 # 4  · formato de ids y contrato IDIssuer
+│  │  ├─ glob.go                     # 4  · PathGlob; PathMatcher en 15
+│  │  ├─ identity.go                 # 4  · RecordID; IDIssuer en 13
+│  │  ├─ text.go                     # 5  · texto obligatorio de registros
+│  │  ├─ approval.go                 # 5  · approved: by, at, via
+│  │  ├─ presence.go                 # 7  · IsMissing para campos opcionales
+│  │  ├─ failure.go                  # 10 · fallo de un archivo con su línea
+│  │  ├─ formatter.go                # 15 · contrato RecordFormatter
+│  │  └─ describe.go                 # 15 · código, mensaje y ubicación de un fallo
 │  │
 │  ├─ system/                        # I/O compartido, sin lógica de Beacon
 │  │  ├─ git.go                      # 21 · ejecuta git sin shell
-│  │  └─ atomic.go                   # 22 · archivo temporal + renombrado
+│  │  └─ atomic.go                   # 12 · archivo temporal + renombrado
 │  │
 │  ├─ router/                        # CLI
 │  │  ├─ router.go                   # 16 · Run(args, stdin, stdout, stderr) int
 │  │  └─ internal/
 │  │     ├─ handle/
 │  │     │  ├─ doctor.go             # 16 · beacon doctor
-│  │     │  └─ format.go             # 16 · beacon fmt
+│  │     │  ├─ format.go             # 16 · beacon fmt
+│  │     │  └─ project.go            # 16 · ubicar .beacon/ y textos de hallazgos
 │  │     └─ output/
 │  │        └─ output.go             # 16 · sobre --json y códigos de salida
 │  │
@@ -102,12 +109,14 @@ beacon/
 │        │  │  ├─ goal_entity.go     # 5
 │        │  │  ├─ goal_vos.go        # 5
 │        │  │  ├─ goal_errors.go     # 5
-│        │  │  ├─ goal_repository.go # 5
+│        │  │  ├─ goal_policies.go   # 5
+│        │  │  ├─ goal_repository.go # 10
 │        │  │  ├─ capability_entity.go      # 5
 │        │  │  ├─ capability_parts.go       # 5  · Promise
 │        │  │  ├─ capability_vos.go         # 5  · check, estados
 │        │  │  ├─ capability_errors.go      # 5
-│        │  │  ├─ capability_repository.go  # 5
+│        │  │  ├─ capability_policies.go    # 5
+│        │  │  ├─ capability_repository.go  # 10
 │        │  │  ├─ capability_proofs.go      # 17 · contrato ProofReader
 │        │  │  └─ capability_changes.go     # 21 · contrato ChangeReader
 │        │  │
@@ -115,25 +124,30 @@ beacon/
 │        │  │  ├─ decision_entity.go      # 6
 │        │  │  ├─ decision_vos.go         # 6
 │        │  │  ├─ decision_errors.go      # 6
-│        │  │  ├─ decision_repository.go  # 6
+│        │  │  ├─ decision_policies.go    # 6
+│        │  │  ├─ decision_repository.go  # 10
 │        │  │  ├─ question_entity.go      # 6
 │        │  │  ├─ question_vos.go         # 6
 │        │  │  ├─ question_errors.go      # 6
-│        │  │  ├─ question_repository.go  # 6
+│        │  │  ├─ question_policies.go    # 6
+│        │  │  ├─ question_repository.go  # 10
 │        │  │  ├─ guide_entity.go         # 6
 │        │  │  ├─ guide_vos.go            # 6
 │        │  │  ├─ guide_errors.go         # 6
-│        │  │  └─ guide_repository.go     # 6
+│        │  │  ├─ guide_policies.go       # 6
+│        │  │  └─ guide_repository.go     # 10
 │        │  │
 │        │  ├─ agenda/               # lo que el proyecto está haciendo
 │        │  │  ├─ work_entity.go      # 7
 │        │  │  ├─ work_vos.go         # 7
 │        │  │  ├─ work_errors.go      # 7
-│        │  │  ├─ work_repository.go  # 7
+│        │  │  ├─ work_policies.go    # 7
+│        │  │  ├─ work_repository.go  # 10
 │        │  │  ├─ task_entity.go      # 7
 │        │  │  ├─ task_vos.go         # 7
 │        │  │  ├─ task_errors.go      # 7
-│        │  │  ├─ task_repository.go  # 7
+│        │  │  ├─ task_policies.go    # 7
+│        │  │  ├─ task_repository.go  # 10
 │        │  │  ├─ claim_entity.go     # 22
 │        │  │  ├─ claim_errors.go     # 22
 │        │  │  └─ claim_repository.go # 22
@@ -148,7 +162,6 @@ beacon/
 │        │
 │        ├─ action/                  # casos de uso
 │        │  ├─ load.go               # 10 · carga todo y acumula errores
-│        │  ├─ format.go             # 12 · fmt
 │        │  ├─ validate.go           # 14 · validación del conjunto
 │        │  ├─ doctor.go             # 15
 │        │  ├─ signals.go            # 17
@@ -161,16 +174,18 @@ beacon/
 │        │
 │        └─ driver/
 │           ├─ record/               # YAML en .beacon/
+│           │  ├─ errors.go          # 9  · errores con archivo y línea
 │           │  ├─ parser.go          # 9  · YAML estricto
 │           │  ├─ store.go           # 10 · lectura y escritura
 │           │  ├─ mapper.go          # 10 · YAML a dominio y de vuelta
 │           │  ├─ config.go          # 11 · config.yaml
 │           │  ├─ format.go          # 12 · salida canónica
+│           │  ├─ naming.go          # 13 · <id>-<slug>.<ext>
 │           │  └─ testdata/          # 8  · fixtures de referencia
 │           ├─ random/
 │           │  └─ random.go          # 13 · IDIssuer real
 │           ├─ match/
-│           │  └─ match.go           # 15 · PathMatcher con doublestar
+│           │  └─ match.go           # 15 · PathMatcher sobre regexp
 │           ├─ double/
 │           │  └─ double.go          # 17 · contratos en memoria para tests
 │           ├─ commit/
@@ -264,14 +279,14 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 
 **Forma de trabajo en todos los pasos:** primero el test que falla, luego el código mínimo, y al final `go test ./...` en verde.
 
-### Paso 4. Kernel
+### Paso 4. Kernel (hecho)
 
 - **Objetivo:** tener las piezas puras que todo lo demás usa.
-- **Construye:** `Error[C]` con código estable y detalles; `Actor`; fecha; `PathGlob`; formato de ids `bc-<hex>` con hijos `.1`, `.1.1`; y los contratos `PathMatcher` e `IDIssuer`.
+- **Construye:** `Error[C]` con código estable y detalles; `Actor`; fecha; `PathGlob`; y formato de ids `bc-<hex>` con hijos `.1`, `.1.1`. Los contratos `IDIssuer` y `PathMatcher` se agregan cuando los usan los pasos 13 y 15.
 - **Cuidado:** un id de la forma `bc-91cd.1` debe saber quién es su padre, porque la jerarquía de tareas depende de eso.
 - **Hecho cuando:** cada parser acepta sus ejemplos válidos, rechaza los inválidos y falla con un código estable.
 
-### Paso 5. Contexto `ledger`
+### Paso 5. Contexto `ledger` (hecho)
 
 - **Objetivo:** modelar lo que el proyecto quiere y promete.
 - **Construye:** `Goal` y `Capability`, con `Promise` como parte. Incluye `check` (ejecutor con parámetros o manual), `attested` con `evidence`, `approved`, `nongoals`, `origin` y `refers`.
@@ -279,7 +294,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 - **Cuidado:** el estado de ciclo (`proposed`, `active`) se guarda, pero el de verificación (`Holds`, `Violated`...) **se calcula** y no vive en la entidad.
 - **Hecho cuando:** ninguna capability inválida se puede construir desde fuera del paquete.
 
-### Paso 6. Contexto `memory`
+### Paso 6. Contexto `memory` (hecho)
 
 - **Objetivo:** modelar lo que el proyecto sabe.
 - **Construye:** `Decision` (con `rejected`, `supersedes`, `review`), `Question` (con `blocks`, `answer`) y `Guide` (con `kind`, `applies`, `always`, `audience`, `status`).
@@ -287,14 +302,15 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 - **Cuidado:** el id de una guide sale del nombre del archivo, no de su frontmatter.
 - **Hecho cuando:** los tres tipos se construyen solo con datos válidos.
 
-### Paso 7. Contexto `agenda`
+### Paso 7. Contexto `agenda` (hecho)
 
 - **Objetivo:** modelar lo que el proyecto está haciendo.
 - **Construye:** `Work` (petición textual, log, `implements`) y `Task` (`parent`, `blocks`, `owner`, `branch`).
 - **Reglas clave:** el id de una tarea desciende del de su `parent`; una tarea `claimed` tiene `owner`.
+- **Cuidado:** `parent` siempre apunta al work raíz, porque `ledger` lo define como task → work. Una tarea anidada como `bc-91cd.1.1` también tiene como `parent` a `bc-91cd`. La petición del work se guarda textual, sin recortar espacios.
 - **Hecho cuando:** los estados cerrados y la jerarquía están probados.
 
-### Paso 8. Fixtures de referencia
+### Paso 8. Fixtures de referencia (hecho)
 
 - **Objetivo:** fijar el resultado correcto antes de escribir el parser.
 - **Construye:** en `driver/record/testdata/`:
@@ -305,52 +321,54 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
   - `canonical/`: pares de entrada y salida esperada de `fmt`.
 - **Hecho cuando:** cada regla de `layout` tiene al menos un fixture.
 
-### Paso 9. Parser YAML estricto
+### Paso 9. Parser YAML estricto (hecho)
 
 - **Objetivo:** leer YAML sin que el parser adivine tipos.
 - **Construye:** `driver/record/parser.go`, que trabaja sobre el árbol de nodos.
 - **Reglas clave:** rechaza anclas, alias, `<<` y claves duplicadas; `version: 1.0` se lee como el tipo que diga el esquema; todo error lleva archivo, línea y una forma de arreglarlo (P7).
+- **Cuidado:** `yaml.Unmarshal` lee solo el primer documento y acepta tags propios, así que el parser debe rechazar por su cuenta varios documentos, tags personalizados y archivos vacíos.
 - **Depende de:** D1.
-- **Hecho cuando:** todos los fixtures `invalid/` fallan con el error esperado.
+- **Hecho cuando:** los fixtures `invalid/` de estructura YAML fallan con el error y la línea esperados. Los de esquema y dominio se cubren en el paso 10, porque necesitan el mapper.
 
-### Paso 10. Carga de `.beacon/`
+### Paso 10. Carga de `.beacon/` (hecho)
 
 - **Objetivo:** pasar de archivos a entidades.
-- **Construye:** `store.go`, `mapper.go` y `action/load.go`.
+- **Construye:** los contratos de repositorio de cada contexto, `store.go`, `mapper.go` y `action/load.go`.
+- **Cuidado:** `Restore<Entity>` confía en su entrada, así que el mapper llama al `Validate<Entity>State` de cada tipo antes de reconstruir el registro. El cuerpo Markdown de una guide no entra a la entidad: lo guarda el driver y se lee solo cuando hace falta.
 - **Reglas clave:**
   - Lectura en paralelo, un worker por núcleo.
   - **Un archivo roto no detiene la carga:** se juntan todos los errores.
   - Los campos desconocidos se quedan en el driver y se reescriben sin cambios.
   - El nombre del archivo debe coincidir con el `id` del registro.
-- **Hecho cuando:** un `.beacon/` de ejemplo carga los 7 tipos y un directorio con varios errores los reporta todos.
+- **Hecho cuando:** un `.beacon/` de ejemplo carga los 7 tipos, un directorio con varios errores los reporta todos y los fixtures `invalid/` restantes fallan con su error, salvo los dos de `config/`, que son del paso 11.
 
-### Paso 11. `config.yaml`
+### Paso 11. `config.yaml` (hecho)
 
 - **Objetivo:** leer la configuración que Spider necesita.
 - **Construye:** `driver/record/config.go`.
 - **Reglas clave:** lee `schema`, `limits` y `review`; aplica los valores por defecto; **rechaza un esquema más nuevo** que el del binario; conserva `runners`, `agents` y cualquier campo desconocido.
 - **Hecho cuando:** `schema: 2` falla con un mensaje que dice cómo resolverlo.
 
-### Paso 12. `fmt` canónico
+### Paso 12. `fmt` canónico (hecho)
 
 - **Objetivo:** que un registro tenga una sola forma posible en disco, para que los diffs sean pequeños.
-- **Construye:** `driver/record/format.go` y `action/format.go`.
+- **Construye:** `driver/record/format.go` y `system/atomic.go`. No hay `action/format.go`, porque no coordinaría nada: `spider.go` llamará directo a `Store.Format`.
 - **Reglas clave:** orden fijo de claves; listas por id; comillas solo donde otra herramienta podría reinterpretar; escritura atómica.
 - **Cuidado:**
-  - Definir dónde van los campos desconocidos: se propone **después de los conocidos, en orden alfabético**.
+  - Los campos desconocidos van **después de los conocidos, en orden alfabético**, y los comentarios YAML se conservan junto a su clave.
   - Los ejemplos de `ledger` usan mapas en línea (`check: {runner: ...}`). Los fixtures `canonical/` deciden exactamente cuándo.
   - **Saltos de línea en Windows:** git ya está convirtiendo LF a CRLF en este repo. `fmt` debe escribir LF, y `.beacon/**` necesita `text eol=lf` en `.gitattributes`, o cada archivo parecería modificado.
 - **Hecho cuando:** formatear dos veces da el mismo resultado byte a byte y ningún campo desconocido se pierde.
 
-### Paso 13. Ids y slugs
+### Paso 13. Ids y slugs (hecho)
 
 - **Objetivo:** crear registros nuevos con nombres estables.
-- **Construye:** `driver/random/random.go` y la generación de `<id>-<slug>.<ext>`.
+- **Construye:** el contrato `IDIssuer` en `kernel`, `driver/random/random.go` y la generación de `<id>-<slug>.<ext>`.
 - **Reglas clave:** el slug sale del título, en minúsculas y con guiones, y normaliza acentos (`Pagos sin fricción` da `pagos-sin-friccion`).
 - **Depende de:** D2.
 - **Hecho cuando:** un choque simulado reintenta, y un espacio lleno hace crecer el id.
 
-### Paso 14. Grafo en memoria
+### Paso 14. Grafo en memoria (hecho)
 
 - **Objetivo:** convertir registros sueltos en una red navegable.
 - **Construye:** `domain/thread` y `action/validate.go`.
@@ -360,24 +378,30 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
   - Referencias a registros inexistentes.
   - Relaciones con un tipo de origen o destino inválido.
   - Ciclos en `blocks` y `parent`, que dejarían trabajo bloqueado para siempre.
+  - Subtareas huérfanas: `bc-91cd.1.1` exige que exista `bc-91cd.1`.
+  - Tareas `done` con subtareas `open` o `claimed`.
 - **Depende de:** D3.
 - **Hecho cuando:** cada error tiene un test y el recorrido de vecinos es determinista.
 
-### Paso 15. Globs y `doctor`
+### Paso 15. Globs y `doctor` (hecho)
 
 - **Objetivo:** saber qué registros aplican a una ruta y diagnosticar el estado completo.
-- **Construye:** `driver/match/match.go` y `action/doctor.go`.
+- **Construye:** el contrato `PathMatcher` en `kernel`, `driver/match/match.go` y `action/doctor.go`.
+- **Decisión:** los globs se implementan a mano. Las llaves se expanden (máximo 64 combinaciones) y cada alternativa se traduce a `regexp`, que corre en tiempo lineal. Una comparación con 400.000 casos contra `doublestar` v4.10.4 mostró que esa librería no es coherente con `**` dentro de llaves (`a/**` coincide con `a`, pero `a/{**,b}` no).
+- **Límite conocido:** una alternativa vacía pegada a una barra, como `{a,}/b`, genera un segmento vacío y su resultado puede diferir de `doublestar`.
+- **`doctor` no valida el grafo si un registro falló al cargar**, porque reportaría referencias rotas que en realidad son consecuencia del primer error.
 - **Reglas de globs:** `*`, `**`, `?`, `{a,b}`; desde la raíz; con `/`; sensibles a mayúsculas; sin negaciones.
-- **Cuidado:** en Windows, las rutas se normalizan a `/` antes de comparar.
+- **Cuidado:** en Windows, las rutas se normalizan a `/` antes de comparar. Los corchetes se rechazan, así que `app/[id]/page.tsx` se escribe `app/*/page.tsx` hasta que haga falta un escape.
 - **`doctor` en esta fase:** valida esquema, formato y grafo, y avisa de guides que superan `limits.guide`. La ayuda con conflictos se agrega al usarlo en ramas reales, y la limpieza de claims en el paso 22.
 - **Hecho cuando:** `doctor` reporta todos los problemas de un `.beacon/` roto con su solución.
 
-### Paso 16. Fachada y CLI mínimo
+### Paso 16. Fachada y CLI mínimo (hecho)
 
 - **Objetivo:** cerrar la Fase 1 con algo ejecutable.
 - **Construye:** `spider.go`, `router`, `cmd/beacon/main.go` y las pruebas de `specifies/`.
 - **Comandos:** `beacon fmt` y `beacon doctor`, con `--json` y códigos de salida 0, 1 y 2.
-- **Medición:** repetir la carga de 500 archivos y comparar con los ~100 ms de `layout`.
+- **Medición:** repetir la carga de 500 archivos y comparar con los ~100 ms de `layout`. **Resultado:** unos 70 ms con carga más grafo, anotado en `layout`.
+- **CLI:** `spf13/cobra` v1.10.2. Los errores de uso también devuelven el sobre `--json` con código 1.
 - **Hecho cuando:** los tests e2e corren el binario real, y el tiempo medido queda anotado aunque no alcance la referencia.
 
 ## 6. Bloque 3: cálculos de Spider
@@ -412,7 +436,7 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
 ### Paso 19. `ready`
 
 - **Objetivo:** saber qué trabajo se puede tomar.
-- **Regla clave:** recorre `blocks` y `parent`; al cerrar un bloqueo, los dependientes quedan disponibles. Recibe la rama como parámetro.
+- **Regla clave:** recorre `blocks` y `parent`; al cerrar un bloqueo, los dependientes quedan disponibles. El bloqueo se hereda a las subtareas, y una tarea con subtareas abiertas no aparece porque se trabaja en las hojas (`ledger`). Recibe la rama como parámetro.
 - **Hecho cuando:** una pregunta abierta saca su trabajo de `ready`, y responderla lo devuelve.
 
 ### Paso 20. `brief`
@@ -440,7 +464,7 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
 ### Paso 22. Estado local
 
 - **Objetivo:** compartir estado entre worktrees sin riesgo.
-- **Construye:** `system/atomic.go`, `driver/states`, claims locales, `context --hook` y la limpieza de claims en `doctor`.
+- **Construye:** `driver/states`, claims locales, `context --hook` y la limpieza de claims en `doctor`.
 - **Reglas clave:** toda escritura en `.git/beacon/` es atómica, y la ruta sale de `git rev-parse --git-common-dir`.
 - **Cuidado:** en Windows, renombrar sobre un archivo que otro proceso tiene abierto puede fallar, así que hace falta reintentar y probarlo con escritores concurrentes.
 - **Hecho cuando:** varios procesos escriben a la vez sin dejar un archivo a medias, y `--hook` no repite lo ya inyectado.

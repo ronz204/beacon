@@ -17,6 +17,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | `beacon check` | Sin argumentos, solo lo relacionado con los cambios; con un id o con `--all` | `engine` |
 | Idioma de los mensajes | Inglés fijo, igual que las claves y la guía del método | `design` |
 | Lenguaje y distribución | Go, binario estático, MIT, sin telemetría; Releases, `go install`, Homebrew y Scoop | `design` |
+| Dependencias | `go.yaml.in/yaml/v4` y `spf13/cobra` v1.10.2 para el CLI. Los globs se implementan a mano sobre `regexp`, porque la gramática es pequeña y `doublestar` es inconsistente con `**` dentro de llaves | `layout`, `engine` |
 | Fuente de verdad | Archivos en git, cargados en memoria al arrancar; sin caché persistente | `layout` |
 | Layout | `records/` (7 carpetas en plural), `archive/` mensual y `config.yaml` | `layout` |
 | Estado local | En `.git/beacon/`, no en `.beacon/`: resultados de checks, claims locales, métricas de fricción, lo ya inyectado por los hooks y copias de seguridad. Escritura atómica porque los worktrees lo comparten | `layout` |
@@ -27,7 +28,8 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Esquema | `schema: 1`, `beacon migrate`, campos desconocidos preservados; esquema por tipo definido | `layout`, `ledger` |
 | Campos | Una sola palabra, en inglés. Comunes: `id`, `created`, `author`, `closed` con `reason`, `approved`; sin `updated`. Opcionales nuevos: `nongoals` (goal y capability), `rejected` (decision), `evidence` (dentro de `attested`) | `ledger` |
 | Relaciones | Campos tipados (`implements`, `blocks`, `parent`, `supersedes`, `serves`, `origin`, `refers`), sin lista genérica | `ledger` |
-| Globs | Estilo doublestar (`*`, `**`, `?`, `{a,b}`), desde la raíz del repo y sin negaciones | `ledger` |
+| Jerarquía de tareas | `parent` apunta siempre al work raíz y la tarea padre sale del id; sin huérfanas, bloqueo heredado, trabajo en las hojas y sin `done` antes que las hijas | `ledger` |
+| Globs | Estilo doublestar (`*`, `**`, `?`, `{a,b}`), desde la raíz del repo y sin negaciones; las llaves se expanden antes de comparar, con un máximo de 64 combinaciones | `ledger` |
 | Actor | `BEACON_ACTOR` (lo pone Anchor) o `human:<user.name de git>`; `approved: {by, at, via}`. Es un marcado, no una prueba | `ledger`, `deltas` |
 | `config.yaml` | Claves: `schema`, `runners` (con `baseline` opcional en los visuales), `review`, `limits` (`guide`, `brief`, `hook`), `agents`. Nivel 3 solo para `runners` y `schema` | `ledger`, `deltas` |
 | Carga en memoria | Validada con benchmark en Go: 500 archivos en unos 100 ms, 5.000 en unos 0,5 a 0,8 s | `layout` |
@@ -109,7 +111,7 @@ Sin recorte de producto; el orden sigue las dependencias. El plan detallado de S
 | Fase | Contenido |
 |---|---|
 | 0 | **Cerrada:** nombre, benchmarks de carga y de git, esquema, guía del método, decisiones de interfaz y las propuestas de la investigación |
-| 1 | **Spider:** esquema (con `nongoals`, `rejected` y `evidence`), parser YAML estricto, `fmt`, ids, grafo en memoria, validación, `doctor`, globs |
+| 1 | **Cerrada el 2026-11-23. Spider:** esquema (con `nongoals`, `rejected` y `evidence`), parser YAML estricto, `fmt`, ids, grafo en memoria, validación, `doctor`, globs |
 | 2 | **Engine (CLI):** `--json` con el sobre uniforme (`brief`, `context` con `--hook`, `record` con stdin, `close`, `get`, `find`), niveles y `diff` (incluidas las capturas base), `check` con ejecutores, `ready` y `claim` con claim local y escritura atómica de `.git/beacon/`; prueba de ramas largas |
 | 3 | **Anchor sobre el CLI:** guía del método, hooks con reinyección, permisos y marca del actor para Claude Code, luego Codex y Cursor; `beacon install` con `--dry-run` y copias; guía de redacción de promesas; arnés del benchmark; uso del propio Beacon en su desarrollo |
 | 4 | **Sentry:** pre-commit, `beacon sentry ci` y plantilla de GitHub Actions (con `merge_group`); arranque, `attest` con `--evidence`, `verify`; ejecutores de ejemplo para UI |

@@ -1,0 +1,7 @@
+id: bc-0001
+created: 2026-11-22
+author: "human:jane"
+success: Tasa de pagos completados al primer intento mayor a 90 %.
+nongoals:
+  - No soportamos pagos recurrentes en esta versión.
+status: active

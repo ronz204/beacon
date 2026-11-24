@@ -22,7 +22,7 @@ Sin `--json`, la salida es texto breve para personas. Con `--json`, **todos los 
 - `data`: el resultado del comando.
 - `signals`: las señales de Spider que aplican (`spider`), incluida "Pendiente de sí", cuyo nivel asigna Engine.
 - `hint`: el siguiente paso exacto cuando algo bloquea, o `null` (P7).
-- Si `ok` es `false`, `data` es `null` y aparece `error: {code, message}`.
+- Si `ok` es `false`, `data` es `null` y aparece `error: {code, message, details}`. `details` es opcional y lleva lo que explica el fallo, por ejemplo los hallazgos de `doctor` con archivo y línea.
 
 **Códigos de salida:** `0` ok, `1` error de uso (argumentos o registro inválido), `2` bloqueado, a la espera de un sí o de una respuesta de la persona, o con un recurso ocupado (por ejemplo una tarea ya reclamada).
 
