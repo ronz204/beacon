@@ -62,6 +62,15 @@ func splitFrontmatter(text string) (string, string, bool) {
 }
 
 func parseMapping(file, text string, offset int) (*yaml.Node, error) {
+	document, err := parseDocument(file, text, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return document.Content[0], nil
+}
+
+func parseDocument(file, text string, offset int) (*yaml.Node, error) {
 	decoder := yaml.NewDecoder(strings.NewReader(text))
 
 	var document yaml.Node
@@ -90,7 +99,7 @@ func parseMapping(file, text string, offset int) (*yaml.Node, error) {
 		return nil, err
 	}
 
-	return root, nil
+	return &document, nil
 }
 
 func syntaxFailure(file string, cause error, offset int) RecordError {
