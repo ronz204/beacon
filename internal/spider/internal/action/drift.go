@@ -9,9 +9,9 @@ import (
 	"github.com/ronz204/beacon/internal/spider/internal/domain/ledger"
 )
 
-type driftCandidate struct {
-	promise ledger.PromiseID
-	paths   []kernel.PathGlob
+type driftGroup struct {
+	paths    []kernel.PathGlob
+	promises []ledger.PromiseID
 }
 
 func markDrift(
@@ -29,13 +29,13 @@ func markDrift(
 			failures = append(failures, err)
 		}
 
-		for _, candidate := range groups[commit] {
+		for _, group := range groups[commit] {
 			drifted := err != nil
 			if !drifted {
 				var matchErr error
 				drifted, matchErr = globsTouch(
 					sources.Matcher,
-					candidate.paths,
+					group.paths,
 					files,
 				)
 				if matchErr != nil {
@@ -44,8 +44,9 @@ func markDrift(
 			}
 
 			if drifted {
-				id := candidate.promise
-				verifications[id] = verifications[id].WithDrift()
+				for _, id := range group.promises {
+					verifications[id] = verifications[id].WithDrift()
+				}
 			}
 		}
 	}
@@ -56,8 +57,8 @@ func markDrift(
 func driftGroups(
 	snapshot Snapshot,
 	verifications Verifications,
-) map[string][]driftCandidate {
-	groups := make(map[string][]driftCandidate)
+) map[string][]driftGroup {
+	groups := make(map[string][]driftGroup)
 
 	for _, capability := range snapshot.Capabilities {
 		paths := capability.Paths()
@@ -65,15 +66,18 @@ func driftGroups(
 			continue
 		}
 
+		byCommit := make(map[string][]ledger.PromiseID)
 		for _, promise := range capability.Promises() {
 			commit := verifications[promise.ID()].Commit()
-			if commit == "" {
-				continue
+			if commit != "" {
+				byCommit[commit] = append(byCommit[commit], promise.ID())
 			}
+		}
 
-			groups[commit] = append(groups[commit], driftCandidate{
-				promise: promise.ID(),
-				paths:   paths,
+		for commit, promises := range byCommit {
+			groups[commit] = append(groups[commit], driftGroup{
+				paths:    paths,
+				promises: promises,
 			})
 		}
 	}
