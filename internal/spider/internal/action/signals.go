@@ -17,7 +17,7 @@ func Verify(
 ) (Verifications, []error) {
 	var failures []error
 
-	outcomes, err := proofs.ReadOutcomes(ctx)
+	results, err := proofs.ReadResults(ctx)
 	if err != nil {
 		failures = append(failures, err)
 	}
@@ -25,10 +25,10 @@ func Verify(
 	verifications := make(Verifications)
 	for _, capability := range snapshot.Capabilities {
 		for _, promise := range capability.Promises() {
-			outcome, found := outcomes[promise.ID()]
+			result, found := results[promise.ID()]
 			verifications[promise.ID()] = ledger.VerifyPromise(
 				promise,
-				outcome,
+				result,
 				found,
 			)
 		}
@@ -75,6 +75,9 @@ func promiseSignals(
 	}
 	if verification.NotRunHere() {
 		kinds = append(kinds, thread.SignalNotRunHere)
+	}
+	if verification.Drifted() {
+		kinds = append(kinds, thread.SignalDrift)
 	}
 	if !scoped {
 		kinds = append(kinds, thread.SignalUnscoped)

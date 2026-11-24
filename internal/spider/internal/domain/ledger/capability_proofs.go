@@ -9,6 +9,11 @@ const (
 	ProofFailed ProofOutcome = "failed"
 )
 
+type ProofResult struct {
+	Outcome ProofOutcome
+	Commit  string
+}
+
 type ProofReader interface {
-	ReadOutcomes(ctx context.Context) (map[PromiseID]ProofOutcome, error)
+	ReadResults(ctx context.Context) (map[PromiseID]ProofResult, error)
 }

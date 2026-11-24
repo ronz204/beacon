@@ -245,6 +245,8 @@ const (
 type Verification struct {
 	status     VerificationStatus
 	notRunHere bool
+	commit     string
+	drifted    bool
 }
 
 func (v Verification) Status() VerificationStatus {
@@ -253,4 +255,17 @@ func (v Verification) Status() VerificationStatus {
 
 func (v Verification) NotRunHere() bool {
 	return v.notRunHere
+}
+
+func (v Verification) Commit() string {
+	return v.commit
+}
+
+func (v Verification) Drifted() bool {
+	return v.drifted
+}
+
+func (v Verification) WithDrift() Verification {
+	v.drifted = true
+	return v
 }

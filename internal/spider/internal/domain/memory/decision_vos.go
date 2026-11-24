@@ -3,6 +3,7 @@ package memory
 import (
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/ronz204/beacon/internal/kernel"
@@ -64,6 +65,17 @@ func ParseReviewSpan(raw string) (ReviewSpan, error) {
 	}
 
 	return ReviewSpan{value: value}, nil
+}
+
+func (s ReviewSpan) DueAfter(base kernel.CalendarDate) kernel.CalendarDate {
+	if amount, isMonths := strings.CutSuffix(s.value, "mo"); isMonths {
+		months, _ := strconv.Atoi(amount)
+		return base.Plus(months, 0)
+	}
+
+	days, _ := strconv.Atoi(strings.TrimSuffix(s.value, "d"))
+
+	return base.Plus(0, days)
 }
 
 func (s ReviewSpan) String() string {

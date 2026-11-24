@@ -10,6 +10,8 @@ const (
 	SignalUnscoped   SignalKind = "unscoped"
 	SignalNotRunHere SignalKind = "not_run_here"
 	SignalTension    SignalKind = "tension"
+	SignalDrift      SignalKind = "drift"
+	SignalStale      SignalKind = "stale"
 )
 
 type Signal struct {

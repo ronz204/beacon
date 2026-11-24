@@ -78,7 +78,7 @@ func missingPromiseField(state PromiseState) string {
 
 func VerifyPromise(
 	promise Promise,
-	outcome ProofOutcome,
+	result ProofResult,
 	found bool,
 ) Verification {
 	switch {
@@ -89,16 +89,22 @@ func VerifyPromise(
 			status:     VerificationUnverified,
 			notRunHere: true,
 		}
-	case outcome == ProofPassed:
-		return Verification{status: VerificationHolds}
+	case result.Outcome == ProofPassed:
+		return Verification{
+			status: VerificationHolds,
+			commit: result.Commit,
+		}
 	}
 
 	return Verification{status: VerificationViolated}
 }
 
 func manualVerification(promise Promise) Verification {
-	if _, attested := promise.Attested(); attested {
-		return Verification{status: VerificationAttested}
+	if attested, found := promise.Attested(); found {
+		return Verification{
+			status: VerificationAttested,
+			commit: attested.Commit(),
+		}
 	}
 
 	return Verification{status: VerificationUnverified}
