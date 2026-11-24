@@ -18,6 +18,7 @@ type GuideState struct {
 	Audience GuideAudience
 	Status   GuideStatus
 	Refers   []GuideCapabilityID
+	Lines    int
 }
 
 type Guide struct {
@@ -86,4 +87,8 @@ func (g Guide) Status() (GuideStatus, bool) {
 
 func (g Guide) Refers() []GuideCapabilityID {
 	return slices.Clone(g.state.Refers)
+}
+
+func (g Guide) Lines() int {
+	return g.state.Lines
 }

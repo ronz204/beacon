@@ -424,9 +424,20 @@ func decodeGuide(file string, data []byte) (memory.Guide, []error) {
 		Audience: one(f, "audience", memory.ParseGuideAudience),
 		Status:   one(f, "status", memory.ParseGuideStatus),
 		Refers:   many(f, "refers", memory.ParseGuideCapabilityID),
+		Lines:    countLines(parsed.Body),
 	}
 
 	return build(f, state, memory.ValidateGuideState, memory.RestoreGuide)
+}
+
+func countLines(body string) int {
+	lines := strings.Count(body, "\n")
+
+	if body != "" && !strings.HasSuffix(body, "\n") {
+		lines++
+	}
+
+	return lines
 }
 
 func guideFileID(f *fields) memory.GuideID {
