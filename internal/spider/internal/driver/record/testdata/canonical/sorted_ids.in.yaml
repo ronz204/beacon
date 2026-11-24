@@ -1,0 +1,19 @@
+id: bc-7f3a
+created: 2026-11-22
+author: "agent:sample-agent"
+name: Inicio de sesión
+intent: Entrar sin exponer la cuenta.
+paths: [tests/auth/**, src/auth/**]
+nongoals:
+  - Sin redes sociales.
+  - Sin biometría.
+promises:
+  - id: bc-e5f6
+    text: Segunda promesa.
+    check: {runner: test-node, target: auth/b}
+    status: proposed
+    refers: [bc-ffff, bc-aaaa]
+  - id: bc-c3d4
+    text: Primera promesa.
+    check: {runner: test-node, target: auth/a}
+    status: proposed

@@ -1,0 +1,7 @@
+schema: 1
+limits:
+  guide: 150
+  brief: 60
+  hook: 20
+  future: 10
+telemetry: false

@@ -1,0 +1,12 @@
+id: bc-a1b2
+created: 2026-11-22
+author: "agent:sample-agent"
+what: Sesiones con JWT de 15 min más refresh token.
+why: Evitamos estado de sesión en servidor y limitamos el daño si se filtra un token.
+where: [src/auth/**]
+rejected:
+  - "Sesiones en servidor: exigen estado compartido entre instancias."
+  - "JWT de larga duración: un token filtrado sirve durante días."
+status: active
+review: 6 meses
+reviewed: 2026-11-22

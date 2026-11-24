@@ -1,0 +1,19 @@
+schema: 2
+runners:
+  test-node:
+    run: ["pnpm", "--filter", "{pkg}", "test", "--", "{target}"]
+  visual:
+    run: ["pnpm", "exec", "playwright", "test", "--grep", "{target}"]
+    baseline: ["tests/**/*-snapshots/**"]
+review:
+  convention: 6mo
+  architecture: 12mo
+  product: 12mo
+  domain: 12mo
+  runbook: 6mo
+  decision: 6mo
+limits:
+  guide: 150
+  brief: 60
+  hook: 20
+agents: [claude-code, codex, cursor]

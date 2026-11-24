@@ -1,0 +1,2 @@
+check: {runner: test-node, other: "[y]", pkg: "{x}", target: "a,b"}
+paths: ["**/*.go", "{a,b}/**", src/auth/**]

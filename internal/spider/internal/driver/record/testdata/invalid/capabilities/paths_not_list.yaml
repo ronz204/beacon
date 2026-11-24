@@ -1,0 +1,21 @@
+id: bc-7f3a
+created: 2026-11-22
+author: "agent:sample-agent"
+name: Inicio de sesión
+intent: Que un usuario entre con correo y contraseña sin exponer si la cuenta existe.
+paths: src/auth/**
+serves: bc-0001
+nongoals:
+  - No incluye inicio de sesión con redes sociales.
+promises:
+  - id: bc-c3d4
+    text: Tras 5 intentos fallidos la cuenta se bloquea 15 minutos.
+    check: {runner: test-node, pkg: api, target: auth/lockout}
+    status: active
+    approved: {by: "human:jane", at: 2026-11-22, via: "agent:sample-agent"}
+  - id: bc-c4a1
+    text: La pantalla de inicio de sesión se ve bien en móvil.
+    check: {manual: Abrir /login en un viewport de 375 px y confirmar que no hay desbordes}
+    status: active
+    approved: {by: "human:jane", at: 2026-11-22}
+    attested: {by: "human:jane", at: 2026-11-22, commit: 9f3c2ab, evidence: docs/evidence/login-375.png}
