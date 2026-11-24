@@ -10,7 +10,10 @@ import (
 	"github.com/ronz204/beacon/internal/spider/internal/driver/record"
 )
 
-const stateFolder = ".beacon"
+const (
+	stateFolder = ".beacon"
+	gitFolder   = ".git"
+)
 
 type Finding = action.Finding
 
@@ -55,12 +58,17 @@ func Locate(start string) (Project, error) {
 		}
 
 		parent := filepath.Dir(directory)
-		if parent == directory {
+		if parent == directory || isRepositoryRoot(directory) {
 			return Project{}, projectErrors.Fail(ProjectMissing, nil)
 		}
 
 		directory = parent
 	}
+}
+
+func isRepositoryRoot(directory string) bool {
+	_, err := os.Stat(filepath.Join(directory, gitFolder))
+	return err == nil
 }
 
 func (p Project) Format(ctx context.Context) FormatResult {
