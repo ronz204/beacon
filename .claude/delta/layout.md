@@ -133,7 +133,7 @@ Medición en Go con `gopkg.in/yaml.v3` v3.0.1 (2026-11-22). Cada archivo es una 
 
 Es de 2 a 3 veces más rápido que la medición anterior en Python con libyaml (20 ms, 210 ms y 2 s para 50, 500 y 5.000 archivos). Con decenas de capabilities el arranque no se nota; con cientos sigue por debajo de 100 ms y solo con miles de archivos se siente en cada llamada de CLI.
 
-Esta tabla se midió con `gopkg.in/yaml.v3`, hoy archivada. En una prueba del 2026-11-23, solo de parseo a nodos, v3.0.6 y v4.0.0 tardaron prácticamente lo mismo (42 y 41 ms para 500 archivos). La carga completa con v4 se vuelve a medir al cerrar la Fase 1.
+Esta tabla se midió con `gopkg.in/yaml.v3`, hoy archivada. En una prueba del 2026-11-23, solo de parseo a nodos, v3.0.6 y v4.0.0 tardaron prácticamente lo mismo (42 y 41 ms para 500 archivos). Al cerrar la Fase 1 se midió el código real: 500 capabilities con 10 promesas cada una, carga más validación del grafo, tardan unos 70 ms (mediana de 5 corridas con caché caliente, en un i7-13620H de 16 hilos). No es comparable directo con la tabla, medida con 2 núcleos.
 
 ### Consultas a git
 
