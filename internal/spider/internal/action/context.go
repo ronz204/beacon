@@ -11,13 +11,6 @@ import (
 	"github.com/ronz204/beacon/internal/spider/internal/domain/thread"
 )
 
-type ContextInput struct {
-	Repositories Repositories
-	Proofs       ledger.ProofReader
-	Matcher      kernel.PathMatcher
-	Paths        []string
-}
-
 type PromiseContext struct {
 	Promise      ledger.Promise
 	Verification ledger.Verification
@@ -48,16 +41,16 @@ type contextSelector struct {
 
 func Context(
 	ctx context.Context,
-	input ContextInput,
+	sources Sources,
+	paths []string,
 ) (ContextResult, []error) {
-	snapshot := Load(ctx, input.Repositories)
-	graph, _ := Validate(snapshot)
-	verifications, proofFailures := Verify(ctx, snapshot, input.Proofs)
+	analysis, failures := Analyze(ctx, sources)
+	snapshot := analysis.Snapshot
 
 	selector := &contextSelector{
-		matcher: input.Matcher,
-		paths:   input.Paths,
-		graph:   graph,
+		matcher: sources.Matcher,
+		paths:   paths,
+		graph:   analysis.Graph,
 		touched: make(map[kernel.RecordID]bool),
 		linked:  make(map[kernel.RecordID]bool),
 	}
@@ -65,21 +58,15 @@ func Context(
 	result := ContextResult{Goals: activeGoals(snapshot.Goals)}
 	result.Capabilities = selector.capabilities(
 		snapshot.Capabilities,
-		verifications,
+		analysis.Verifications,
 	)
 	result.Decisions = selector.decisions(snapshot.Decisions)
 	result.Guides = selector.guides(snapshot.Guides)
 	selector.linkWork()
 	result.Questions = selector.questions(snapshot.Questions)
-	result.Signals = selector.signals(snapshot, verifications)
+	result.Signals = selector.signals(analysis.Signals)
 
-	failures := slices.Concat(
-		snapshot.Failures,
-		proofFailures,
-		selector.failures,
-	)
-
-	return result, failures
+	return result, slices.Concat(failures, selector.failures)
 }
 
 func activeGoals(goals []ledger.Goal) []ledger.Goal {
@@ -251,12 +238,10 @@ func (s *contextSelector) questions(
 	return selected
 }
 
-func (s *contextSelector) signals(
-	snapshot Snapshot,
-	verifications Verifications,
-) []thread.Signal {
-	all := Signals(snapshot, s.graph, verifications)
-	selected := slices.DeleteFunc(all, func(signal thread.Signal) bool {
+func (s *contextSelector) signals(all []thread.Signal) []thread.Signal {
+	selected := slices.DeleteFunc(slices.Clone(all), func(
+		signal thread.Signal,
+	) bool {
 		return !s.inScope(signal.Subject)
 	})
 

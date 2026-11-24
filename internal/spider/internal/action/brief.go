@@ -28,12 +28,6 @@ type BriefLine struct {
 	Text    string
 }
 
-type BriefInput struct {
-	Repositories Repositories
-	Proofs       ledger.ProofReader
-	Limit        int
-}
-
 type BriefResult struct {
 	Lines   []BriefLine
 	Omitted int
@@ -42,34 +36,45 @@ type BriefResult struct {
 type briefTexts struct {
 	questions map[string]string
 	promises  map[string]string
+	reviews   map[string]string
 }
 
-func Brief(ctx context.Context, input BriefInput) (BriefResult, []error) {
-	snapshot := Load(ctx, input.Repositories)
-	graph, _ := Validate(snapshot)
-	verifications, proofFailures := Verify(ctx, snapshot, input.Proofs)
-	signals := Signals(snapshot, graph, verifications)
+func Brief(
+	ctx context.Context,
+	sources Sources,
+	limit int,
+) (BriefResult, []error) {
+	analysis, failures := Analyze(ctx, sources)
+	snapshot := analysis.Snapshot
 	texts := newBriefTexts(snapshot)
 
 	ranked := slices.Concat(
-		texts.blockerLines(signals),
+		texts.blockerLines(analysis.Signals),
 		progressLines(snapshot),
-		checkLines(signals),
+		texts.checkLines(analysis.Signals, analysis.Stale),
 		guideLines(snapshot.Guides),
 	)
-	result := fitBrief(goalLines(snapshot.Goals), ranked, input.Limit)
 
-	return result, slices.Concat(snapshot.Failures, proofFailures)
+	return fitBrief(goalLines(snapshot.Goals), ranked, limit), failures
 }
 
 func newBriefTexts(snapshot Snapshot) briefTexts {
 	texts := briefTexts{
 		questions: make(map[string]string),
 		promises:  make(map[string]string),
+		reviews:   make(map[string]string),
 	}
 
 	for _, question := range snapshot.Questions {
 		texts.questions[question.ID().String()] = question.Text().String()
+	}
+
+	for _, decision := range snapshot.Decisions {
+		texts.reviews[decision.ID().String()] = decision.What().String()
+	}
+
+	for _, guide := range snapshot.Guides {
+		texts.reviews[guide.ID().String()] = guide.Title().String()
 	}
 
 	for _, capability := range snapshot.Capabilities {
@@ -184,23 +189,46 @@ func claimedTaskLine(task agenda.Task) BriefLine {
 	)
 }
 
-func checkLines(signals []thread.Signal) []BriefLine {
+func (t briefTexts) checkLines(
+	signals []thread.Signal,
+	stale []StaleRecord,
+) []BriefLine {
+	var lines []BriefLine
 	pending := 0
+
 	for _, signal := range signals {
-		if signal.Kind == thread.SignalNotRunHere {
+		switch signal.Kind {
+		case thread.SignalDrift:
+			lines = append(lines, briefLine(
+				BriefChecks,
+				"Drift: promise %s: %s",
+				signal.Subject,
+				firstLine(t.promises[signal.Subject.String()]),
+			))
+		case thread.SignalNotRunHere:
 			pending++
 		}
 	}
 
-	if pending == 0 {
-		return nil
+	if pending > 0 {
+		lines = append(lines, briefLine(
+			BriefChecks,
+			"Promises without a check result on this machine: %d",
+			pending,
+		))
 	}
 
-	return []BriefLine{briefLine(
-		BriefChecks,
-		"Promises without a check result on this machine: %d",
-		pending,
-	)}
+	for _, record := range stale {
+		lines = append(lines, briefLine(
+			BriefChecks,
+			"Stale: %s %s: %s",
+			record.Kind,
+			record.ID,
+			firstLine(t.reviews[record.ID.String()]),
+		))
+	}
+
+	return lines
 }
 
 func guideLines(guides []memory.Guide) []BriefLine {
