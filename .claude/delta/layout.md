@@ -64,8 +64,25 @@ Los worktrees de un mismo repo comparten `.git/beacon/`, y varias sesiones de ag
 - Los registros estructurados son **YAML**; las guides son Markdown con frontmatter YAML.
 - **Librería:** `go.yaml.in/yaml/v4` (v4.0.0), la línea mantenida por la organización YAML; `gopkg.in/yaml.v3` está archivada. Se trabaja sobre nodos para conservar estilos, líneas y campos desconocidos.
 - **Estricto:** sin anclas ni alias, sin claves de combinación (`<<`) y sin claves duplicadas. La librería no rechaza estas últimas al leer nodos, así que las valida el binario.
-- **Sin tipos implícitos:** el parser lee cada valor por el tipo que dice el esquema (`ledger`). `beacon fmt` entrecomilla **solo lo que otra herramienta podría reinterpretar**: `yes`, `no`, `on`, `off`, `null`, números (`1.0`), strings vacíos, valores con `:` o `#`, con espacios al inicio o al final, o con caracteres de flujo (`,`, `{`, `}`, `[`, `]`) dentro de un mapa en línea. Las fechas (`2026-11-22`) y las enumeraciones (`status: active`) van sin comillas.
-- **`beacon fmt`** formatea de forma canónica: orden fijo de claves, un campo por línea, listas ordenadas por id. Un formato canónico da diffs pequeños y estables.
+- **Sin tipos implícitos:** el parser lee cada valor por el tipo que dice el esquema (`ledger`). `beacon fmt` entrecomilla con comillas dobles **solo lo que otra herramienta podría reinterpretar**: `yes`, `no`, `on`, `off`, `true`, `false`, `null` y `~` en cualquier capitalización, números (`1.0`, `1e3`, `0x1f`, `1234567`), fechas dentro de un campo de texto, strings vacíos, valores con `:` o `#`, con espacios al inicio o al final, valores que empiezan con un indicador YAML (`*`, `&`, `!`, `%`, `@`, `` ` ``, `?`, `- `, `|`, `>`, `[`, `{`, `'`, `"`), como el glob `"**/*.go"`, o con caracteres de flujo (`,`, `{`, `}`, `[`, `]`) dentro de un valor en línea. Los campos de fecha (`2026-11-22`) y las enumeraciones (`status: active`) van sin comillas.
+- **`beacon fmt`** formatea de forma canónica: orden fijo de claves, un campo por línea, listas de ids y promesas ordenadas por id. Un formato canónico da diffs pequeños y estables.
+- **En línea o en bloque:** `check`, `approved`, `attested` y las listas de ids, globs y etiquetas van en línea. Las listas de texto (`nongoals`, `rejected`, `log`) y `promises` van en bloque, y conservan su orden salvo `promises`. `request` usa un bloque literal cuando tiene saltos de línea, sin alterar su contenido.
+- **Orden de claves:** el de la tabla. Los campos desconocidos van después de los conocidos, en orden alfabético y sin cambios por dentro.
+
+| Tipo | Orden |
+|---|---|
+| goal | `id`, `created`, `author`, `statement`, `success`, `nongoals`, `status`, `approved` |
+| capability | `id`, `created`, `author`, `name`, `intent`, `paths`, `serves`, `nongoals`, `approved`, `promises` |
+| promesa | `id`, `text`, `check`, `status`, `approved`, `attested`, `origin`, `refers` |
+| decision | `id`, `created`, `author`, `what`, `why`, `where`, `supersedes`, `rejected`, `status`, `review`, `reviewed`, `approved` |
+| question | `id`, `created`, `author`, `text`, `blocks`, `status`, `answer`, `origin`, `approved` |
+| work | `id`, `created`, `author`, `request`, `implements`, `serves`, `status`, `log`, `approved` |
+| task | `id`, `created`, `author`, `title`, `parent`, `blocks`, `implements`, `status`, `owner`, `branch`, `approved` |
+| guide | `title`, `kind`, `applies`, `always`, `review`, `reviewed`, `tags`, `audience`, `status`, `refers` |
+| `check` | `runner` y sus parámetros en orden alfabético, o `manual` |
+| `approved` | `by`, `at`, `via` |
+| `attested` | `by`, `at`, `commit`, `evidence` |
+
 - El binario valida contra un esquema y, si algo no encaja, dice cómo arreglarlo.
 
 ## Ids y nombres
