@@ -75,3 +75,31 @@ func missingPromiseField(state PromiseState) string {
 
 	return ""
 }
+
+func VerifyPromise(
+	promise Promise,
+	outcome ProofOutcome,
+	found bool,
+) Verification {
+	switch {
+	case promise.Check().IsManual():
+		return manualVerification(promise)
+	case !found:
+		return Verification{
+			status:     VerificationUnverified,
+			notRunHere: true,
+		}
+	case outcome == ProofPassed:
+		return Verification{status: VerificationHolds}
+	}
+
+	return Verification{status: VerificationViolated}
+}
+
+func manualVerification(promise Promise) Verification {
+	if _, attested := promise.Attested(); attested {
+		return Verification{status: VerificationAttested}
+	}
+
+	return Verification{status: VerificationUnverified}
+}

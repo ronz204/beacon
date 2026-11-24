@@ -232,3 +232,25 @@ func (a PromiseAttestation) Commit() string {
 func (a PromiseAttestation) Evidence() string {
 	return a.evidence
 }
+
+type VerificationStatus string
+
+const (
+	VerificationHolds      VerificationStatus = "holds"
+	VerificationAttested   VerificationStatus = "attested"
+	VerificationUnverified VerificationStatus = "unverified"
+	VerificationViolated   VerificationStatus = "violated"
+)
+
+type Verification struct {
+	status     VerificationStatus
+	notRunHere bool
+}
+
+func (v Verification) Status() VerificationStatus {
+	return v.status
+}
+
+func (v Verification) NotRunHere() bool {
+	return v.notRunHere
+}
