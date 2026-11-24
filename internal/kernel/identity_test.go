@@ -55,6 +55,27 @@ func TestParseRecordIDRejectsInvalid(t *testing.T) {
 	}
 }
 
+func TestRecordIDRoot(t *testing.T) {
+	cases := map[string]string{
+		"bc-91cd":     "bc-91cd",
+		"bc-91cd.1":   "bc-91cd",
+		"bc-91cd.1.2": "bc-91cd",
+	}
+
+	for raw, want := range cases {
+		t.Run(raw, func(t *testing.T) {
+			id, err := kernel.ParseRecordID(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if id.Root().String() != want {
+				t.Fatalf("root = %q, want %q", id.Root(), want)
+			}
+		})
+	}
+}
+
 func TestRecordIDParent(t *testing.T) {
 	cases := []struct {
 		raw    string
