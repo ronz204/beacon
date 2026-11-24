@@ -77,7 +77,7 @@ Beacon **no trae un navegador**: usa los que el proyecto ya tenga a través de e
 
 ## Deriva
 
-Una promesa en `Holds` o `Attested` cuyo código (`paths`) cambió desde su última comprobación se muestra como **deriva**: no deja de cumplirse, pero ya no está demostrada. Se resuelve volviendo a comprobar o a atestiguar. Sin `paths` no hay detección de deriva (`ledger`, `spider`).
+Una promesa en `Holds` o `Attested` cuyo código (`paths`) cambió desde su última comprobación, incluidos los cambios sin commitear, se muestra como **deriva**: no deja de cumplirse, pero ya no está demostrada. Se resuelve volviendo a comprobar o a atestiguar. Sin `paths` no hay detección de deriva (`ledger`, `spider`).
 
 ## Dónde viven los resultados
 

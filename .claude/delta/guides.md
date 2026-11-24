@@ -42,14 +42,14 @@ El contexto debe ser poco y preciso (`survey`, E1 y E2).
 - El trabajo en curso.
 - Un índice de una línea por guide.
 
-**Bajo demanda:** todo lo demás aparece cuando `context <paths>` coincide con el `applies` de una guide. Solo las guides con `always: true` entran al `brief` completas.
+**Bajo demanda:** todo lo demás aparece cuando `context <paths>` coincide con el `applies` de una guide. Una guide con `always: true` aparece en `context` para cualquier archivo, pero en el `brief` solo tiene su línea del índice, como las demás: su cuerpo completo se lee con `beacon get`. Así el tope del `brief` no depende del largo de una guide.
 
 ## Frescura
 
 Una guide se marca como posiblemente desactualizada cuando:
 
 - pasó su plazo (`reviewed` más `review`), o
-- el código bajo su `applies` cambió mucho desde la última revisión (se calcula con git).
+- el código bajo su `applies` recibió **10 o más commits** desde la última revisión (se calcula con git). Para una decisión cuenta su `where`. El umbral es un valor inicial que se ajusta con la medición de fricción.
 
 La segunda señal es determinista y sin modelo. Aparece en `beacon stale` y en el `brief` (`spider`).
 

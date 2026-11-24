@@ -38,7 +38,8 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Paths | Pista gruesa y opcional, pueden solaparse | `ledger` |
 | Guides | Metadatos livianos de una palabra; el `brief` es mínimo, el resto bajo demanda | `guides` |
 | Tope del `brief` | `limits.brief` líneas; se recorta por prioridad fija y con aviso | `spider` |
-| Frescura | `review` (duración) y `reviewed` (fecha); plazos por tipo de 6 y 12 meses, valores iniciales | `guides` |
+| Frescura | `review` (duración) y `reviewed` (fecha); plazos por tipo de 6 y 12 meses, valores iniciales; también se marca con 10 o más commits sobre sus paths desde la revisión | `guides` |
+| Deriva | Compara el commit del último check con el árbol de trabajo, así que incluye cambios sin commitear | `spider`, `pledge` |
 | Spider | Estructura activa con señales; el grafo vive en el contexto `thread` | `spider`, `design` |
 | Frontera de `diff` | Spider detecta qué cambió y Engine lo clasifica por nivel | `spider`, `deltas`, `engine` |
 | Checks | Ejecutores en `config.yaml` más parámetros; sin shell | `pledge` |

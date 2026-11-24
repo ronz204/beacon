@@ -142,7 +142,7 @@ La deriva y la frescura (`spider`) dependen de git. Medición del 2026-11-22 en 
 
 | Consulta | Tiempo |
 |---|---|
-| `git diff --name-only <base>..HEAD` (una por commit base distinto) | de 5 a 16 ms |
+| `git diff --name-only <base>` (una por commit base distinto; hoy compara con el árbol de trabajo) | de 5 a 16 ms |
 | `git log --since=<fecha> --name-only` | 10 ms (7 días), 27 ms (30 días), 60 ms (toda la historia, 2.000 commits) |
 | `git status --porcelain` | 8 ms |
 | Una consulta por capability (`git log -1 -- <path>`), 500 capabilities | 1.147 ms |
