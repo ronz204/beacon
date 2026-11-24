@@ -15,6 +15,10 @@ const (
 	RecordDocumentExtra      RecordCode = "record_document_extra"
 	RecordRootInvalid        RecordCode = "record_root_invalid"
 	RecordFrontmatterMissing RecordCode = "record_frontmatter_missing"
+	RecordFieldMissing       RecordCode = "record_field_missing"
+	RecordFieldType          RecordCode = "record_field_type"
+	RecordFileMismatch       RecordCode = "record_file_mismatch"
+	RecordFileExtension      RecordCode = "record_file_extension"
 )
 
 type RecordError = kernel.Error[RecordCode]
@@ -30,6 +34,10 @@ var recordErrors = kernel.ErrorCatalog[RecordCode]{
 	RecordDocumentExtra:      "keep a single YAML document in the file",
 	RecordRootInvalid:        "the record must be a YAML mapping",
 	RecordFrontmatterMissing: "start the guide with a --- frontmatter block",
+	RecordFieldMissing:       "add the required field",
+	RecordFieldType:          "use the type the schema defines for this field",
+	RecordFileMismatch:       "rename the file to start with the record id",
+	RecordFileExtension:      "use the extension this record folder expects",
 }
 
 func failAt(code RecordCode, file string, line int) RecordError {
