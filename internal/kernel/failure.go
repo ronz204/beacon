@@ -10,6 +10,10 @@ var recordFailures = ErrorCatalog[RecordFailureCode]{
 	RecordFileInvalid: "record file could not be loaded",
 }
 
+func FailHistory(cause error) KernelError {
+	return kernelErrors.Fail(KernelHistoryFailed, nil).WithCause(cause)
+}
+
 func NewRecordFailure(file string, line int, cause error) RecordFailure {
 	details := map[string]any{
 		"file": file,
