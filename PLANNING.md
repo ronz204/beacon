@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. El paso 4 está hecho y el siguiente es el 5.
+> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 y 5 están hechos y el siguiente es el 6.
 
 ## 1. Panorama
 
@@ -79,7 +79,9 @@ beacon/
 │  │  ├─ actor.go                    # 4  · human:<nombre>, agent:<nombre>
 │  │  ├─ date.go                     # 4  · fecha YYYY-MM-DD
 │  │  ├─ glob.go                     # 4  · PathGlob; PathMatcher en 15
-│  │  └─ identity.go                 # 4  · RecordID; IDIssuer en 13
+│  │  ├─ identity.go                 # 4  · RecordID; IDIssuer en 13
+│  │  ├─ text.go                     # 5  · texto obligatorio de registros
+│  │  └─ approval.go                 # 5  · approved: by, at, via
 │  │
 │  ├─ system/                        # I/O compartido, sin lógica de Beacon
 │  │  ├─ git.go                      # 21 · ejecuta git sin shell
@@ -102,12 +104,14 @@ beacon/
 │        │  │  ├─ goal_entity.go     # 5
 │        │  │  ├─ goal_vos.go        # 5
 │        │  │  ├─ goal_errors.go     # 5
-│        │  │  ├─ goal_repository.go # 5
+│        │  │  ├─ goal_policies.go   # 5
+│        │  │  ├─ goal_repository.go # 10
 │        │  │  ├─ capability_entity.go      # 5
 │        │  │  ├─ capability_parts.go       # 5  · Promise
 │        │  │  ├─ capability_vos.go         # 5  · check, estados
 │        │  │  ├─ capability_errors.go      # 5
-│        │  │  ├─ capability_repository.go  # 5
+│        │  │  ├─ capability_policies.go    # 5
+│        │  │  ├─ capability_repository.go  # 10
 │        │  │  ├─ capability_proofs.go      # 17 · contrato ProofReader
 │        │  │  └─ capability_changes.go     # 21 · contrato ChangeReader
 │        │  │
@@ -271,7 +275,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 - **Cuidado:** un id de la forma `bc-91cd.1` debe saber quién es su padre, porque la jerarquía de tareas depende de eso.
 - **Hecho cuando:** cada parser acepta sus ejemplos válidos, rechaza los inválidos y falla con un código estable.
 
-### Paso 5. Contexto `ledger`
+### Paso 5. Contexto `ledger` (hecho)
 
 - **Objetivo:** modelar lo que el proyecto quiere y promete.
 - **Construye:** `Goal` y `Capability`, con `Promise` como parte. Incluye `check` (ejecutor con parámetros o manual), `attested` con `evidence`, `approved`, `nongoals`, `origin` y `refers`.
@@ -316,7 +320,8 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 ### Paso 10. Carga de `.beacon/`
 
 - **Objetivo:** pasar de archivos a entidades.
-- **Construye:** `store.go`, `mapper.go` y `action/load.go`.
+- **Construye:** los contratos de repositorio de cada contexto, `store.go`, `mapper.go` y `action/load.go`.
+- **Cuidado:** `Restore<Entity>` confía en su entrada, así que el mapper llama a `ValidateGoalState` y `ValidateCapabilityState` antes de reconstruir cada registro.
 - **Reglas clave:**
   - Lectura en paralelo, un worker por núcleo.
   - **Un archivo roto no detiene la carga:** se juntan todos los errores.
