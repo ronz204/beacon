@@ -68,6 +68,7 @@ Los worktrees de un mismo repo comparten `.git/beacon/`, y varias sesiones de ag
 - **`beacon fmt`** formatea de forma canónica: orden fijo de claves, un campo por línea, listas de ids y promesas ordenadas por id. Un formato canónico da diffs pequeños y estables.
 - **En línea o en bloque:** `check`, `approved`, `attested` y las listas de ids, globs y etiquetas van en línea. Las listas de texto (`nongoals`, `rejected`, `log`) y `promises` van en bloque, y conservan su orden salvo `promises`. `request` usa un bloque literal cuando tiene saltos de línea, sin alterar su contenido.
 - **Orden de claves:** el de la tabla. Los campos desconocidos van después de los conocidos, en orden alfabético y sin cambios por dentro.
+- **Alcance de `fmt`:** formatea los registros y el frontmatter de las guides, sin tocar su cuerpo ni `config.yaml`. Conserva los comentarios YAML junto a su clave, escribe LF y no toca un archivo inválido. `.beacon/**` lleva `text eol=lf` en `.gitattributes`.
 
 | Tipo | Orden |
 |---|---|
