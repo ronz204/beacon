@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 y 5 están hechos y el siguiente es el 6.
+> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 a 6 están hechos y el siguiente es el 7.
 
 ## 1. Panorama
 
@@ -119,15 +119,18 @@ beacon/
 │        │  │  ├─ decision_entity.go      # 6
 │        │  │  ├─ decision_vos.go         # 6
 │        │  │  ├─ decision_errors.go      # 6
-│        │  │  ├─ decision_repository.go  # 6
+│        │  │  ├─ decision_policies.go    # 6
+│        │  │  ├─ decision_repository.go  # 10
 │        │  │  ├─ question_entity.go      # 6
 │        │  │  ├─ question_vos.go         # 6
 │        │  │  ├─ question_errors.go      # 6
-│        │  │  ├─ question_repository.go  # 6
+│        │  │  ├─ question_policies.go    # 6
+│        │  │  ├─ question_repository.go  # 10
 │        │  │  ├─ guide_entity.go         # 6
 │        │  │  ├─ guide_vos.go            # 6
 │        │  │  ├─ guide_errors.go         # 6
-│        │  │  └─ guide_repository.go     # 6
+│        │  │  ├─ guide_policies.go       # 6
+│        │  │  └─ guide_repository.go     # 10
 │        │  │
 │        │  ├─ agenda/               # lo que el proyecto está haciendo
 │        │  │  ├─ work_entity.go      # 7
@@ -283,7 +286,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 - **Cuidado:** el estado de ciclo (`proposed`, `active`) se guarda, pero el de verificación (`Holds`, `Violated`...) **se calcula** y no vive en la entidad.
 - **Hecho cuando:** ninguna capability inválida se puede construir desde fuera del paquete.
 
-### Paso 6. Contexto `memory`
+### Paso 6. Contexto `memory` (hecho)
 
 - **Objetivo:** modelar lo que el proyecto sabe.
 - **Construye:** `Decision` (con `rejected`, `supersedes`, `review`), `Question` (con `blocks`, `answer`) y `Guide` (con `kind`, `applies`, `always`, `audience`, `status`).
@@ -321,7 +324,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 
 - **Objetivo:** pasar de archivos a entidades.
 - **Construye:** los contratos de repositorio de cada contexto, `store.go`, `mapper.go` y `action/load.go`.
-- **Cuidado:** `Restore<Entity>` confía en su entrada, así que el mapper llama a `ValidateGoalState` y `ValidateCapabilityState` antes de reconstruir cada registro.
+- **Cuidado:** `Restore<Entity>` confía en su entrada, así que el mapper llama al `Validate<Entity>State` de cada tipo antes de reconstruir el registro. El cuerpo Markdown de una guide no entra a la entidad: lo guarda el driver y se lee solo cuando hace falta.
 - **Reglas clave:**
   - Lectura en paralelo, un worker por núcleo.
   - **Un archivo roto no detiene la carga:** se juntan todos los errores.
