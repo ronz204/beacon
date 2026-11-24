@@ -6,23 +6,33 @@ import (
 	"github.com/ronz204/beacon/internal/kernel"
 )
 
+func ActiveBlocks(graph Graph) []GraphEdge {
+	var active []GraphEdge
+
+	for _, edge := range graph.edges {
+		isBlock := edge.Relation == RelationBlocks
+		if isBlock && graph.nodes[edge.Source].Unfinished {
+			active = append(active, edge)
+		}
+	}
+
+	return active
+}
+
 func BlockedSignals(graph Graph) []Signal {
 	var signals []Signal
 
-	for _, edge := range graph.edges {
-		if edge.Relation != RelationBlocks {
+	for _, edge := range ActiveBlocks(graph) {
+		if graph.nodes[edge.Source].Kind != NodeQuestion {
 			continue
 		}
 
-		source := graph.nodes[edge.Source]
-		if source.Kind == NodeQuestion && source.Unfinished {
-			signals = append(signals, Signal{
-				Kind:     SignalBlocked,
-				Subject:  edge.Target,
-				Related:  edge.Source,
-				Relation: edge.Relation,
-			})
-		}
+		signals = append(signals, Signal{
+			Kind:     SignalBlocked,
+			Subject:  edge.Target,
+			Related:  edge.Source,
+			Relation: edge.Relation,
+		})
 	}
 
 	return signals
