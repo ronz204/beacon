@@ -8,6 +8,7 @@ import (
 
 	"github.com/ronz204/beacon/internal/spider/internal/action"
 	"github.com/ronz204/beacon/internal/spider/internal/domain/agenda"
+	"github.com/ronz204/beacon/internal/spider/internal/driver/double"
 )
 
 const (
@@ -53,6 +54,7 @@ func readyOf(
 	result, failures := action.Ready(
 		context.Background(),
 		repositories(root),
+		double.NewClaims(),
 		parsed,
 	)
 	if len(failures) != 0 {
