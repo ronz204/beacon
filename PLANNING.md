@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 a 9 están hechos y el siguiente es el 10.
+> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 a 10 están hechos y el siguiente es el 11.
 
 ## 1. Panorama
 
@@ -82,7 +82,8 @@ beacon/
 │  │  ├─ identity.go                 # 4  · RecordID; IDIssuer en 13
 │  │  ├─ text.go                     # 5  · texto obligatorio de registros
 │  │  ├─ approval.go                 # 5  · approved: by, at, via
-│  │  └─ presence.go                 # 7  · IsMissing para campos opcionales
+│  │  ├─ presence.go                 # 7  · IsMissing para campos opcionales
+│  │  └─ failure.go                  # 10 · fallo de un archivo con su línea
 │  │
 │  ├─ system/                        # I/O compartido, sin lógica de Beacon
 │  │  ├─ git.go                      # 21 · ejecuta git sin shell
@@ -326,7 +327,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 - **Depende de:** D1.
 - **Hecho cuando:** los fixtures `invalid/` de estructura YAML fallan con el error y la línea esperados. Los de esquema y dominio se cubren en el paso 10, porque necesitan el mapper.
 
-### Paso 10. Carga de `.beacon/`
+### Paso 10. Carga de `.beacon/` (hecho)
 
 - **Objetivo:** pasar de archivos a entidades.
 - **Construye:** los contratos de repositorio de cada contexto, `store.go`, `mapper.go` y `action/load.go`.
@@ -336,7 +337,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
   - **Un archivo roto no detiene la carga:** se juntan todos los errores.
   - Los campos desconocidos se quedan en el driver y se reescriben sin cambios.
   - El nombre del archivo debe coincidir con el `id` del registro.
-- **Hecho cuando:** un `.beacon/` de ejemplo carga los 7 tipos, un directorio con varios errores los reporta todos y los fixtures `invalid/` restantes fallan con su error.
+- **Hecho cuando:** un `.beacon/` de ejemplo carga los 7 tipos, un directorio con varios errores los reporta todos y los fixtures `invalid/` restantes fallan con su error, salvo los dos de `config/`, que son del paso 11.
 
 ### Paso 11. `config.yaml`
 
