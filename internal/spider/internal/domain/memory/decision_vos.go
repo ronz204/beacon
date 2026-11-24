@@ -15,9 +15,9 @@ type DecisionID struct {
 }
 
 func ParseDecisionID(raw string) (DecisionID, error) {
-	id, isRoot := parseRootRecordID(raw)
+	id, err := kernel.ParseRootRecordID(raw)
 
-	if !isRoot {
+	if err != nil {
 		return DecisionID{}, invalidDecision(DecisionIDInvalid, raw)
 	}
 
@@ -68,15 +68,4 @@ func ParseReviewSpan(raw string) (ReviewSpan, error) {
 
 func (s ReviewSpan) String() string {
 	return s.value
-}
-
-func parseRootRecordID(raw string) (kernel.RecordID, bool) {
-	id, err := kernel.ParseRecordID(raw)
-	if err != nil {
-		return kernel.RecordID{}, false
-	}
-
-	_, hasParent := id.Parent()
-
-	return id, !hasParent
 }

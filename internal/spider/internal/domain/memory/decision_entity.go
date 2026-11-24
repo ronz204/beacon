@@ -38,7 +38,7 @@ type Decision struct {
 }
 
 func NewDecision(input DecisionInput, now time.Time) (Decision, error) {
-	created, err := calendarDateOf(now)
+	created, err := kernel.CalendarDateOf(now)
 	if err != nil {
 		return Decision{}, err
 	}
@@ -98,7 +98,7 @@ func (d Decision) Where() []kernel.PathGlob {
 }
 
 func (d Decision) Supersedes() (DecisionID, bool) {
-	return d.state.Supersedes, !isMissing(d.state.Supersedes)
+	return d.state.Supersedes, !kernel.IsMissing(d.state.Supersedes)
 }
 
 func (d Decision) Rejected() []kernel.RecordText {
@@ -110,17 +110,13 @@ func (d Decision) Status() DecisionStatus {
 }
 
 func (d Decision) Review() (ReviewSpan, bool) {
-	return d.state.Review, !isMissing(d.state.Review)
+	return d.state.Review, !kernel.IsMissing(d.state.Review)
 }
 
 func (d Decision) Reviewed() (kernel.CalendarDate, bool) {
-	return d.state.Reviewed, !isMissing(d.state.Reviewed)
+	return d.state.Reviewed, !kernel.IsMissing(d.state.Reviewed)
 }
 
 func (d Decision) Approved() (kernel.Approval, bool) {
-	return d.state.Approved, !isMissing(d.state.Approved)
-}
-
-func calendarDateOf(now time.Time) (kernel.CalendarDate, error) {
-	return kernel.ParseCalendarDate(now.Format(time.DateOnly))
+	return d.state.Approved, !kernel.IsMissing(d.state.Approved)
 }

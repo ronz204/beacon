@@ -23,6 +23,19 @@ func ParseRecordID(raw string) (RecordID, error) {
 	return RecordID{value: value}, nil
 }
 
+func ParseRootRecordID(raw string) (RecordID, error) {
+	id, err := ParseRecordID(raw)
+	if err != nil {
+		return RecordID{}, err
+	}
+
+	if _, hasParent := id.Parent(); hasParent {
+		return RecordID{}, invalidValue(KernelRecordIDInvalid, raw)
+	}
+
+	return id, nil
+}
+
 func (id RecordID) String() string {
 	return id.value
 }

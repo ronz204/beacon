@@ -1,5 +1,7 @@
 package ledger
 
+import "github.com/ronz204/beacon/internal/kernel"
+
 func ValidateCapabilityState(state CapabilityState) error {
 	field := missingCapabilityField(state)
 	if field != "" {
@@ -27,15 +29,15 @@ func ValidateCapabilityState(state CapabilityState) error {
 
 func missingCapabilityField(state CapabilityState) string {
 	switch {
-	case isMissing(state.ID):
+	case kernel.IsMissing(state.ID):
 		return "id"
-	case isMissing(state.Created):
+	case kernel.IsMissing(state.Created):
 		return "created"
-	case isMissing(state.Author):
+	case kernel.IsMissing(state.Author):
 		return "author"
-	case isMissing(state.Name):
+	case kernel.IsMissing(state.Name):
 		return "name"
-	case isMissing(state.Intent):
+	case kernel.IsMissing(state.Intent):
 		return "intent"
 	}
 
@@ -49,7 +51,7 @@ func validatePromiseState(state PromiseState) error {
 		return capabilityErrors.Fail(PromiseFieldMissing, details)
 	}
 
-	if !isMissing(state.Attested) && !state.Check.IsManual() {
+	if !kernel.IsMissing(state.Attested) && !state.Check.IsManual() {
 		return invalidCapabilityValue(
 			PromiseAttestManual,
 			state.ID.String(),
@@ -61,13 +63,13 @@ func validatePromiseState(state PromiseState) error {
 
 func missingPromiseField(state PromiseState) string {
 	switch {
-	case isMissing(state.ID):
+	case kernel.IsMissing(state.ID):
 		return "id"
-	case isMissing(state.Text):
+	case kernel.IsMissing(state.Text):
 		return "text"
 	case state.Check.IsZero():
 		return "check"
-	case isMissing(state.Status):
+	case kernel.IsMissing(state.Status):
 		return "status"
 	}
 

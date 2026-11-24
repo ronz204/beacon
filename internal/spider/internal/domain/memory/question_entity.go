@@ -32,7 +32,7 @@ type Question struct {
 }
 
 func NewQuestion(input QuestionInput, now time.Time) (Question, error) {
-	created, err := calendarDateOf(now)
+	created, err := kernel.CalendarDateOf(now)
 	if err != nil {
 		return Question{}, err
 	}
@@ -87,13 +87,13 @@ func (q Question) Status() QuestionStatus {
 }
 
 func (q Question) Answer() (kernel.RecordText, bool) {
-	return q.state.Answer, !isMissing(q.state.Answer)
+	return q.state.Answer, !kernel.IsMissing(q.state.Answer)
 }
 
 func (q Question) Origin() (QuestionOriginID, bool) {
-	return q.state.Origin, !isMissing(q.state.Origin)
+	return q.state.Origin, !kernel.IsMissing(q.state.Origin)
 }
 
 func (q Question) Approved() (kernel.Approval, bool) {
-	return q.state.Approved, !isMissing(q.state.Approved)
+	return q.state.Approved, !kernel.IsMissing(q.state.Approved)
 }

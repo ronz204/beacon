@@ -19,6 +19,10 @@ func ParseCalendarDate(raw string) (CalendarDate, error) {
 	return CalendarDate{value: value}, nil
 }
 
+func CalendarDateOf(moment time.Time) (CalendarDate, error) {
+	return ParseCalendarDate(moment.Format(time.DateOnly))
+}
+
 func (d CalendarDate) String() string {
 	return d.value
 }

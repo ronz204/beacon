@@ -12,9 +12,9 @@ type GoalID struct {
 }
 
 func ParseGoalID(raw string) (GoalID, error) {
-	id, isRoot := parseRootRecordID(raw)
+	id, err := kernel.ParseRootRecordID(raw)
 
-	if !isRoot {
+	if err != nil {
 		return GoalID{}, invalidGoalValue(GoalIDInvalid, raw)
 	}
 
@@ -49,15 +49,4 @@ func ParseGoalStatus(raw string) (GoalStatus, error) {
 	}
 
 	return status, nil
-}
-
-func parseRootRecordID(raw string) (kernel.RecordID, bool) {
-	id, err := kernel.ParseRecordID(raw)
-	if err != nil {
-		return kernel.RecordID{}, false
-	}
-
-	_, hasParent := id.Parent()
-
-	return id, !hasParent
 }

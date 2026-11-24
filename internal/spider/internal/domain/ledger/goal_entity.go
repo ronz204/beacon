@@ -31,7 +31,7 @@ type Goal struct {
 }
 
 func NewGoal(input GoalInput, now time.Time) (Goal, error) {
-	created, err := calendarDateOf(now)
+	created, err := kernel.CalendarDateOf(now)
 	if err != nil {
 		return Goal{}, err
 	}
@@ -90,9 +90,5 @@ func (g Goal) Status() GoalStatus {
 }
 
 func (g Goal) Approved() (kernel.Approval, bool) {
-	return g.state.Approved, !isMissing(g.state.Approved)
-}
-
-func calendarDateOf(now time.Time) (kernel.CalendarDate, error) {
-	return kernel.ParseCalendarDate(now.Format(time.DateOnly))
+	return g.state.Approved, !kernel.IsMissing(g.state.Approved)
 }

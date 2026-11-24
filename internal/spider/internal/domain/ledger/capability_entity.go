@@ -38,7 +38,7 @@ func NewCapability(
 	input CapabilityInput,
 	now time.Time,
 ) (Capability, error) {
-	created, err := calendarDateOf(now)
+	created, err := kernel.CalendarDateOf(now)
 	if err != nil {
 		return Capability{}, err
 	}
@@ -111,7 +111,7 @@ func (c Capability) Paths() []kernel.PathGlob {
 }
 
 func (c Capability) Serves() (GoalID, bool) {
-	return c.state.Serves, !isMissing(c.state.Serves)
+	return c.state.Serves, !kernel.IsMissing(c.state.Serves)
 }
 
 func (c Capability) Nongoals() []kernel.RecordText {
@@ -129,7 +129,7 @@ func (c Capability) Promises() []Promise {
 }
 
 func (c Capability) Approved() (kernel.Approval, bool) {
-	return c.state.Approved, !isMissing(c.state.Approved)
+	return c.state.Approved, !kernel.IsMissing(c.state.Approved)
 }
 
 func cloneCapabilityState(state CapabilityState) CapabilityState {

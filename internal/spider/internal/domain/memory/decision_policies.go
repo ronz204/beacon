@@ -1,5 +1,7 @@
 package memory
 
+import "github.com/ronz204/beacon/internal/kernel"
+
 func ValidateDecisionState(state DecisionState) error {
 	field := missingDecisionField(state)
 
@@ -13,24 +15,19 @@ func ValidateDecisionState(state DecisionState) error {
 
 func missingDecisionField(state DecisionState) string {
 	switch {
-	case isMissing(state.ID):
+	case kernel.IsMissing(state.ID):
 		return "id"
-	case isMissing(state.Created):
+	case kernel.IsMissing(state.Created):
 		return "created"
-	case isMissing(state.Author):
+	case kernel.IsMissing(state.Author):
 		return "author"
-	case isMissing(state.What):
+	case kernel.IsMissing(state.What):
 		return "what"
-	case isMissing(state.Why):
+	case kernel.IsMissing(state.Why):
 		return "why"
-	case isMissing(state.Status):
+	case kernel.IsMissing(state.Status):
 		return "status"
 	}
 
 	return ""
-}
-
-func isMissing[T comparable](value T) bool {
-	var zero T
-	return value == zero
 }

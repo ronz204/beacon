@@ -1,5 +1,7 @@
 package memory
 
+import "github.com/ronz204/beacon/internal/kernel"
+
 func ValidateGuideState(state GuideState) error {
 	field := missingGuideField(state)
 
@@ -13,11 +15,11 @@ func ValidateGuideState(state GuideState) error {
 
 func missingGuideField(state GuideState) string {
 	switch {
-	case isMissing(state.ID):
+	case kernel.IsMissing(state.ID):
 		return "id"
-	case isMissing(state.Title):
+	case kernel.IsMissing(state.Title):
 		return "title"
-	case isMissing(state.Kind):
+	case kernel.IsMissing(state.Kind):
 		return "kind"
 	}
 

@@ -1,5 +1,7 @@
 package memory
 
+import "github.com/ronz204/beacon/internal/kernel"
+
 func ValidateQuestionState(state QuestionState) error {
 	field := missingQuestionField(state)
 	if field != "" {
@@ -7,7 +9,7 @@ func ValidateQuestionState(state QuestionState) error {
 		return questionErrors.Fail(QuestionFieldMissing, details)
 	}
 
-	if state.Status == QuestionAnswered && isMissing(state.Answer) {
+	if state.Status == QuestionAnswered && kernel.IsMissing(state.Answer) {
 		return invalidQuestion(QuestionAnswerMissing, state.ID.String())
 	}
 
@@ -16,15 +18,15 @@ func ValidateQuestionState(state QuestionState) error {
 
 func missingQuestionField(state QuestionState) string {
 	switch {
-	case isMissing(state.ID):
+	case kernel.IsMissing(state.ID):
 		return "id"
-	case isMissing(state.Created):
+	case kernel.IsMissing(state.Created):
 		return "created"
-	case isMissing(state.Author):
+	case kernel.IsMissing(state.Author):
 		return "author"
-	case isMissing(state.Text):
+	case kernel.IsMissing(state.Text):
 		return "text"
-	case isMissing(state.Status):
+	case kernel.IsMissing(state.Status):
 		return "status"
 	}
 

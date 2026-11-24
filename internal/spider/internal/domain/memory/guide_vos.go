@@ -13,9 +13,9 @@ type GuideID struct {
 }
 
 func ParseGuideID(raw string) (GuideID, error) {
-	id, isRoot := parseRootRecordID(raw)
+	id, err := kernel.ParseRootRecordID(raw)
 
-	if !isRoot {
+	if err != nil {
 		return GuideID{}, invalidGuide(GuideIDInvalid, raw)
 	}
 
@@ -31,9 +31,9 @@ type GuideCapabilityID struct {
 }
 
 func ParseGuideCapabilityID(raw string) (GuideCapabilityID, error) {
-	id, isRoot := parseRootRecordID(raw)
+	id, err := kernel.ParseRootRecordID(raw)
 
-	if !isRoot {
+	if err != nil {
 		return GuideCapabilityID{}, invalidGuide(GuideReferInvalid, raw)
 	}
 

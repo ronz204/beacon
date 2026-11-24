@@ -50,15 +50,15 @@ func (p Promise) Status() PromiseStatus {
 }
 
 func (p Promise) Approved() (kernel.Approval, bool) {
-	return p.state.Approved, !isMissing(p.state.Approved)
+	return p.state.Approved, !kernel.IsMissing(p.state.Approved)
 }
 
 func (p Promise) Attested() (PromiseAttestation, bool) {
-	return p.state.Attested, !isMissing(p.state.Attested)
+	return p.state.Attested, !kernel.IsMissing(p.state.Attested)
 }
 
 func (p Promise) Origin() (OriginWorkID, bool) {
-	return p.state.Origin, !isMissing(p.state.Origin)
+	return p.state.Origin, !kernel.IsMissing(p.state.Origin)
 }
 
 func (p Promise) Refers() []PromiseID {

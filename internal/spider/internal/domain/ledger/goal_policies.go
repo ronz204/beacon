@@ -1,5 +1,7 @@
 package ledger
 
+import "github.com/ronz204/beacon/internal/kernel"
+
 func ValidateGoalState(state GoalState) error {
 	field := missingGoalField(state)
 
@@ -13,24 +15,19 @@ func ValidateGoalState(state GoalState) error {
 
 func missingGoalField(state GoalState) string {
 	switch {
-	case isMissing(state.ID):
+	case kernel.IsMissing(state.ID):
 		return "id"
-	case isMissing(state.Created):
+	case kernel.IsMissing(state.Created):
 		return "created"
-	case isMissing(state.Author):
+	case kernel.IsMissing(state.Author):
 		return "author"
-	case isMissing(state.Statement):
+	case kernel.IsMissing(state.Statement):
 		return "statement"
-	case isMissing(state.Success):
+	case kernel.IsMissing(state.Success):
 		return "success"
-	case isMissing(state.Status):
+	case kernel.IsMissing(state.Status):
 		return "status"
 	}
 
 	return ""
-}
-
-func isMissing[T comparable](value T) bool {
-	var zero T
-	return value == zero
 }

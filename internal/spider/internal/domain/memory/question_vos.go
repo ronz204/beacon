@@ -12,9 +12,9 @@ type QuestionID struct {
 }
 
 func ParseQuestionID(raw string) (QuestionID, error) {
-	id, isRoot := parseRootRecordID(raw)
+	id, err := kernel.ParseRootRecordID(raw)
 
-	if !isRoot {
+	if err != nil {
 		return QuestionID{}, invalidQuestion(QuestionIDInvalid, raw)
 	}
 
@@ -48,9 +48,9 @@ type QuestionOriginID struct {
 }
 
 func ParseQuestionOriginID(raw string) (QuestionOriginID, error) {
-	id, isRoot := parseRootRecordID(raw)
+	id, err := kernel.ParseRootRecordID(raw)
 
-	if !isRoot {
+	if err != nil {
 		return QuestionOriginID{}, invalidQuestion(QuestionOriginInvalid, raw)
 	}
 

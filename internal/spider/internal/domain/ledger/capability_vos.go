@@ -17,9 +17,9 @@ type CapabilityID struct {
 }
 
 func ParseCapabilityID(raw string) (CapabilityID, error) {
-	id, isRoot := parseRootRecordID(raw)
+	id, err := kernel.ParseRootRecordID(raw)
 
-	if !isRoot {
+	if err != nil {
 		return CapabilityID{}, invalidCapabilityValue(CapabilityIDInvalid, raw)
 	}
 
@@ -35,9 +35,9 @@ type PromiseID struct {
 }
 
 func ParsePromiseID(raw string) (PromiseID, error) {
-	id, isRoot := parseRootRecordID(raw)
+	id, err := kernel.ParseRootRecordID(raw)
 
-	if !isRoot {
+	if err != nil {
 		return PromiseID{}, invalidCapabilityValue(PromiseIDInvalid, raw)
 	}
 
@@ -53,9 +53,9 @@ type OriginWorkID struct {
 }
 
 func ParseOriginWorkID(raw string) (OriginWorkID, error) {
-	id, isRoot := parseRootRecordID(raw)
+	id, err := kernel.ParseRootRecordID(raw)
 
-	if !isRoot {
+	if err != nil {
 		return OriginWorkID{}, invalidCapabilityValue(PromiseOriginInvalid, raw)
 	}
 

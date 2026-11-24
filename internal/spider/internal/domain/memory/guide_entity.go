@@ -65,11 +65,11 @@ func (g Guide) Always() bool {
 }
 
 func (g Guide) Review() (ReviewSpan, bool) {
-	return g.state.Review, !isMissing(g.state.Review)
+	return g.state.Review, !kernel.IsMissing(g.state.Review)
 }
 
 func (g Guide) Reviewed() (kernel.CalendarDate, bool) {
-	return g.state.Reviewed, !isMissing(g.state.Reviewed)
+	return g.state.Reviewed, !kernel.IsMissing(g.state.Reviewed)
 }
 
 func (g Guide) Tags() []GuideTag {
@@ -77,11 +77,11 @@ func (g Guide) Tags() []GuideTag {
 }
 
 func (g Guide) Audience() (GuideAudience, bool) {
-	return g.state.Audience, !isMissing(g.state.Audience)
+	return g.state.Audience, !kernel.IsMissing(g.state.Audience)
 }
 
 func (g Guide) Status() (GuideStatus, bool) {
-	return g.state.Status, !isMissing(g.state.Status)
+	return g.state.Status, !kernel.IsMissing(g.state.Status)
 }
 
 func (g Guide) Refers() []GuideCapabilityID {
