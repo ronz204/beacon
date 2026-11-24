@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/ronz204/beacon/internal/kernel"
+	"github.com/ronz204/beacon/internal/spider/internal/domain/agenda"
 	"github.com/ronz204/beacon/internal/spider/internal/domain/ledger"
 	"github.com/ronz204/beacon/internal/spider/internal/domain/memory"
 )
@@ -56,4 +57,74 @@ func (h History) GuideChangeDays(
 	context.Context,
 ) (map[memory.GuideID]kernel.CalendarDate, error) {
 	return maps.Clone(h.Guides), nil
+}
+
+type Claims struct {
+	items []agenda.TaskClaim
+}
+
+type Workspace struct {
+	Branches  []agenda.TaskBranch
+	Worktrees []string
+}
+
+type Injections map[string]map[string]bool
+
+func NewClaims(items ...agenda.TaskClaim) *Claims {
+	return &Claims{items: slices.Clone(items)}
+}
+
+func (c *Claims) ListClaims(context.Context) ([]agenda.TaskClaim, error) {
+	return slices.Clone(c.items), nil
+}
+
+func (c *Claims) SaveClaim(_ context.Context, claim agenda.TaskClaim) error {
+	c.items = slices.DeleteFunc(c.items, func(item agenda.TaskClaim) bool {
+		return item.Task == claim.Task
+	})
+	c.items = append(c.items, claim)
+
+	return nil
+}
+
+func (c *Claims) RemoveClaims(
+	_ context.Context,
+	tasks []agenda.TaskID,
+) error {
+	c.items = slices.DeleteFunc(c.items, func(item agenda.TaskClaim) bool {
+		return slices.Contains(tasks, item.Task)
+	})
+
+	return nil
+}
+
+func (w Workspace) ListBranches(context.Context) ([]agenda.TaskBranch, error) {
+	return slices.Clone(w.Branches), nil
+}
+
+func (w Workspace) ListWorktrees(context.Context) ([]string, error) {
+	return slices.Clone(w.Worktrees), nil
+}
+
+func (i Injections) InjectedKeys(
+	_ context.Context,
+	session kernel.SessionID,
+) (map[string]bool, error) {
+	return maps.Clone(i[session.String()]), nil
+}
+
+func (i Injections) RecordInjected(
+	_ context.Context,
+	session kernel.SessionID,
+	keys []string,
+) error {
+	if i[session.String()] == nil {
+		i[session.String()] = make(map[string]bool)
+	}
+
+	for _, key := range keys {
+		i[session.String()][key] = true
+	}
+
+	return nil
 }

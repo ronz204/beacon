@@ -11,6 +11,7 @@ import (
 	"unicode"
 
 	"github.com/ronz204/beacon/internal/kernel"
+	"github.com/ronz204/beacon/internal/spider/internal/domain/agenda"
 	"github.com/ronz204/beacon/internal/spider/internal/domain/memory"
 	"github.com/ronz204/beacon/internal/system"
 )
@@ -121,6 +122,43 @@ func (r Repository) GuideChangeDays(
 	}
 
 	return days, nil
+}
+
+func (r Repository) ListBranches(
+	ctx context.Context,
+) ([]agenda.TaskBranch, error) {
+	output, err := r.git(
+		ctx,
+		"for-each-ref", "--format=%(refname:short)", "refs/heads",
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var branches []agenda.TaskBranch
+	for _, line := range lines(output) {
+		if branch, err := agenda.ParseTaskBranch(line); err == nil {
+			branches = append(branches, branch)
+		}
+	}
+
+	return branches, nil
+}
+
+func (r Repository) ListWorktrees(ctx context.Context) ([]string, error) {
+	output, err := r.git(ctx, "worktree", "list", "--porcelain")
+	if err != nil {
+		return nil, err
+	}
+
+	var worktrees []string
+	for _, line := range lines(output) {
+		if path, found := strings.CutPrefix(line, "worktree "); found {
+			worktrees = append(worktrees, filepath.Clean(path))
+		}
+	}
+
+	return worktrees, nil
 }
 
 func (r Repository) StateChanges(
