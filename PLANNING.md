@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: Fase 1 cerrada el 2026-11-23.** `beacon fmt` y `beacon doctor` funcionan sobre un `.beacon/` real. Las decisiones D1 a D4 están registradas en la KB. Los pasos 17 a 20 del Bloque 3 están hechos y el siguiente es el 21.
+> **Estado: Fase 1 cerrada el 2026-11-23.** `beacon fmt` y `beacon doctor` funcionan sobre un `.beacon/` real. Las decisiones D1 a D4 están registradas en la KB. Los pasos 17 a 21 del Bloque 3 están hechos y el siguiente es el 22.
 
 ## 1. Panorama
 
@@ -454,10 +454,10 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
   5. Índice de guides.
 - **Hecho cuando:** con exceso de contenido nunca se pierde lo crítico y aparece `N more, run beacon status`.
 - **Cómo quedó:** la meta y sus `nongoals` entran siempre, aunque superen el tope. El resto se ordena por la prioridad fija y se corta desde el final, reservando una línea para el aviso. Las promesas sin resultado se resumen en una sola línea.
-- **Abierto:** `guides.md` dice que las guides `always` entran completas al `brief`, pero `spider.md` solo pide un índice. Por ahora hay solo índice, porque el cuerpo de una guide no se carga en la entidad.
+- **Decidido (2026-11-24):** las guides `always` solo tienen su línea del índice en el `brief`; su cuerpo se lee bajo demanda. `guides.md` quedó alineado.
 - **Pendiente:** el aviso nombra `beacon status`, que todavía no existe (Engine). Hasta entonces ese mensaje no cumple P7.
 
-### Paso 21. Git: `drift`, `stale` y `diff`
+### Paso 21. Git: `drift`, `stale` y `diff` (hecho)
 
 - **Objetivo:** cruzar el estado con la historia del código.
 - **Construye:** `system/git.go`, `driver/commit`, y `action/drift.go`, `stale.go` y `diff.go`.
@@ -467,6 +467,9 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
   - `git` se ejecuta sin shell.
 - **Depende de:** D4.
 - **Hecho cuando:** los tests corren sobre repos temporales reales y 500 capabilities quedan cerca de los 150 a 200 ms de `layout`.
+- **Decidido (2026-11-24):** una guide o decisión está desactualizada si pasó su plazo o si recibió 10 o más commits sobre sus paths desde la última revisión. La deriva cuenta los cambios sin commitear.
+- **Cómo quedó:** `action.Analyze` junta carga, grafo, verificación, deriva y frescura, y lo usan `context` y `brief`. `driver/commit` hace las consultas a git en lote, con `core.quotepath=off` para nombres no ASCII, y valida commits y revisiones antes de pasarlos a git. `StateChanges` entrega los registros y capturas base que cambiaron desde una revisión, con su contenido antes y después, sin clasificar.
+- **Pendiente:** leer los globs `baseline` de `runners` en `config.yaml` y medir los 500 casos con git real; ambos se hacen al conectar `diff` y `stale` al CLI en Engine.
 
 ### Paso 22. Estado local
 
