@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: Fase 1 cerrada el 2026-11-23.** `beacon fmt` y `beacon doctor` funcionan sobre un `.beacon/` real. Las decisiones D1 a D4 están registradas en la KB. Los pasos 17 y 18 del Bloque 3 están hechos y el siguiente es el 19.
+> **Estado: Fase 1 cerrada el 2026-11-23.** `beacon fmt` y `beacon doctor` funcionan sobre un `.beacon/` real. Las decisiones D1 a D4 están registradas en la KB. Los pasos 17 a 20 del Bloque 3 están hechos y el siguiente es el 21.
 
 ## 1. Panorama
 
@@ -436,13 +436,14 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
 - **Hecho cuando:** un archivo sin dueño recibe solo la meta y las guides `always`.
 - **Cómo quedó:** `context` devuelve las metas activas, las capabilities cuyos `paths` coinciden (con el estado de cada promesa), las decisiones activas con `where` coincidente, las guides `always`, con `applies` coincidente o que refieren a una capability tocada, las preguntas abiertas conectadas con lo tocado o con el trabajo que lo implementa, y las señales de todo eso. Las fallas del grafo no detienen `context`: las reporta `doctor`.
 
-### Paso 19. `ready`
+### Paso 19. `ready` (hecho)
 
 - **Objetivo:** saber qué trabajo se puede tomar.
 - **Regla clave:** recorre `blocks` y `parent`; al cerrar un bloqueo, los dependientes quedan disponibles. El bloqueo se hereda a las subtareas, y una tarea con subtareas abiertas no aparece porque se trabaja en las hojas (`ledger`). Recibe la rama como parámetro.
 - **Hecho cuando:** una pregunta abierta saca su trabajo de `ready`, y responderla lo devuelve.
+- **Cómo quedó:** un work está listo si está `active` y nada abierto lo bloquea. Una task está lista si está `open`, o `claimed` en la misma rama que se consulta; si su work está listo; si no tiene subtareas abiertas; y si ni ella ni sus tareas padre están bloqueadas por una pregunta abierta o una tarea sin terminar. Los claims locales de `.git/beacon/` se suman en el paso 22.
 
-### Paso 20. `brief`
+### Paso 20. `brief` (hecho)
 
 - **Objetivo:** el resumen que recibe el agente al empezar.
 - **Regla clave:** tope de `limits.brief` líneas. La meta activa siempre entra, y el resto se recorta en este orden fijo:
@@ -452,6 +453,9 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
   4. Deriva y promesas sin comprobar aquí.
   5. Índice de guides.
 - **Hecho cuando:** con exceso de contenido nunca se pierde lo crítico y aparece `N more, run beacon status`.
+- **Cómo quedó:** la meta y sus `nongoals` entran siempre, aunque superen el tope. El resto se ordena por la prioridad fija y se corta desde el final, reservando una línea para el aviso. Las promesas sin resultado se resumen en una sola línea.
+- **Abierto:** `guides.md` dice que las guides `always` entran completas al `brief`, pero `spider.md` solo pide un índice. Por ahora hay solo índice, porque el cuerpo de una guide no se carga en la entidad.
+- **Pendiente:** el aviso nombra `beacon status`, que todavía no existe (Engine). Hasta entonces ese mensaje no cumple P7.
 
 ### Paso 21. Git: `drift`, `stale` y `diff`
 
