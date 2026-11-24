@@ -11,7 +11,6 @@ beacon/
 │  └─ rules/                    # convenciones del proyecto
 ├─ .github/workflows/           # CI
 ├─ cmd/beacon/main.go           # punto de entrada del binario
-├─ scripts/                     # tareas de desarrollo
 ├─ testing/
 │  ├─ e2e/                      # pruebas del binario real
 │  ├─ utils/                    # ayudas compartidas de prueba
