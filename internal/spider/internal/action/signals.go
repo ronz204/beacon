@@ -2,7 +2,6 @@ package action
 
 import (
 	"context"
-	"slices"
 
 	"github.com/ronz204/beacon/internal/spider/internal/domain/ledger"
 	"github.com/ronz204/beacon/internal/spider/internal/domain/thread"
@@ -10,7 +9,7 @@ import (
 
 type Verifications map[ledger.PromiseID]ledger.Verification
 
-func Verify(
+func verify(
 	ctx context.Context,
 	snapshot Snapshot,
 	proofs ledger.ProofReader,
@@ -37,7 +36,7 @@ func Verify(
 	return verifications, failures
 }
 
-func Signals(
+func promiseSignalsOf(
 	snapshot Snapshot,
 	graph thread.Graph,
 	verifications Verifications,
@@ -54,8 +53,6 @@ func Signals(
 		}
 	}
 
-	slices.SortFunc(signals, thread.CompareSignals)
-
 	return signals
 }
 
@@ -69,24 +66,17 @@ func promiseSignals(
 		return nil
 	}
 
-	var kinds []thread.SignalKind
-	if verification.Status() == ledger.VerificationViolated {
-		kinds = append(kinds, thread.SignalRed)
-	}
-	if verification.NotRunHere() {
-		kinds = append(kinds, thread.SignalNotRunHere)
-	}
-	if verification.Drifted() {
-		kinds = append(kinds, thread.SignalDrift)
-	}
-	if !scoped {
-		kinds = append(kinds, thread.SignalUnscoped)
+	var signals []thread.Signal
+	add := func(kind thread.SignalKind, applies bool) {
+		if applies {
+			signals = append(signals, thread.Signal{Kind: kind, Subject: id})
+		}
 	}
 
-	signals := make([]thread.Signal, 0, len(kinds))
-	for _, kind := range kinds {
-		signals = append(signals, thread.Signal{Kind: kind, Subject: id})
-	}
+	add(thread.SignalRed, verification.Status() == ledger.VerificationViolated)
+	add(thread.SignalNotRunHere, verification.NotRunHere())
+	add(thread.SignalDrift, verification.Drifted())
+	add(thread.SignalUnscoped, !scoped)
 
 	return signals
 }

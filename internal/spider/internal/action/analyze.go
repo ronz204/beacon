@@ -31,12 +31,12 @@ type Analysis struct {
 func Analyze(ctx context.Context, sources Sources) (Analysis, []error) {
 	snapshot := Load(ctx, sources.Repositories)
 	graph, _ := Validate(snapshot)
-	verifications, proofFailures := Verify(ctx, snapshot, sources.Proofs)
+	verifications, proofFailures := verify(ctx, snapshot, sources.Proofs)
 	driftFailures := markDrift(ctx, snapshot, verifications, sources)
 	stale, staleFailures := staleRecords(ctx, snapshot, sources)
 
 	signals := slices.Concat(
-		Signals(snapshot, graph, verifications),
+		promiseSignalsOf(snapshot, graph, verifications),
 		staleSignals(stale),
 	)
 	slices.SortFunc(signals, thread.CompareSignals)
