@@ -2,6 +2,7 @@ package system
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"time"
@@ -33,7 +34,7 @@ func acquireLock(lock string) error {
 		if err == nil {
 			return file.Close()
 		}
-		if !errors.Is(err, fs.ErrExist) {
+		if !isContention(err) {
 			return err
 		}
 
@@ -42,11 +43,15 @@ func acquireLock(lock string) error {
 			continue
 		}
 		if time.Now().After(deadline) {
-			return errLockTimeout
+			return fmt.Errorf("%w: %w", errLockTimeout, err)
 		}
 
 		time.Sleep(lockRetry)
 	}
+}
+
+func isContention(err error) bool {
+	return errors.Is(err, fs.ErrExist) || errors.Is(err, fs.ErrPermission)
 }
 
 func isExpired(lock string) bool {
