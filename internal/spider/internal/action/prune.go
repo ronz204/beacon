@@ -2,7 +2,6 @@ package action
 
 import (
 	"context"
-	"path/filepath"
 	"slices"
 
 	"github.com/ronz204/beacon/internal/spider/internal/domain/agenda"
@@ -23,15 +22,14 @@ func PruneClaims(
 		return nil, err
 	}
 
-	worktrees, err := workspace.ListWorktrees(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	var removed []agenda.TaskClaim
 	var tasks []agenda.TaskID
 	for _, claim := range current {
-		if isClaimAlive(claim, branches, worktrees) {
+		alive, err := isClaimAlive(ctx, claim, branches, workspace)
+		if err != nil {
+			return nil, err
+		}
+		if alive {
 			continue
 		}
 
@@ -47,21 +45,14 @@ func PruneClaims(
 }
 
 func isClaimAlive(
+	ctx context.Context,
 	claim agenda.TaskClaim,
 	branches []agenda.TaskBranch,
-	worktrees []string,
-) bool {
+	workspace agenda.WorkspaceReader,
+) (bool, error) {
 	if !slices.Contains(branches, claim.Branch) {
-		return false
+		return false, nil
 	}
 
-	worktree := filepath.Clean(claim.Worktree)
-
-	return slices.ContainsFunc(worktrees, func(path string) bool {
-		return samePath(filepath.Clean(path), worktree)
-	})
-}
-
-func samePath(a, b string) bool {
-	return filepath.ToSlash(a) == filepath.ToSlash(b)
+	return workspace.WorktreeExists(ctx, claim.Worktree)
 }

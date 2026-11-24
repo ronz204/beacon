@@ -102,8 +102,11 @@ func (w Workspace) ListBranches(context.Context) ([]agenda.TaskBranch, error) {
 	return slices.Clone(w.Branches), nil
 }
 
-func (w Workspace) ListWorktrees(context.Context) ([]string, error) {
-	return slices.Clone(w.Worktrees), nil
+func (w Workspace) WorktreeExists(
+	_ context.Context,
+	path string,
+) (bool, error) {
+	return slices.Contains(w.Worktrees, path), nil
 }
 
 func (i Injections) InjectedKeys(

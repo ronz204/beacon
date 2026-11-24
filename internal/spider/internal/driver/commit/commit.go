@@ -3,6 +3,7 @@ package commit
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -145,20 +146,19 @@ func (r Repository) ListBranches(
 	return branches, nil
 }
 
-func (r Repository) ListWorktrees(ctx context.Context) ([]string, error) {
-	output, err := r.git(ctx, "worktree", "list", "--porcelain")
+func (r Repository) WorktreeExists(
+	_ context.Context,
+	path string,
+) (bool, error) {
+	info, err := os.Stat(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
 	if err != nil {
-		return nil, err
+		return false, kernel.FailHistory(err)
 	}
 
-	var worktrees []string
-	for _, line := range lines(output) {
-		if path, found := strings.CutPrefix(line, "worktree "); found {
-			worktrees = append(worktrees, filepath.Clean(path))
-		}
-	}
-
-	return worktrees, nil
+	return info.IsDir(), nil
 }
 
 func (r Repository) StateChanges(
