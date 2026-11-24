@@ -18,11 +18,8 @@ func briefOf(
 
 	result, failures := action.Brief(
 		context.Background(),
-		action.BriefInput{
-			Repositories: repositories(validRoot),
-			Proofs:       proofs,
-			Limit:        limit,
-		},
+		sourcesFor(validRoot, proofs),
+		limit,
 	)
 	if len(failures) != 0 {
 		t.Fatalf("failures = %v", failures)
@@ -88,7 +85,7 @@ func TestBriefShowsEverySectionInPriorityOrder(t *testing.T) {
 }
 
 func TestBriefPutsRedPromisesWithBlockers(t *testing.T) {
-	proofs := double.Proofs{promiseKey("bc-c3d4"): ledger.ProofFailed}
+	proofs := double.Proofs{promiseKey("bc-c3d4"): proven(ledger.ProofFailed)}
 
 	result := briefOf(t, proofs, 60)
 

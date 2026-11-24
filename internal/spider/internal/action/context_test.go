@@ -27,6 +27,34 @@ func promiseKey(raw string) ledger.PromiseID {
 	return id
 }
 
+const evidenceCommit = "9f3c2ab"
+
+var testToday = mustDay("2026-11-24")
+
+func mustDay(raw string) kernel.CalendarDate {
+	day, err := kernel.ParseCalendarDate(raw)
+	if err != nil {
+		panic(err)
+	}
+
+	return day
+}
+
+func proven(outcome ledger.ProofOutcome) ledger.ProofResult {
+	return ledger.ProofResult{Outcome: outcome, Commit: evidenceCommit}
+}
+
+func sourcesFor(root string, proofs double.Proofs) action.Sources {
+	return action.Sources{
+		Repositories: repositories(root),
+		Proofs:       proofs,
+		Changes:      double.Changes{evidenceCommit: nil},
+		History:      double.History{},
+		Matcher:      match.NewMatcher(),
+		Today:        testToday,
+	}
+}
+
 func buildContext(
 	t *testing.T,
 	proofs double.Proofs,
@@ -36,12 +64,8 @@ func buildContext(
 
 	result, failures := action.Context(
 		context.Background(),
-		action.ContextInput{
-			Repositories: repositories(validRoot),
-			Proofs:       proofs,
-			Matcher:      match.NewMatcher(),
-			Paths:        paths,
-		},
+		sourcesFor(validRoot, proofs),
+		paths,
 	)
 	if len(failures) != 0 {
 		t.Fatalf("failures = %v", failures)
@@ -114,7 +138,7 @@ func TestContextOfAnUnownedFileHasOnlyGoalAndAlwaysGuides(t *testing.T) {
 }
 
 func TestContextReportsPromiseStates(t *testing.T) {
-	proofs := double.Proofs{promiseKey("bc-c3d4"): ledger.ProofFailed}
+	proofs := double.Proofs{promiseKey("bc-c3d4"): proven(ledger.ProofFailed)}
 
 	result := buildContext(t, proofs, "src/auth/login.go")
 
@@ -132,8 +156,8 @@ func TestContextReportsPromiseStates(t *testing.T) {
 }
 
 func TestContextSignals(t *testing.T) {
-	failed := double.Proofs{promiseKey("bc-c3d4"): ledger.ProofFailed}
-	passed := double.Proofs{promiseKey("bc-c3d4"): ledger.ProofPassed}
+	failed := double.Proofs{promiseKey("bc-c3d4"): proven(ledger.ProofFailed)}
+	passed := double.Proofs{promiseKey("bc-c3d4"): proven(ledger.ProofPassed)}
 
 	withFailure := buildContext(t, failed, "src/auth/login.go").Signals
 	withPass := buildContext(t, passed, "src/auth/login.go").Signals
