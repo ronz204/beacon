@@ -48,13 +48,17 @@ func Validate(snapshot Snapshot) (thread.Graph, []error) {
 }
 
 func (b *graphBuilder) recordID(id fmt.Stringer) (kernel.RecordID, bool) {
-	parsed, err := kernel.ParseRecordID(id.String())
+	parsed, err := recordIDOf(id)
 	if err != nil {
 		b.failures = append(b.failures, err)
 		return kernel.RecordID{}, false
 	}
 
 	return parsed, true
+}
+
+func recordIDOf(id fmt.Stringer) (kernel.RecordID, error) {
+	return kernel.ParseRecordID(id.String())
 }
 
 func (b *graphBuilder) addNode(id fmt.Stringer, kind thread.NodeKind) {
@@ -136,7 +140,14 @@ func (b *graphBuilder) addDecision(decision memory.Decision) {
 }
 
 func (b *graphBuilder) addQuestion(question memory.Question) {
-	b.addNode(question.ID(), thread.NodeQuestion)
+	if id, valid := b.recordID(question.ID()); valid {
+		b.nodes = append(b.nodes, thread.GraphNode{
+			ID:         id,
+			Kind:       thread.NodeQuestion,
+			Unfinished: question.Status() == memory.QuestionOpen,
+		})
+	}
+
 	addEdges(b, question.ID(), thread.RelationBlocks, question.Blocks())
 
 	if work, found := question.Origin(); found {
