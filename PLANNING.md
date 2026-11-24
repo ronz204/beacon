@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: Fase 1 cerrada el 2026-11-23.** `beacon fmt` y `beacon doctor` funcionan sobre un `.beacon/` real. Las decisiones D1 a D4 están registradas en la KB. Los pasos 17 a 21 del Bloque 3 están hechos y el siguiente es el 22.
+> **Estado: Fase 1 cerrada el 2026-11-23.** `beacon fmt` y `beacon doctor` funcionan sobre un `.beacon/` real. Las decisiones D1 a D4 están registradas en la KB. El Bloque 3 (pasos 17 a 22) está hecho: Spider calcula todo lo que pide `spider`, como librería, y falta exponerlo en el CLI con Engine.
 
 ## 1. Panorama
 
@@ -471,13 +471,15 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
 - **Cómo quedó:** `action.Analyze` junta carga, grafo, verificación, deriva y frescura, y lo usan `context` y `brief`. `driver/commit` hace las consultas a git en lote, con `core.quotepath=off` para nombres no ASCII, y valida commits y revisiones antes de pasarlos a git. `StateChanges` entrega los registros y capturas base que cambiaron desde una revisión, con su contenido antes y después, sin clasificar.
 - **Pendiente:** leer los globs `baseline` de `runners` en `config.yaml` y medir los 500 casos con git real; ambos se hacen al conectar `diff` y `stale` al CLI en Engine.
 
-### Paso 22. Estado local
+### Paso 22. Estado local (hecho)
 
 - **Objetivo:** compartir estado entre worktrees sin riesgo.
 - **Construye:** `driver/states`, claims locales, `context --hook` y la limpieza de claims en `doctor`.
 - **Reglas clave:** toda escritura en `.git/beacon/` es atómica, y la ruta sale de `git rev-parse --git-common-dir`.
 - **Cuidado:** en Windows, renombrar sobre un archivo que otro proceso tiene abierto puede fallar, así que hace falta reintentar y probarlo con escritores concurrentes.
 - **Hecho cuando:** varios procesos escriben a la vez sin dejar un archivo a medias, y `--hook` no repite lo ya inyectado.
+- **Cómo quedó:** `driver/states` guarda `claims.json` e `injected.json` en `.git/beacon/`, con escritura atómica y un candado de archivo (`system.WithFileLock`), porque la atomicidad sola no evita que dos escritores se pisen. `ready` respeta los claims locales: una tarea reclamada en otra rama no aparece. `doctor` borra los claims cuya rama o worktree ya no existe y lo avisa. `HookContext` entrega solo lo que la sesión no recibió, con tope y aviso, y registra lo entregado.
+- **Pendiente:** escribir un claim (`beacon claim`) y el comando `context --hook` son de Engine; Spider ya los soporta.
 
 ## 7. Hitos y commits
 
