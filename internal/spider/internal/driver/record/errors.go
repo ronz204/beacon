@@ -19,6 +19,9 @@ const (
 	RecordFieldType          RecordCode = "record_field_type"
 	RecordFileMismatch       RecordCode = "record_file_mismatch"
 	RecordFileExtension      RecordCode = "record_file_extension"
+	RecordSchemaMissing      RecordCode = "record_schema_missing"
+	RecordSchemaNewer        RecordCode = "record_schema_newer"
+	RecordFormatUnsafe       RecordCode = "record_format_unsafe"
 )
 
 type RecordError = kernel.Error[RecordCode]
@@ -38,6 +41,9 @@ var recordErrors = kernel.ErrorCatalog[RecordCode]{
 	RecordFieldType:          "use the type the schema defines for this field",
 	RecordFileMismatch:       "rename the file to start with the record id",
 	RecordFileExtension:      "use the extension this record folder expects",
+	RecordSchemaMissing:      "add schema: 1 to config.yaml",
+	RecordSchemaNewer:        "update beacon to read this schema version",
+	RecordFormatUnsafe:       "formatting would alter the record content",
 }
 
 func failAt(code RecordCode, file string, line int) RecordError {
