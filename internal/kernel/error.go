@@ -40,6 +40,7 @@ const (
 	KernelApprovalInvalid KernelCode = "approval_invalid"
 	KernelDateInvalid     KernelCode = "date_invalid"
 	KernelGlobInvalid     KernelCode = "glob_invalid"
+	KernelIDIssueFailed   KernelCode = "id_issue_failed"
 	KernelRecordIDInvalid KernelCode = "record_id_invalid"
 	KernelTextInvalid     KernelCode = "text_invalid"
 )
@@ -51,6 +52,7 @@ var kernelErrors = ErrorCatalog[KernelCode]{
 	KernelApprovalInvalid: "approval via must be an agent",
 	KernelDateInvalid:     "date must be a real day in YYYY-MM-DD format",
 	KernelGlobInvalid:     "glob must be repo-relative using *, **, ?, {a,b}",
+	KernelIDIssueFailed:   "a new record id could not be issued",
 	KernelRecordIDInvalid: "record id must look like bc-a1b2 or bc-a1b2.1",
 	KernelTextInvalid:     "text must not be blank",
 }

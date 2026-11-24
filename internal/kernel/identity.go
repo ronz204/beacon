@@ -13,6 +13,14 @@ type RecordID struct {
 	value string
 }
 
+type IDIssuer interface {
+	IssueRecordID(taken func(RecordID) bool) (RecordID, error)
+}
+
+func FailRecordIDIssue(cause error) KernelError {
+	return kernelErrors.Fail(KernelIDIssueFailed, nil).WithCause(cause)
+}
+
 func ParseRecordID(raw string) (RecordID, error) {
 	value := strings.TrimSpace(raw)
 
