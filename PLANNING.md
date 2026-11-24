@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 a 7 (hito H1) están hechos y el siguiente es el 8.
+> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 a 8 están hechos y el siguiente es el 9.
 
 ## 1. Panorama
 
@@ -305,7 +305,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 - **Cuidado:** `parent` siempre apunta al work raíz, porque `ledger` lo define como task → work. Una tarea anidada como `bc-91cd.1.1` también tiene como `parent` a `bc-91cd`. La petición del work se guarda textual, sin recortar espacios.
 - **Hecho cuando:** los estados cerrados y la jerarquía están probados.
 
-### Paso 8. Fixtures de referencia
+### Paso 8. Fixtures de referencia (hecho)
 
 - **Objetivo:** fijar el resultado correcto antes de escribir el parser.
 - **Construye:** en `driver/record/testdata/`:
@@ -321,6 +321,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 - **Objetivo:** leer YAML sin que el parser adivine tipos.
 - **Construye:** `driver/record/parser.go`, que trabaja sobre el árbol de nodos.
 - **Reglas clave:** rechaza anclas, alias, `<<` y claves duplicadas; `version: 1.0` se lee como el tipo que diga el esquema; todo error lleva archivo, línea y una forma de arreglarlo (P7).
+- **Cuidado:** `yaml.Unmarshal` lee solo el primer documento y acepta tags propios, así que el parser debe rechazar por su cuenta varios documentos, tags personalizados y archivos vacíos.
 - **Depende de:** D1.
 - **Hecho cuando:** todos los fixtures `invalid/` fallan con el error esperado.
 
