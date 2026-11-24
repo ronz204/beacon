@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 a 6 están hechos y el siguiente es el 7.
+> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 a 7 (hito H1) están hechos y el siguiente es el 8.
 
 ## 1. Panorama
 
@@ -81,7 +81,8 @@ beacon/
 │  │  ├─ glob.go                     # 4  · PathGlob; PathMatcher en 15
 │  │  ├─ identity.go                 # 4  · RecordID; IDIssuer en 13
 │  │  ├─ text.go                     # 5  · texto obligatorio de registros
-│  │  └─ approval.go                 # 5  · approved: by, at, via
+│  │  ├─ approval.go                 # 5  · approved: by, at, via
+│  │  └─ presence.go                 # 7  · IsMissing para campos opcionales
 │  │
 │  ├─ system/                        # I/O compartido, sin lógica de Beacon
 │  │  ├─ git.go                      # 21 · ejecuta git sin shell
@@ -136,11 +137,13 @@ beacon/
 │        │  │  ├─ work_entity.go      # 7
 │        │  │  ├─ work_vos.go         # 7
 │        │  │  ├─ work_errors.go      # 7
-│        │  │  ├─ work_repository.go  # 7
+│        │  │  ├─ work_policies.go    # 7
+│        │  │  ├─ work_repository.go  # 10
 │        │  │  ├─ task_entity.go      # 7
 │        │  │  ├─ task_vos.go         # 7
 │        │  │  ├─ task_errors.go      # 7
-│        │  │  ├─ task_repository.go  # 7
+│        │  │  ├─ task_policies.go    # 7
+│        │  │  ├─ task_repository.go  # 10
 │        │  │  ├─ claim_entity.go     # 22
 │        │  │  ├─ claim_errors.go     # 22
 │        │  │  └─ claim_repository.go # 22
@@ -294,11 +297,12 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 - **Cuidado:** el id de una guide sale del nombre del archivo, no de su frontmatter.
 - **Hecho cuando:** los tres tipos se construyen solo con datos válidos.
 
-### Paso 7. Contexto `agenda`
+### Paso 7. Contexto `agenda` (hecho)
 
 - **Objetivo:** modelar lo que el proyecto está haciendo.
 - **Construye:** `Work` (petición textual, log, `implements`) y `Task` (`parent`, `blocks`, `owner`, `branch`).
 - **Reglas clave:** el id de una tarea desciende del de su `parent`; una tarea `claimed` tiene `owner`.
+- **Cuidado:** `parent` siempre apunta al work raíz, porque `ledger` lo define como task → work. Una tarea anidada como `bc-91cd.1.1` también tiene como `parent` a `bc-91cd`. La petición del work se guarda textual, sin recortar espacios.
 - **Hecho cuando:** los estados cerrados y la jerarquía están probados.
 
 ### Paso 8. Fixtures de referencia
@@ -368,6 +372,8 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
   - Referencias a registros inexistentes.
   - Relaciones con un tipo de origen o destino inválido.
   - Ciclos en `blocks` y `parent`, que dejarían trabajo bloqueado para siempre.
+  - Subtareas huérfanas: `bc-91cd.1.1` exige que exista `bc-91cd.1`.
+  - Tareas `done` con subtareas `open` o `claimed`.
 - **Depende de:** D3.
 - **Hecho cuando:** cada error tiene un test y el recorrido de vecinos es determinista.
 
@@ -420,7 +426,7 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
 ### Paso 19. `ready`
 
 - **Objetivo:** saber qué trabajo se puede tomar.
-- **Regla clave:** recorre `blocks` y `parent`; al cerrar un bloqueo, los dependientes quedan disponibles. Recibe la rama como parámetro.
+- **Regla clave:** recorre `blocks` y `parent`; al cerrar un bloqueo, los dependientes quedan disponibles. El bloqueo se hereda a las subtareas, y una tarea con subtareas abiertas no aparece porque se trabaja en las hojas (`ledger`). Recibe la rama como parámetro.
 - **Hecho cuando:** una pregunta abierta saca su trabajo de `ready`, y responderla lo devuelve.
 
 ### Paso 20. `brief`
