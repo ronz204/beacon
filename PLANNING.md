@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 a 12 están hechos y el siguiente es el 13.
+> **Estado: preparación cerrada el 2026-11-23.** Todavía no hay código. Las decisiones D1 a D4 están tomadas y registradas en la KB. Los pasos 4 a 14 están hechos y el siguiente es el 15.
 
 ## 1. Panorama
 
@@ -177,6 +177,7 @@ beacon/
 │           │  ├─ mapper.go          # 10 · YAML a dominio y de vuelta
 │           │  ├─ config.go          # 11 · config.yaml
 │           │  ├─ format.go          # 12 · salida canónica
+│           │  ├─ naming.go          # 13 · <id>-<slug>.<ext>
 │           │  └─ testdata/          # 8  · fixtures de referencia
 │           ├─ random/
 │           │  └─ random.go          # 13 · IDIssuer real
@@ -356,7 +357,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
   - **Saltos de línea en Windows:** git ya está convirtiendo LF a CRLF en este repo. `fmt` debe escribir LF, y `.beacon/**` necesita `text eol=lf` en `.gitattributes`, o cada archivo parecería modificado.
 - **Hecho cuando:** formatear dos veces da el mismo resultado byte a byte y ningún campo desconocido se pierde.
 
-### Paso 13. Ids y slugs
+### Paso 13. Ids y slugs (hecho)
 
 - **Objetivo:** crear registros nuevos con nombres estables.
 - **Construye:** el contrato `IDIssuer` en `kernel`, `driver/random/random.go` y la generación de `<id>-<slug>.<ext>`.
@@ -364,7 +365,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 - **Depende de:** D2.
 - **Hecho cuando:** un choque simulado reintenta, y un espacio lleno hace crecer el id.
 
-### Paso 14. Grafo en memoria
+### Paso 14. Grafo en memoria (hecho)
 
 - **Objetivo:** convertir registros sueltos en una red navegable.
 - **Construye:** `domain/thread` y `action/validate.go`.
