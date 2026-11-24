@@ -37,18 +37,22 @@ type KernelCode string
 
 const (
 	KernelActorInvalid    KernelCode = "actor_invalid"
+	KernelApprovalInvalid KernelCode = "approval_invalid"
 	KernelDateInvalid     KernelCode = "date_invalid"
 	KernelGlobInvalid     KernelCode = "glob_invalid"
 	KernelRecordIDInvalid KernelCode = "record_id_invalid"
+	KernelTextInvalid     KernelCode = "text_invalid"
 )
 
 type KernelError = Error[KernelCode]
 
 var kernelErrors = ErrorCatalog[KernelCode]{
 	KernelActorInvalid:    "actor must be human:<name> or agent:<name>",
+	KernelApprovalInvalid: "approval via must be an agent",
 	KernelDateInvalid:     "date must be a real day in YYYY-MM-DD format",
 	KernelGlobInvalid:     "glob must be repo-relative using *, **, ?, {a,b}",
 	KernelRecordIDInvalid: "record id must look like bc-a1b2 or bc-a1b2.1",
+	KernelTextInvalid:     "text must not be blank",
 }
 
 func invalidValue(code KernelCode, raw string) KernelError {
