@@ -469,7 +469,7 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
 - **Hecho cuando:** los tests corren sobre repos temporales reales y 500 capabilities quedan cerca de los 150 a 200 ms de `layout`.
 - **Decidido (2026-11-24):** una guide o decisión está desactualizada si pasó su plazo o si recibió 10 o más commits sobre sus paths desde la última revisión. La deriva cuenta los cambios sin commitear.
 - **Cómo quedó:** `action.Analyze` junta carga, grafo, verificación, deriva y frescura, y lo usan `context` y `brief`. `driver/commit` hace las consultas a git en lote, con `core.quotepath=off` para nombres no ASCII, y valida commits y revisiones antes de pasarlos a git. `StateChanges` entrega los registros y capturas base que cambiaron desde una revisión, con su contenido antes y después, sin clasificar.
-- **Medido (2026-11-24):** con 500 capabilities, 1.000 archivos, 50 commits y cambios sin commitear, el análisis completo con git real tarda unos 155 ms, dentro de la meta de `layout`.
+- **Medido (2026-11-24):** con 500 capabilities, 1.000 archivos, 50 commits y cambios sin commitear, el análisis completo con git real tarda unos 100 ms y el hook unos 40 ms, porque git corre en paralelo con la carga y el hook no consulta git.
 - **Pendiente:** leer los globs `baseline` de `runners` en `config.yaml`, al conectar `diff` al CLI en Engine.
 
 ### Paso 22. Estado local (hecho)
