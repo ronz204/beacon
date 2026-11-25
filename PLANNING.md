@@ -864,7 +864,7 @@ cmd/beacon → router → weaver.go → action → domain → kernel
   - El plegado de acentos pasó al kernel (`kernel.FoldText`), porque lo usan `find` y los slugs de archivo.
   - Si `config.yaml` falla, los límites quedan en sus valores por defecto y la falla se reporta, para que `brief` no quede con tope 0.
 
-### Paso 24. Escritura de registros
+### Paso 24. Escritura de registros (hecho)
 
 - **Objetivo:** crear y reemplazar registros con las mismas garantías que la lectura.
 - **Construye:** `driver/record/payload.go`, `driver/record/writer.go` y `action/save.go`.
@@ -875,8 +875,17 @@ cmd/beacon → router → weaver.go → action → domain → kernel
   4. Se escribe con el formato canónico de `fmt`, escritura atómica y candado sobre el archivo.
 - **Dos fases separadas:** `Prepare(ctx, payload)` devuelve el antes y el después como `StateChange` sin escribir nada, y `Save(ctx, prepared, stamps)` escribe. Weaver clasifica entre las dos.
 - **`get --json`** devuelve la forma del payload, así que `get` → editar → `record` es un ciclo cerrado.
-- **Cuidado:** si cambia el slug (porque cambió el título), el archivo se renombra; el id nunca cambia. Un payload con un `id` que no existe da `record_missing`, no crea nada.
+- **Cuidado:** el id nunca cambia. Un payload con un `id` que no existe da `record_missing` y no crea nada (salvo en una tarea; ver "Cómo quedó").
 - **Hecho cuando:** `get` seguido de `record` con el mismo payload no cambia ningún byte, un campo desconocido sobrevive, y un payload inválido falla con el mismo código y la misma ruta de campo que el archivo equivalente.
+- **Cómo quedó:**
+  - El payload se lee con el parser YAML estricto y se **fusiona nodo por nodo** sobre el archivo existente: lo que no cambió conserva su nodo original, con sus comentarios. Las promesas se emparejan por id.
+  - `Prepare` devuelve el antes y el después como `Record`, los campos ignorados y si el registro queda igual; `Save` sella los `approved` pedidos y escribe. `spider.Approval` es `kernel.ApprovalInput`.
+  - Un payload inválido da `payload_invalid`, y en `details.findings` va cada falla con el mismo código que daría el archivo (por ejemplo `question_field_missing`). `record_missing`, `promise_omitted` y `promise_unknown` (una promesa con un id que el registro no tiene) llegan tal cual.
+  - **El archivo no se renombra al actualizar**, aunque cambie el título: un nombre estable no ensucia el diff, y el slug de los registros existentes no siempre sale del título (el del goal de ejemplo no sale de `statement`). Solo un registro nuevo toma su slug del título.
+  - **Una tarea nueva** sin `id` toma el siguiente hijo libre de su work (`bc-91cd.2`). Es el único tipo que acepta un `id` nuevo explícito, porque su jerarquía sale del id (`ledger`); para crear una subtarea se manda `bc-91cd.1.1`.
+  - En una guide, `body` ausente conserva el cuerpo actual, para que un cambio de frontmatter no borre el texto por accidente.
+  - Escribir compara el archivo con lo leído en `Prepare`, bajo el candado `.git/beacon/records.lock`. Si alguien lo cambió en medio, falla con `record_changed`.
+  - El payload de `config` llega en el paso 26, junto con su clave `approved` (D13).
 
 ### Paso 25. Archivo y `close`
 
