@@ -623,8 +623,11 @@ func (d Draft) render() (Draft, []error) {
 	}
 
 	if d.Kind == ConfigKind {
-		d.Output = raw
-		_, failures := decodeConfig(d.File, raw)
+		d.Output, err = FormatConfig(d.File, raw)
+		if err != nil {
+			return Draft{}, parseFailure(d.File, err)
+		}
+		_, failures := decodeConfig(d.File, d.Output)
 		if len(failures) > 0 {
 			return Draft{}, failures
 		}

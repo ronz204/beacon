@@ -357,3 +357,27 @@ func TestStoreFormatCoversGuides(t *testing.T) {
 		t.Fatalf("got:\n%s", got)
 	}
 }
+
+func TestFormatConfigIsCanonicalAndStable(t *testing.T) {
+	input := "agents:\n  - codex\nlimits: {hook: 20, brief: 60}\n" +
+		"runners:\n  visual:\n    baseline: [\"shots/**\"]\n" +
+		"    run: [\"npx\", \"--yes\", \"{target}\"]\n" +
+		"  alpha:\n    run: [go]\nschema: 1\nextra: kept\n"
+	want := "schema: 1\nrunners:\n  alpha:\n    run: [go]\n" +
+		"  visual:\n    run: [npx, --yes, \"{target}\"]\n" +
+		"    baseline: [shots/**]\nlimits:\n  brief: 60\n  hook: 20\n" +
+		"agents: [codex]\nextra: kept\n"
+
+	got, err := record.FormatConfig("config.yaml", []byte(input))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != want {
+		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
+	}
+
+	again, err := record.FormatConfig("config.yaml", got)
+	if err != nil || string(again) != want {
+		t.Fatalf("second pass:\n%s (%v)", again, err)
+	}
+}
