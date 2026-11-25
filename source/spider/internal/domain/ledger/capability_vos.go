@@ -246,6 +246,7 @@ type Verification struct {
 	status     VerificationStatus
 	notRunHere bool
 	commit     string
+	footprint  string
 	drifted    bool
 }
 
@@ -259,6 +260,10 @@ func (v Verification) NotRunHere() bool {
 
 func (v Verification) Commit() string {
 	return v.commit
+}
+
+func (v Verification) Footprint() string {
+	return v.footprint
 }
 
 func (v Verification) Drifted() bool {

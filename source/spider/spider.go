@@ -63,9 +63,9 @@ type Project struct {
 	archive archive.Store
 }
 
-type pendingProofs struct{}
+type noProofs struct{}
 
-func (pendingProofs) ReadResults(
+func (noProofs) ReadResults(
 	context.Context,
 ) (map[ledger.PromiseID]ledger.ProofResult, error) {
 	return map[ledger.PromiseID]ledger.ProofResult{}, nil
@@ -137,7 +137,7 @@ func (p Project) Brief(
 	ctx context.Context,
 	pending []string,
 ) (BriefView, []Finding) {
-	sources, config, failures := p.sources()
+	sources, config, failures := p.sources(ctx)
 	result, briefFailures := action.Brief(
 		ctx,
 		sources,
@@ -152,7 +152,7 @@ func (p Project) Context(
 	ctx context.Context,
 	paths []string,
 ) (ContextView, []Finding) {
-	sources, _, failures := p.sources()
+	sources, _, failures := p.sources(ctx)
 	result, contextFailures := action.Context(ctx, sources, paths)
 
 	return contextView(result), p.findings(failures, contextFailures)
@@ -173,7 +173,7 @@ func (p Project) HookContext(
 		return HookView{}, nil, err
 	}
 
-	sources, config, failures := p.sources()
+	sources, config, failures := p.sources(ctx)
 	result, hookFailures := action.HookContext(ctx, sources, action.HookInput{
 		Session: id,
 		Paths:   paths,
@@ -205,7 +205,7 @@ func (p Project) Ready(
 }
 
 func (p Project) Analyze(ctx context.Context) (AnalysisView, []Finding) {
-	sources, _, failures := p.sources()
+	sources, _, failures := p.sources(ctx)
 	analysis, analysisFailures := action.Analyze(ctx, sources)
 
 	return analysisView(analysis), p.findings(failures, analysisFailures)
@@ -388,11 +388,13 @@ func recordOf(file string, data []byte) (*Record, error) {
 	return &Record{Type: document.Kind, Data: document.JSON}, nil
 }
 
-func (p Project) sources() (action.Sources, record.Config, []error) {
+func (p Project) sources(
+	ctx context.Context,
+) (action.Sources, record.Config, []error) {
 	config, failures := p.store.LoadConfig()
 	sources := action.Sources{
 		Repositories: p.repositories(),
-		Proofs:       pendingProofs{},
+		Proofs:       noProofs{},
 		Matcher:      match.NewMatcher(),
 		Review:       config.Review,
 		Today:        today(),
@@ -402,6 +404,12 @@ func (p Project) sources() (action.Sources, record.Config, []error) {
 		repository := commit.NewRepository(p.root)
 		sources.Changes = repository
 		sources.History = repository
+
+		local, err := states.Open(ctx, p.root)
+		if err != nil {
+			return sources, config, append(failures, err)
+		}
+		sources.Proofs = local
 	}
 
 	return sources, config, failures
@@ -802,4 +810,73 @@ func (p Project) Close(
 
 		return record.Remove(prepared.file, prepared.before)
 	})
+}
+
+type Verdict struct {
+	Promise string
+	Outcome string
+	Reason  string
+}
+
+func (p Project) RecordResults(ctx context.Context, verdicts []Verdict) error {
+	parsed, err := parseVerdicts(verdicts)
+	if err != nil {
+		return err
+	}
+
+	local, err := states.Open(ctx, p.root)
+	if err != nil {
+		return err
+	}
+
+	repository := commit.NewRepository(p.root)
+	head, err := repository.Head(ctx)
+	if err != nil {
+		return err
+	}
+
+	snapshot := action.Load(ctx, p.repositories())
+	results, unknown, err := action.ProofsOf(ctx, snapshot, action.ProofInput{
+		Verdicts: parsed,
+		Changes:  repository,
+		Matcher:  match.NewMatcher(),
+		Head:     head,
+	})
+	if err != nil {
+		return err
+	}
+	if len(unknown) > 0 {
+		return record.MissingFailure(unknown[0])
+	}
+
+	return local.RecordResults(ctx, results, time.Now())
+}
+
+func parseVerdicts(verdicts []Verdict) ([]action.Verdict, error) {
+	parsed := make([]action.Verdict, 0, len(verdicts))
+
+	for _, verdict := range verdicts {
+		id, err := ledger.ParsePromiseID(verdict.Promise)
+		if err != nil {
+			return nil, err
+		}
+
+		outcome, err := ledger.ParseProofOutcome(verdict.Outcome)
+		if err != nil {
+			return nil, err
+		}
+
+		reason, err := ledger.ParseProofReason(verdict.Reason)
+		if err != nil {
+			return nil, err
+		}
+
+		parsed = append(parsed, action.Verdict{
+			Promise: id,
+			Outcome: outcome,
+			Reason:  reason,
+		})
+	}
+
+	return parsed, nil
 }

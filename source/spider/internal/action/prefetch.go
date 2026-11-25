@@ -42,6 +42,13 @@ func (c *changeCache) FilesChangedSince(
 	return c.query(ctx, commit)()
 }
 
+func (c *changeCache) FootprintOf(
+	ctx context.Context,
+	files []string,
+) (string, error) {
+	return c.reader.FootprintOf(ctx, files)
+}
+
 func (c *changeCache) query(ctx context.Context, commit string) changeQuery {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()

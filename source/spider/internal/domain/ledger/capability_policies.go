@@ -91,8 +91,9 @@ func VerifyPromise(
 		}
 	case result.Outcome == ProofPassed:
 		return Verification{
-			status: VerificationHolds,
-			commit: result.Commit,
+			status:    VerificationHolds,
+			commit:    result.Commit,
+			footprint: result.Footprint,
 		}
 	}
 

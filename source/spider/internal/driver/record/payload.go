@@ -87,9 +87,11 @@ func (s Store) findFile(id kernel.RecordID) (string, error) {
 		}
 	}
 
-	details := map[string]any{"id": id.String()}
+	return "", MissingFailure(id.String())
+}
 
-	return "", recordErrors.Fail(RecordMissing, details)
+func MissingFailure(id string) error {
+	return recordErrors.Fail(RecordMissing, map[string]any{"id": id})
 }
 
 func extensionOf(kind string) string {
