@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ronz204/beacon/internal/kernel"
 	"github.com/ronz204/beacon/internal/spider/internal/action"
 	"github.com/ronz204/beacon/internal/spider/internal/domain/ledger"
 	"github.com/ronz204/beacon/internal/spider/internal/driver/commit"
@@ -59,7 +60,11 @@ func benchmarkCapabilityAt(index int) string {
 	return strings.Replace(
 		text,
 		fmt.Sprintf("paths: [src/module%d/**]", index),
-		fmt.Sprintf("paths: [src/module%d/**, tests/module%d/**]", index, index),
+		fmt.Sprintf(
+			"paths: [src/module%d/**, tests/module%d/**]",
+			index,
+			index,
+		),
 		1,
 	)
 }
@@ -94,6 +99,8 @@ func analyzeRepository(b *testing.B) (string, double.Proofs) {
 		}
 		benchGit(b, root, "commit", "-q", "-am", "change")
 	}
+
+	benchGit(b, root, "gc", "-q")
 
 	for module := range 30 {
 		path := fmt.Sprintf("src/module%d/b.go", module)
@@ -171,6 +178,37 @@ func BenchmarkContextWithRealGit(b *testing.B) {
 		)
 		if len(failures) != 0 || len(result.Capabilities) != 1 {
 			b.Fatalf("failures = %v, result = %+v", failures, result)
+		}
+	}
+}
+
+func BenchmarkHookWithRealGit(b *testing.B) {
+	root, proofs := analyzeRepository(b)
+	state := filepath.Join(root, ".beacon")
+	repository := commit.NewRepository(root)
+	sources := action.Sources{
+		Repositories: repositories(state),
+		Proofs:       proofs,
+		Changes:      repository,
+		History:      repository,
+		Matcher:      match.NewMatcher(),
+		Today:        testToday,
+	}
+	ctx := context.Background()
+	session, err := kernel.ParseSessionID("bench-session")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	for b.Loop() {
+		_, failures := action.HookContext(ctx, sources, action.HookInput{
+			Session: session,
+			Paths:   []string{"src/module7/a.go"},
+			Limit:   20,
+			Log:     double.Injections{},
+		})
+		if len(failures) != 0 {
+			b.Fatalf("failures = %v", failures)
 		}
 	}
 }

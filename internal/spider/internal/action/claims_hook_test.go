@@ -219,3 +219,43 @@ func TestHookDeliversAnItemLargerThanTheLimit(t *testing.T) {
 		t.Fatalf("the hook never settles: %q", last.Lines)
 	}
 }
+
+func TestHookNeverQueriesGit(t *testing.T) {
+	sessionID, err := kernel.ParseSessionID("sample-session")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sources := sourcesFor(validRoot, passedProofs())
+	sources.Changes = double.Changes{}
+
+	result, failures := action.HookContext(
+		context.Background(),
+		sources,
+		action.HookInput{
+			Session: sessionID,
+			Paths:   []string{"src/auth/login.go"},
+			Limit:   60,
+			Log:     double.Injections{},
+		},
+	)
+
+	requireClean(t, failures)
+	if strings.Contains(strings.Join(result.Lines, "\n"), "drift") {
+		t.Fatalf("the hook reported drift: %q", result.Lines)
+	}
+}
+
+func TestAnalyzeWithoutGitSkipsDriftAndFreshness(t *testing.T) {
+	sources := sourcesFor(validRoot, passedProofs())
+	sources.Changes = nil
+	sources.History = nil
+	sources.Today = mustDay("2030-01-01")
+
+	analysis, failures := action.Analyze(context.Background(), sources)
+
+	requireClean(t, failures)
+	if len(driftedPromises(analysis)) != 0 || len(analysis.Stale) != 0 {
+		t.Fatalf("analysis = %+v", analysis)
+	}
+}
