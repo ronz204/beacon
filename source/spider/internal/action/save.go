@@ -56,6 +56,9 @@ func RecordIDs(snapshot Snapshot) map[string]bool {
 	for _, task := range snapshot.Tasks {
 		add(task.ID())
 	}
+	for _, node := range snapshot.Archived {
+		add(node.ID)
+	}
 
 	return ids
 }

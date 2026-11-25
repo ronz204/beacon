@@ -186,7 +186,7 @@ func TestReadyAndAnalyzeExposeTheGraph(t *testing.T) {
 func TestFindReturnsMatchesByType(t *testing.T) {
 	project, _ := newProject(t)
 
-	view, findings := project.Find(context.Background(), "postgres")
+	view, findings := project.Find(context.Background(), "postgres", false)
 
 	requireNoFindings(t, findings)
 	if !slices.Contains(view.Matches, spider.Match{

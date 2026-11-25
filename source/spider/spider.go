@@ -2,6 +2,7 @@ package spider
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"slices"
@@ -12,17 +13,27 @@ import (
 	"github.com/ronz204/beacon/source/spider/internal/action"
 	"github.com/ronz204/beacon/source/spider/internal/domain/agenda"
 	"github.com/ronz204/beacon/source/spider/internal/domain/ledger"
+	"github.com/ronz204/beacon/source/spider/internal/domain/thread"
+	"github.com/ronz204/beacon/source/spider/internal/driver/archive"
 	"github.com/ronz204/beacon/source/spider/internal/driver/commit"
 	"github.com/ronz204/beacon/source/spider/internal/driver/match"
 	"github.com/ronz204/beacon/source/spider/internal/driver/random"
 	"github.com/ronz204/beacon/source/spider/internal/driver/record"
 	"github.com/ronz204/beacon/source/spider/internal/driver/states"
+	"github.com/ronz204/beacon/source/system"
 )
 
 const (
-	stateFolder = ".beacon"
-	gitFolder   = ".git"
+	stateFolder   = ".beacon"
+	gitFolder     = ".git"
+	archiveFolder = "archive"
+	recordsLock   = "records"
 )
+
+var searchedFields = []string{
+	"statement", "success", "name", "intent", "text",
+	"what", "why", "request", "title",
+}
 
 type Finding = action.Finding
 
@@ -47,8 +58,9 @@ type FormatResult struct {
 }
 
 type Project struct {
-	root  string
-	store record.Store
+	root    string
+	store   record.Store
+	archive archive.Store
 }
 
 type pendingProofs struct{}
@@ -69,8 +81,9 @@ func Locate(start string) (Project, error) {
 		state := filepath.Join(directory, stateFolder)
 		if info, err := os.Stat(state); err == nil && info.IsDir() {
 			return Project{
-				root:  directory,
-				store: record.NewStore(state),
+				root:    directory,
+				store:   record.NewStore(state),
+				archive: archive.NewStore(filepath.Join(state, archiveFolder)),
 			}, nil
 		}
 
@@ -198,10 +211,62 @@ func (p Project) Analyze(ctx context.Context) (AnalysisView, []Finding) {
 	return analysisView(analysis), p.findings(failures, analysisFailures)
 }
 
-func (p Project) Find(ctx context.Context, text string) (FindView, []Finding) {
-	result, failures := action.Find(ctx, p.repositories(), text)
+func (p Project) Find(
+	ctx context.Context,
+	text string,
+	archived bool,
+) (FindView, []Finding) {
+	var candidates []action.FindCandidate
+	var failures []error
 
-	return findView(result), p.findings(failures)
+	if archived {
+		var err error
+		candidates, err = p.archivedCandidates(ctx)
+		if err != nil {
+			failures = append(failures, err)
+		}
+	}
+
+	result, findFailures := action.Find(
+		ctx,
+		p.repositories(),
+		text,
+		candidates,
+	)
+
+	return findView(result), p.findings(failures, findFailures)
+}
+
+func (p Project) archivedCandidates(
+	ctx context.Context,
+) ([]action.FindCandidate, error) {
+	entries, err := p.archive.Entries(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	candidates := make([]action.FindCandidate, 0, len(entries))
+	for _, entry := range entries {
+		var fields map[string]any
+		if json.Unmarshal(entry.Record, &fields) != nil {
+			continue
+		}
+
+		id, _ := fields["id"].(string)
+		candidate := action.FindCandidate{
+			Kind: thread.NodeKind(entry.Type),
+			ID:   id,
+		}
+		for _, key := range searchedFields {
+			if text, isText := fields[key].(string); isText {
+				candidate.Texts = append(candidate.Texts, text)
+			}
+		}
+
+		candidates = append(candidates, candidate)
+	}
+
+	return candidates, nil
 }
 
 func (p Project) Get(ctx context.Context, id string) (StoredRecord, error) {
@@ -211,6 +276,9 @@ func (p Project) Get(ctx context.Context, id string) (StoredRecord, error) {
 	}
 
 	file, err := p.store.Lookup(ctx, parsed)
+	if isMissing(err) {
+		return p.archived(ctx, id, err)
+	}
 	if err != nil {
 		return StoredRecord{}, err
 	}
@@ -228,6 +296,31 @@ func (p Project) Get(ctx context.Context, id string) (StoredRecord, error) {
 	return StoredRecord{
 		Record: Record{Type: document.Kind, Data: document.JSON},
 		File:   p.relative(file),
+	}, nil
+}
+
+func isMissing(err error) bool {
+	code := kernel.DescribeFailure(err).Code
+	return err != nil && code == string(record.RecordMissing)
+}
+
+func (p Project) archived(
+	ctx context.Context,
+	id string,
+	missing error,
+) (StoredRecord, error) {
+	entry, found, err := p.archive.Find(ctx, id)
+	if err != nil {
+		return StoredRecord{}, err
+	}
+	if !found {
+		return StoredRecord{}, missing
+	}
+
+	return StoredRecord{
+		Record:   Record{Type: entry.Type, Data: entry.Record},
+		File:     p.relative(entry.File),
+		Archived: true,
 	}, nil
 }
 
@@ -323,6 +416,7 @@ func (p Project) repositories() action.Repositories {
 		Guides:       p.store,
 		Works:        p.store,
 		Tasks:        p.store,
+		Archive:      p.archive,
 	}
 }
 
@@ -367,15 +461,19 @@ func (p Project) relative(file string) string {
 type SaveCode string
 
 const (
-	SavePayloadInvalid SaveCode = "payload_invalid"
-	SaveGraphInvalid   SaveCode = "graph_invalid"
+	SavePayloadInvalid      SaveCode = "payload_invalid"
+	SaveGraphInvalid        SaveCode = "graph_invalid"
+	SaveGuideNotArchivable  SaveCode = "guide_not_archivable"
+	SaveTaskHasOpenChildren SaveCode = "task_has_open_children"
 )
 
 type SaveError = kernel.Error[SaveCode]
 
 var saveErrors = kernel.ErrorCatalog[SaveCode]{
-	SavePayloadInvalid: "the payload does not describe a valid record",
-	SaveGraphInvalid:   "the change breaks references or relations",
+	SavePayloadInvalid:      "the payload does not describe a valid record",
+	SaveGraphInvalid:        "the change breaks references or relations",
+	SaveGuideNotArchivable:  "guides are deleted, not archived",
+	SaveTaskHasOpenChildren: "finish or close the open subtasks first",
 }
 
 var passedThrough = []string{
@@ -409,6 +507,14 @@ func (p Project) Prepare(
 	}
 
 	snapshot := action.Load(ctx, p.repositories())
+	if snapshot.Archived == nil {
+		nodes, err := p.archive.ArchivedNodes(ctx)
+		if err != nil {
+			return Prepared{}, err
+		}
+		snapshot.Archived = nodes
+	}
+
 	ids := action.RecordIDs(snapshot)
 	draft, failures := p.store.Draft(record.DraftInput{
 		Payload: payload,
@@ -478,7 +584,7 @@ func (p Project) Save(
 		return err
 	}
 
-	return p.store.Write(draft, locks.LockFile("records"))
+	return p.store.Write(draft, locks.LockFile(recordsLock))
 }
 
 func (p Project) draftError(failures []error) error {
@@ -495,5 +601,205 @@ func (p Project) draftError(failures []error) error {
 func (p Project) saveError(code SaveCode, failures []error) error {
 	return saveErrors.Fail(code, map[string]any{
 		"findings": p.findings(failures),
+	})
+}
+
+type ClosePrepared struct {
+	Type     string
+	ID       string
+	File     string
+	Before   *Record
+	After    *Record
+	Archived Record
+	file     string
+	before   []byte
+	record   []byte
+	closing  record.Closing
+	draft    *record.Draft
+}
+
+func (p Project) PrepareClose(
+	ctx context.Context,
+	id string,
+	reason string,
+) (ClosePrepared, error) {
+	parsed, err := kernel.ParseRecordID(id)
+	if err != nil {
+		return ClosePrepared{}, err
+	}
+
+	text, err := kernel.ParseRecordText(reason)
+	if err != nil {
+		return ClosePrepared{}, err
+	}
+
+	snapshot := action.Load(ctx, p.repositories())
+	closing := record.Closing{Closed: today(), Reason: text}
+
+	if owner, found := action.PromiseOwner(snapshot, id); found {
+		closing.Capability = owner
+		return p.preparePromiseClose(ctx, id, closing)
+	}
+
+	file, err := p.store.Lookup(ctx, parsed)
+	if err != nil {
+		return ClosePrepared{}, err
+	}
+
+	prepared, err := p.closedRecord(file, id, closing)
+	if err != nil {
+		return ClosePrepared{}, err
+	}
+
+	switch prepared.Type {
+	case "guide":
+		return ClosePrepared{}, saveErrors.Fail(SaveGuideNotArchivable, nil)
+	case "task":
+		if open := action.OpenSubtasks(snapshot, id); len(open) > 0 {
+			details := map[string]any{"subtasks": open}
+			failure := saveErrors.Fail(SaveTaskHasOpenChildren, details)
+			return ClosePrepared{}, failure
+		}
+	}
+
+	return prepared, nil
+}
+
+func (p Project) closedRecord(
+	file string,
+	id string,
+	closing record.Closing,
+) (ClosePrepared, error) {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return ClosePrepared{}, kernel.NewRecordFailure(file, 0, err)
+	}
+
+	document, err := record.ReadDocument(file, data)
+	if err != nil {
+		return ClosePrepared{}, err
+	}
+
+	line, err := record.ClosedJSON(document.JSON, closing)
+	if err != nil {
+		return ClosePrepared{}, err
+	}
+
+	return ClosePrepared{
+		Type:     document.Kind,
+		ID:       id,
+		File:     p.relative(file),
+		Before:   &Record{Type: document.Kind, Data: document.JSON},
+		Archived: Record{Type: document.Kind, Data: line},
+		file:     file,
+		before:   data,
+		record:   document.JSON,
+		closing:  closing,
+	}, nil
+}
+
+func (p Project) preparePromiseClose(
+	ctx context.Context,
+	id string,
+	closing record.Closing,
+) (ClosePrepared, error) {
+	owner, err := kernel.ParseRecordID(closing.Capability)
+	if err != nil {
+		return ClosePrepared{}, err
+	}
+
+	file, err := p.store.Lookup(ctx, owner)
+	if err != nil {
+		return ClosePrepared{}, err
+	}
+
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return ClosePrepared{}, kernel.NewRecordFailure(file, 0, err)
+	}
+
+	promise, _ := record.PromiseJSON(file, data, id)
+	line, err := record.ClosedJSON(promise, closing)
+	if err != nil {
+		return ClosePrepared{}, err
+	}
+
+	draft, failures := p.store.DraftWithoutPromise(file, id)
+	if len(failures) > 0 {
+		return ClosePrepared{}, p.draftError(failures)
+	}
+
+	before, err := recordOf(file, data)
+	if err != nil {
+		return ClosePrepared{}, err
+	}
+
+	after, err := recordOf(file, draft.Output)
+	if err != nil {
+		return ClosePrepared{}, err
+	}
+
+	return ClosePrepared{
+		Type:     "promise",
+		ID:       id,
+		File:     p.relative(file),
+		Before:   before,
+		After:    after,
+		Archived: Record{Type: "promise", Data: line},
+		file:     file,
+		before:   data,
+		record:   promise,
+		closing:  closing,
+		draft:    &draft,
+	}, nil
+}
+
+func (p Project) Close(
+	ctx context.Context,
+	prepared ClosePrepared,
+	stamps map[string]Approval,
+) error {
+	closing := prepared.closing
+
+	for id, input := range stamps {
+		if id != prepared.ID {
+			return record.StampTargetFailure(id)
+		}
+
+		approval, err := kernel.ParseApproval(input)
+		if err != nil {
+			return err
+		}
+		closing.Approval = &approval
+	}
+
+	line, err := record.ClosedJSON(prepared.record, closing)
+	if err != nil {
+		return err
+	}
+
+	locks, err := states.Open(ctx, p.root)
+	if err != nil {
+		return err
+	}
+
+	segment := archive.SegmentName(closing.Closed)
+	lock := locks.LockFile(recordsLock)
+
+	return system.WithFileLock(lock, func() error {
+		if err := record.Unchanged(prepared.file, prepared.before); err != nil {
+			return err
+		}
+
+		err := p.archive.Append(segment, prepared.Type, line)
+		if err != nil {
+			return err
+		}
+
+		if prepared.draft != nil {
+			return prepared.draft.Commit()
+		}
+
+		return record.Remove(prepared.file, prepared.before)
 	})
 }

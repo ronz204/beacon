@@ -17,7 +17,8 @@ type Record struct {
 
 type StoredRecord struct {
 	Record
-	File string `json:"file"`
+	File     string `json:"file"`
+	Archived bool   `json:"archived"`
 }
 
 type Signal struct {

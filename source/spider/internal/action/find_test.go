@@ -15,6 +15,7 @@ func findIDs(t *testing.T, text string) []string {
 		context.Background(),
 		repositories(validRoot),
 		text,
+		nil,
 	)
 	requireClean(t, failures)
 

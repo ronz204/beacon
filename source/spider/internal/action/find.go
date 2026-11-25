@@ -17,6 +17,12 @@ type FindMatch struct {
 	Text string
 }
 
+type FindCandidate struct {
+	Kind  thread.NodeKind
+	ID    string
+	Texts []string
+}
+
 type FindResult struct {
 	Matches []FindMatch
 	Omitted int
@@ -31,6 +37,7 @@ func Find(
 	ctx context.Context,
 	repositories Repositories,
 	text string,
+	archived []FindCandidate,
 ) (FindResult, []error) {
 	snapshot := Load(ctx, repositories)
 	needle := kernel.FoldText(strings.TrimSpace(text))
@@ -40,6 +47,9 @@ func Find(
 
 	search := &findSearch{needle: needle}
 	search.snapshot(snapshot)
+	for _, candidate := range archived {
+		search.candidate(candidate)
+	}
 
 	return search.result(), snapshot.Failures
 }
@@ -93,6 +103,19 @@ func (s *findSearch) add(
 				Kind: kind,
 				ID:   id.String(),
 				Text: firstLine(texts[0].String()),
+			})
+			return
+		}
+	}
+}
+
+func (s *findSearch) candidate(candidate FindCandidate) {
+	for _, text := range candidate.Texts {
+		if strings.Contains(kernel.FoldText(text), s.needle) {
+			s.matches = append(s.matches, FindMatch{
+				Kind: candidate.Kind,
+				ID:   candidate.ID,
+				Text: firstLine(candidate.Texts[0]),
 			})
 			return
 		}

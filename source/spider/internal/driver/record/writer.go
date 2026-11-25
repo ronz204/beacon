@@ -2,8 +2,6 @@ package record
 
 import (
 	"bytes"
-	"errors"
-	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
@@ -16,18 +14,24 @@ import (
 )
 
 const (
-	payloadFile    = "payload.json"
-	promisesKey    = "promises"
-	approvedKey    = "approved"
-	payloadTypeKey = "type"
-	payloadDataKey = "record"
-	payloadFileKey = "file"
+	payloadFile     = "payload.json"
+	promisesKey     = "promises"
+	approvedKey     = "approved"
+	payloadTypeKey  = "type"
+	payloadDataKey  = "record"
+	payloadFileKey  = "file"
+	payloadArchived = "archived"
 )
 
 var (
 	recordOwned  = []string{idKey, "created", "author", approvedKey}
 	promiseOwned = []string{idKey, approvedKey, "attested"}
-	payloadKeys  = []string{payloadTypeKey, payloadDataKey, payloadFileKey}
+	payloadKeys  = []string{
+		payloadTypeKey,
+		payloadDataKey,
+		payloadFileKey,
+		payloadArchived,
+	}
 )
 
 var titleKeys = map[string]string{
@@ -633,27 +637,24 @@ func (d Draft) Unchanged() bool {
 }
 
 func (s Store) Write(d Draft, lock string) error {
-	return system.WithFileLock(lock, func() error {
-		current, err := os.ReadFile(d.File)
-		switch {
-		case errors.Is(err, fs.ErrNotExist) && d.Before == nil:
-		case err != nil:
-			return kernel.NewRecordFailure(d.File, 0, err)
-		case !bytes.Equal(current, d.Before):
-			return failAt(RecordChanged, d.File, 0)
-		}
+	return system.WithFileLock(lock, d.Commit)
+}
 
-		if d.Unchanged() {
-			return nil
-		}
+func (d Draft) Commit() error {
+	if err := Unchanged(d.File, d.Before); err != nil {
+		return err
+	}
 
-		if err := os.MkdirAll(filepath.Dir(d.File), 0o755); err != nil {
-			return kernel.NewRecordFailure(d.File, 0, err)
-		}
-		if err := system.WriteFileAtomic(d.File, d.Output); err != nil {
-			return kernel.NewRecordFailure(d.File, 0, err)
-		}
-
+	if d.Unchanged() {
 		return nil
-	})
+	}
+
+	if err := os.MkdirAll(filepath.Dir(d.File), 0o755); err != nil {
+		return kernel.NewRecordFailure(d.File, 0, err)
+	}
+	if err := system.WriteFileAtomic(d.File, d.Output); err != nil {
+		return kernel.NewRecordFailure(d.File, 0, err)
+	}
+
+	return nil
 }
