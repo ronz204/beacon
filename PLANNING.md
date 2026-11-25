@@ -4,7 +4,7 @@ Este plan cubre solo la fase en curso: en qué orden se construye y qué archivo
 
 La numeración de pasos y decisiones sigue la del plan de la Fase 1 (Spider), ya cerrada, para que las referencias de la KB y de los commits sigan valiendo: por eso los pasos empiezan en el 23 y las decisiones en D5. Ese plan está en el historial de git (`git show 967f5aa:PLANNING.md`).
 
-> **Estado: en curso.** Pasos 23 a 25 hechos; sigue el paso 26. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
+> **Estado: en curso.** Bloque 4 cerrado (pasos 23 a 26); sigue el paso 27, con la rama `feat/weaver-cli`. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
 
 ## 1. Panorama
 
@@ -392,7 +392,7 @@ cmd/beacon → router → weaver.go → action → domain → kernel
   - Errores nuevos: `guide_not_archivable` y `task_has_open_children`, con las subtareas abiertas en `details.subtasks`.
   - **Límite conocido:** se archiva primero y se borra después. Si el proceso muere en medio, el registro queda activo y archivado a la vez, y `doctor` lo reporta como id repetido (`graph_node_repeated`). Se arregla borrando el archivo de `records/`. Si pasa en la práctica, se agrega a `doctor` una reparación automática.
 
-### Paso 26. Resultados, huella y `config.yaml`
+### Paso 26. Resultados, huella y `config.yaml` (hecho)
 
 - **Objetivo:** que los resultados de los checks existan de verdad y que la deriva no mienta con cambios sin commitear (D9, D12).
 - **Construye:**
@@ -404,6 +404,14 @@ cmd/beacon → router → weaver.go → action → domain → kernel
 - **`RecordResults(ctx, verdicts)`** en `spider.go`: recibe `{promesa, outcome, reason}`, calcula `HEAD` y la huella **una vez por capability**, y fusiona en `results.json` bajo candado.
 - **Cuidado:** la huella se calcula sobre los archivos del diff que ya se obtuvo en lote (`layout`), sin una consulta a git por promesa. Un archivo borrado entra en la huella como borrado.
 - **Hecho cuando:** (a) un check con cambios sin commitear no muestra deriva; (b) editar después uno de esos archivos sí la muestra; (c) commitear exactamente lo comprobado no la muestra; (d) dos escritores concurrentes no pierden resultados.
+- **Cómo quedó:**
+  - `RecordResults` recibe veredictos `{promesa, outcome, reason}`, hace una consulta a git (cambios desde `HEAD`) y calcula la huella una vez por capability. Una promesa desconocida da `record_missing`.
+  - La huella es el SHA-256 de las líneas `ruta NUL sha256-del-contenido` (o `deleted`) de los archivos cambiados que caen en los `paths`, ordenadas por ruta. Vacía si no hay ninguno.
+  - La deriva pasa a ser "la huella actual difiere de la guardada". Con una huella guardada vacía es idéntica a la regla anterior, y solo se calcula cuando algún archivo de los `paths` cambió.
+  - Sin git, la fachada sigue usando un lector sin resultados.
+  - `config.yaml` parsea `runners` (`run` no vacío y `baseline` opcional) y `approved`; un ejecutor sin `run` da `record_runner_invalid`. `Runners()` los expone, y `Config()` devuelve el `config` con la forma del payload.
+  - `StateChanges` usa los `baseline` reales e incluye los cambios en `config.yaml` (tipo `config`).
+  - El payload `{"type": "config"}` se fusiona como un registro, con `approved` como única clave del binario, y el sello usa el id `config`. Si no cambia nada, el archivo queda igual byte por byte; si cambia, se reescribe con el estilo de la librería YAML, porque `fmt` no tiene un formato canónico para `config.yaml`.
 
 ## 5. Bloque 5: dominio de Weaver
 
