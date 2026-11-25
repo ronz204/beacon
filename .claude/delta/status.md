@@ -123,7 +123,7 @@ Fuera del orden de construcción hasta que se cumpla su condición.
 
 ## Orden de construcción
 
-Sin recorte de producto; el orden sigue las dependencias. El plan detallado de Spider está en `PLANNING.md`.
+Sin recorte de producto; el orden sigue las dependencias. El plan detallado de la fase en curso está en `PLANNING.md`; el de la Fase 1 (Spider), cerrado, queda en el historial de git.
 
 | Fase | Contenido |
 |---|---|
