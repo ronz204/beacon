@@ -37,7 +37,7 @@ check: {runner: test-node, pkg: api, target: auth/lockout}
 
 - Los parámetros se pasan como **argumentos separados, sin shell**, y no pueden empezar con `-`, para que nadie inyecte una opción.
 - Un monorepo de 40 paquetes usa el **mismo** ejecutor con otro `pkg`. Si los paquetes usan toolchains distintas, hay un ejecutor por ecosistema (`test-node`, `test-go`).
-- Cambiar un ejecutor es el único cambio peligroso: es de nivel 3 y en CI se usan los `runners` de la rama base (`deltas`, `sentry`).
+- Cambiar un ejecutor es el único cambio peligroso: es de nivel 3 y en CI se usan los `runners` de la rama base (`deltas`, `snares`).
 
 ## Cada test cita el id de su promesa
 
@@ -78,6 +78,8 @@ Beacon **no trae un navegador**: usa los que el proyecto ya tenga a través de e
 ## Deriva
 
 Una promesa en `Holds` o `Attested` cuyo código (`paths`) cambió desde su última comprobación, incluidos los cambios sin commitear, se muestra como **deriva**: no deja de cumplirse, pero ya no está demostrada. Se resuelve volviendo a comprobar o a atestiguar. Sin `paths` no hay detección de deriva (`ledger`, `spider`).
+
+Un check corrido con cambios sin commitear no produce deriva por sí mismo: el resultado guarda la **huella** de esos cambios (`layout`), y solo hay deriva si lo cambiado desde el commit del check deja de coincidir con ella. Commitear exactamente lo comprobado tampoco produce deriva.
 
 ## Dónde viven los resultados
 

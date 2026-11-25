@@ -21,7 +21,7 @@
 | **Work / Task** | Trabajo grande y sus nodos (`method`) |
 | **Claim** | Reserva consultiva de una tarea (`method`) |
 | **Nivel 1, 2, 3** | Clasificación de cambios por riesgo (`deltas`) |
-| **Spider, Engine, Render, Anchor, Sentry** | Componentes (`design`) |
+| **Spider, Weaver, Anchor, Snares** | Componentes (`design`) |
 | **ODD** | Organic Driven Development, el método de guía de Gentle-AI según su README actual |
 | **RDD** | Receipt-Driven Development, el flujo de revisión de Gentle-AI donde el binario decide el siguiente paso |
 | **SDD** | Desarrollo guiado por specs; Böckeler distingue spec-first, spec-anchored y spec-as-source (`survey`) |

@@ -10,14 +10,14 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 |---|---|---|
 | Naturaleza | Método que comprueba con código, agnóstico al agente | `vision` |
 | Nombre | **Beacon**, con carpeta `.beacon/` y prefijo de ids `bc-`. Se mantiene pese a la colisión con el producto de Asymptote Labs (ver Riesgos) | `layout` |
-| Componentes | Spider, Engine (con Render), Anchor, Sentry; módulos en un binario y un repo | `design` |
-| Nombre de Sentry | Se mantiene, pese a coincidir con la herramienta de errores; Guard descartado | `sentry` |
-| Interfaz | **Solo CLI**, sin servidor MCP. Se reconsidera únicamente si un agente importante no tiene terminal o si se mide latencia real que moleste en repos grandes | `engine` |
-| Salida `--json` | Un sobre uniforme `{ok, data, signals, hint}`; códigos de salida 0 (ok), 1 (error de uso) y 2 (bloqueado o recurso ocupado) | `engine` |
-| `beacon check` | Sin argumentos, solo lo relacionado con los cambios; con un id o con `--all` | `engine` |
+| Componentes | Spider, Weaver, Anchor, Snares; módulos en un binario y un repo | `design` |
+| Nombres de componentes | Metáfora de la telaraña: Spider, Weaver, Anchor, Snares (Engine y Sentry quedan descartados) | `design` |
+| Interfaz | **Solo CLI**, sin servidor MCP. Se reconsidera únicamente si un agente importante no tiene terminal o si se mide latencia real que moleste en repos grandes | `weaver` |
+| Salida `--json` | Un sobre uniforme `{ok, data, signals, hint}`; códigos de salida 0 (ok), 1 (error de uso) y 2 (bloqueado o recurso ocupado) | `weaver` |
+| `beacon check` | Sin argumentos, solo lo relacionado con los cambios; con un id o con `--all` | `weaver` |
 | Idioma de los mensajes | Inglés fijo, igual que las claves y la guía del método | `design` |
 | Lenguaje y distribución | Go, binario estático, MIT, sin telemetría; Releases, `go install`, Homebrew y Scoop | `design` |
-| Dependencias | `go.yaml.in/yaml/v4` y `spf13/cobra` v1.10.2 para el CLI. Los globs se implementan a mano sobre `regexp`, porque la gramática es pequeña y `doublestar` es inconsistente con `**` dentro de llaves | `layout`, `engine` |
+| Dependencias | `go.yaml.in/yaml/v4` y `spf13/cobra` v1.10.2 para el CLI. Los globs se implementan a mano sobre `regexp`, porque la gramática es pequeña y `doublestar` es inconsistente con `**` dentro de llaves | `layout`, `weaver` |
 | Carpetas raíz | `source/` para el código y `testing/` para las pruebas que cruzan el binario. `source/` no protege como `internal`: solo el `internal/` de cada pieza es privado para Go | `README` |
 | Fuente de verdad | Archivos en git, cargados en memoria al arrancar; sin caché persistente | `layout` |
 | Layout | `records/` (7 carpetas en plural), `archive/` mensual y `config.yaml` | `layout` |
@@ -42,7 +42,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Frescura | `review` (duración) y `reviewed` (fecha); plazos por tipo de 6 y 12 meses, valores iniciales; también se marca con 10 o más commits sobre sus paths desde la revisión | `guides` |
 | Deriva | Compara el commit del último check con el árbol de trabajo, así que incluye cambios sin commitear | `spider`, `pledge` |
 | Spider | Estructura activa con señales; el grafo vive en el contexto `thread` | `spider`, `design` |
-| Frontera de `diff` | Spider detecta qué cambió y Engine lo clasifica por nivel | `spider`, `deltas`, `engine` |
+| Frontera de `diff` | Spider detecta qué cambió y Weaver lo clasifica por nivel | `spider`, `deltas`, `weaver` |
 | Checks | Ejecutores en `config.yaml` más parámetros; sin shell | `pledge` |
 | Redacción de promesas | Guía, no regla: resultado observable con entradas y salidas concretas, una cosa por promesa, EARS opcional. `beacon record` la devuelve al proponer una promesa | `pledge`, `anchor` |
 | Resultados de checks | Locales en `.git/beacon/results.json`, recalculados en CI; sin resultado local es Unverified con razón `not-run-here` | `pledge` |
@@ -50,9 +50,9 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Promesas manuales | `attest` solo al cerrar sesión y solo si cambió el código; `--evidence` guarda la referencia a lo revisado | `pledge` |
 | UI | Beacon no trae navegador. Cuatro casos: E2E y accesibilidad como ejecutor (Holds), regresión visual contra una captura base (Holds solo como "igual a la base"), "se ve bien" manual con evidencia `observed` (Attested). **Actualizar una captura base es nivel 3** | `pledge`, `deltas` |
 | Niveles de cambio | 1, 2 y 3 con regla mecánica y atajo por texto normalizado; incluye las capturas base | `deltas` |
-| Aprobación | Sí en el chat transmitido por el agente; en equipo, además la review del PR por una persona (la garantía real) | `deltas`, `sentry` |
+| Aprobación | Sí en el chat transmitido por el agente; en equipo, además la review del PR por una persona (la garantía real) | `deltas`, `snares` |
 | Riesgo | Lo calcula el código; el agente solo puede subirlo | `deltas` |
-| CI | Comando genérico `beacon sentry ci` y una plantilla de GitHub Actions que escucha `pull_request` y `merge_group`; otras plataformas después | `sentry` |
+| CI | Comando genérico `beacon snares ci` y una plantilla de GitHub Actions que escucha `pull_request` y `merge_group`; otras plataformas después | `snares` |
 | Flujo | Pasos 0 a 9; tamaño por reanudabilidad | `method` |
 | Arranque | Escaneo mecánico, todo `proposed`, preguntas de una en una; guide de arquitectura como `draft` con un esqueleto corto inspirado en arc42 | `method` |
 | Claims | Consultivos, en dos sitios: local en `.git/beacon/` (visible entre worktrees, avisa al instante) y `owner` y `branch` en el registro (avisan al equipo); `ready` por rama | `method`, `layout` |
@@ -62,17 +62,32 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Agentes | Ola 1: Claude Code, Codex, Cursor. Ola 2: OpenCode, Gemini CLI, Copilot | `anchor` |
 | Hooks de Codex | Soportados (`SessionStart`, `Stop`, y `PreCompact` y `PostCompact` para la reinyección); el hook llama al CLI | `anchor` |
 | Idioma | Claves, guía del método y mensajes del binario en inglés; contenido de los registros en cualquier idioma | `design` |
-| Fricción | Medida solo en local | `engine` |
+| Fricción | Medida solo en local | `weaver` |
+| `beacon status` | Entra en la Fase 2, porque el aviso del `brief` lo nombra (P7) | `weaver` |
+| `record` | Registro completo por stdin, sin parches; el sí se transmite reenviando el mismo payload con `--approve`, sin estado pendiente | `weaver`, `deltas` |
+| Aprobación de `config.yaml` | Clave `approved` sellada por `record --approve` | `ledger`, `deltas` |
+| Rama base | `git merge-base HEAD` con `origin/HEAD`, `main` o `master`; `--base` la fuerza | `weaver` |
+| Ejecución de checks | Tope fijo de 10 minutos por invocación (`timeout` es `Violated`); con un rojo, `check` sale con código 2. El tope se vuelve configurable si la fricción lo pide | `weaver` |
+| `results.json` | Lo guarda Spider, con commit y huella de lo no commiteado, para que un check con cambios sin commitear no muestre deriva | `layout`, `pledge` |
+| Archivo | Adelantado a la Fase 2, porque `close` lo necesita; una línea JSON por registro cerrado | `layout` |
 | Benchmark de fricción | Protocolo aprobado: condiciones A (sin Beacon), B (solo guía), C (completo) y D (C sin reinyección); piloto de 10 tareas, 3 repeticiones y un agente (90 sesiones); métricas de proceso, integridad, fricción, resultado y costo. El arnés se construye pronto y el benchmark se corre en la Fase 6 | `survey` 7.6 |
 
 ## Abierto
 
 **No queda nada de diseño abierto.** Las propuestas R1 a R9 que salieron de la investigación del 2026-11-22 se aprobaron ese mismo día y ya están aplicadas en los archivos de arriba (`survey` las llama "propuestas": ese texto es el de la fecha de la investigación). Lo que sigue son detalles de implementación que se resuelven al construir cada fase:
 
-- El formato exacto de `results.json` y del archivo `.jsonl` (`claims.json` e `injected.json` ya están definidos en `layout`).
+- Las Propuestas D15 a D20 del plan de la Fase 2 (`PLANNING.md`): frontera pública de Spider, forma del payload, nivel de cada cambio, promesas que no se borran por omisión, regla del sí fresco y cómo se corren los checks. Se confirman al revisar el plan.
 - Qué hook sirve en cada agente para reinyectar antes de editar y tras compactar, y cómo identificar la sesión (R1).
-- El nombre y el comportamiento exactos del evento `merge_group` de GitHub (`sentry`).
+- El nombre y el comportamiento exactos del evento `merge_group` de GitHub (`snares`).
 - Si el nivel 3 de las capturas base resulta demasiado ruidoso; se mide en la fricción y se afina el `baseline`.
+
+## Diferido
+
+Fuera del orden de construcción hasta que se cumpla su condición.
+
+| Qué | Por qué se difiere | Se retoma si |
+|---|---|---|
+| **Render:** `beacon render`, vistas Markdown bajo demanda para personas (resumen del proyecto, una capability con sus promesas, preguntas abiertas), sin versionar | No es necesario por ahora: los slugs hacen legible `.beacon/`, y `get`, `find` y `status` resumen el estado (`layout`, `weaver`) | Una persona no logra entender el estado con eso, por ejemplo al revisar un PR o al presentar el proyecto |
 
 ## Investigación
 
@@ -100,8 +115,8 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Registro que se pudre | Promesas y guides sin revisar |
 | Calidad de las promesas | Mal redactadas no protegen nada; la guía de redacción ayuda pero no se puede imponer por código (`pledge`) |
 | Paths gruesos | Contexto impreciso o deriva no detectada |
-| Seguridad | El CI ejecuta código del repo (`sentry`) |
-| Conflictos en equipo | Mismo archivo editado por dos personas (`layout`); conflictos semánticos que solo ve el CI sobre la fusión (`sentry`) |
+| Seguridad | El CI ejecuta código del repo (`snares`) |
+| Conflictos en equipo | Mismo archivo editado por dos personas (`layout`); conflictos semánticos que solo ve el CI sobre la fusión (`snares`) |
 | Agentes cambiantes | Los adaptadores envejecen rápido (`anchor`) |
 | Colisión de nombre | Beacon coincide con el producto de Asymptote Labs (open source, Go, memoria para agentes de código, con financiación), incluido el comando `beacon`; en npm los nombres `beacon` y `beacon-cli` ya están tomados. Se decidió mantener el nombre, así que hay riesgo de confusión y de choque con ese comando en la máquina de quien use ambas herramientas |
 | Resultados local vs CI | Una promesa puede pasar en un clon y fallar en CI; la fuente de verdad es el CI (`pledge`) |
@@ -114,8 +129,8 @@ Sin recorte de producto; el orden sigue las dependencias. El plan detallado de S
 |---|---|
 | 0 | **Cerrada:** nombre, benchmarks de carga y de git, esquema, guía del método, decisiones de interfaz y las propuestas de la investigación |
 | 1 | **Cerrada el 2026-11-23. Spider:** esquema (con `nongoals`, `rejected` y `evidence`), parser YAML estricto, `fmt`, ids, grafo en memoria, validación, `doctor`, globs |
-| 2 | **Engine (CLI):** `--json` con el sobre uniforme (`brief`, `context` con `--hook`, `record` con stdin, `close`, `get`, `find`), niveles y `diff` (incluidas las capturas base), `check` con ejecutores, `ready` y `claim` con claim local y escritura atómica de `.git/beacon/`; prueba de ramas largas |
+| 2 | **Weaver (CLI), planificada en `PLANNING.md`:** `--json` con el sobre uniforme (`brief`, `context` con `--hook`, `record` con stdin, `close`, `get`, `find`, `status`), archivo, niveles y `diff` (incluidas las capturas base), `check` con ejecutores y `results.json`, `ready` y `claim` con claim local y escritura atómica de `.git/beacon/`; prueba de ramas largas |
 | 3 | **Anchor sobre el CLI:** guía del método, hooks con reinyección, permisos y marca del actor para Claude Code, luego Codex y Cursor; `beacon install` con `--dry-run` y copias; guía de redacción de promesas; arnés del benchmark; uso del propio Beacon en su desarrollo |
-| 4 | **Sentry:** pre-commit, `beacon sentry ci` y plantilla de GitHub Actions (con `merge_group`); arranque, `attest` con `--evidence`, `verify`; ejecutores de ejemplo para UI |
-| 5 | **Render**, frescura de guides, archivo, `stale` |
+| 4 | **Snares:** pre-commit, `beacon snares ci` y plantilla de GitHub Actions (con `merge_group`); arranque, `attest` con `--evidence`, `verify`; ejecutores de ejemplo para UI |
+| 5 | Frescura de guides, `stale` |
 | 6 | Segunda ola de agentes, `stats`, correr el benchmark de fricción |

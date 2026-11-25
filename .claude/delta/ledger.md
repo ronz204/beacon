@@ -40,7 +40,7 @@ No hay un tipo especial de capability para diseño de UI: una capability de UI e
 - Si existe la variable de entorno `BEACON_ACTOR` (por ejemplo `agent:claude-code`), ese es el actor. La pone Anchor en los comandos del agente (`anchor`).
 - Si no, el actor es la persona: `human:<user.name de git>`.
 
-Es un **marcado, no una prueba**: el agente corre con el mismo usuario del sistema y podría saltárselo. La garantía real en equipo es la revisión del PR por una persona (`deltas`, `sentry`).
+Es un **marcado, no una prueba**: el agente corre con el mismo usuario del sistema y podría saltárselo. La garantía real en equipo es la revisión del PR por una persona (`deltas`, `snares`).
 
 ## Relaciones
 
@@ -134,8 +134,9 @@ agents: [claude-code, codex, cursor]
 | `review` | Plazo de revisión por tipo de guide y de decisión (`guides`) | Nivel 1 |
 | `limits` | Largo máximo en líneas de una guide, del `brief` y de lo que un hook inyecta a mitad de sesión (`spider`, `anchor`); valores iniciales que se ajustan con el uso | Nivel 1 |
 | `agents` | Agentes instalados (`anchor`) | Nivel 1 |
+| `approved` | `{by, at, via}`: el sí al último cambio de `runners` o `schema` (`deltas`). Lo escribe solo el binario | — |
 
-Solo `runners` y `schema` son sensibles porque solo los ejecutores corren código en CI (`deltas`, `sentry`). Cambiar los archivos que cubre un `baseline` también es de nivel 3, pero se detecta en el diff del repo y no en `config.yaml` (`deltas`).
+Solo `runners` y `schema` son sensibles porque solo los ejecutores corren código en CI (`deltas`, `snares`). Cambiar los archivos que cubre un `baseline` también es de nivel 3, pero se detecta en el diff del repo y no en `config.yaml` (`deltas`).
 
 ## Ejemplos
 

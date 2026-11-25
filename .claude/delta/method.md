@@ -15,7 +15,7 @@ Cómo trabaja el agente con Beacon. Es ligero: el binario respalda los pasos que
 | 6. Implementar | Test primero; cada test cita el id de su promesa; registra decisiones (con las alternativas que descartó) y cierra preguntas al resolverlas; las promesas nuevas dicen un resultado observable con entradas y salidas concretas (`pledge`) | Validación de registros y niveles de cambio |
 | 7. Comprobar | `beacon check` en las capabilities tocadas | Ejecución y veredicto por código (`pledge`) |
 | 8. Cerrar | Informe: promesas tocadas y su estado, cambios en el estado del proyecto, pendientes | `beacon diff` da el resumen clasificado; los de nivel 3 esperan un sí |
-| 9. Entregar | **La persona** decide commit, push y PR | Git hook y CI ejecutan `beacon check` (`sentry`), también sobre la fusión en la cola de merge |
+| 9. Entregar | **La persona** decide commit, push y PR | Git hook y CI ejecutan `beacon check` (`snares`), también sobre la fusión en la cola de merge |
 
 ## Tamaño por reanudabilidad
 
@@ -40,7 +40,7 @@ La práctica común con varios agentes es una tarea, una rama, un worktree y una
 - **`owner` y `branch` en el registro avisan al equipo** cuando la rama sube. Si dos ramas reclaman la misma tarea en máquinas distintas, git lo muestra como **conflicto en ese archivo**; el conflicto es visible, que es lo que se quiere.
 - `ready` se calcula **por rama** y tiene en cuenta los claims locales.
 - Un claim no es un candado: la persona puede tomar una tarea reclamada. Lo que evita es que ocurra sin enterarse.
-- **Ramas largas** (qué pasa con una promesa cambiada en la rama principal mientras una rama vive) no está resuelto del todo: la hipótesis es que `beacon diff` compare contra el punto de origen de la rama, y se prueba con casos reales en la Fase 2 (`status`).
+- **Ramas largas** (qué pasa con una promesa cambiada en la rama principal mientras una rama vive) no está resuelto del todo: la hipótesis es que `beacon diff` compare contra el punto de origen de la rama (`git merge-base`, `weaver`), y se prueba con casos reales en la Fase 2 (`status`).
 
 ## Estado visible y preguntas
 

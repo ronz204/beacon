@@ -1,6 +1,6 @@
 # Anchor
 
-Adaptadores que instalan Beacon en cada agente. Son **transporte opaco**: no toman decisiones; toda decisión vive en el binario (`engine`).
+Adaptadores que instalan Beacon en cada agente. Son **transporte opaco**: no toman decisiones; toda decisión vive en el binario (`weaver`).
 
 ## Qué instala
 

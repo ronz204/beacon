@@ -35,7 +35,7 @@ Los cambios se clasifican en tres niveles según el riesgo de debilitar lo prome
 
 ## P7. Los mensajes llevan a una salida
 
-Si Beacon bloquea algo, dice exactamente qué hacer, y lo que dice funciona. Un mensaje solo nombra un comando si ejecutarlo resuelve el bloqueo. Cero callejones sin salida; se mide (`engine`).
+Si Beacon bloquea algo, dice exactamente qué hacer, y lo que dice funciona. Un mensaje solo nombra un comando si ejecutarlo resuelve el bloqueo. Cero callejones sin salida; se mide (`weaver`).
 
 ## P8. Apuntar el instrumento a uno mismo
 
