@@ -68,13 +68,17 @@ func (s Store) Lookup(
 	ctx context.Context,
 	id kernel.RecordID,
 ) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+
+	return s.findFile(id)
+}
+
+func (s Store) findFile(id kernel.RecordID) (string, error) {
 	prefix := id.String() + "-"
 
 	for _, kind := range RecordKinds() {
-		if err := ctx.Err(); err != nil {
-			return "", err
-		}
-
 		files, _ := listFiles(s.folder(kindFolders[kind]), extensionOf(kind))
 		for _, file := range files {
 			if strings.HasPrefix(filepath.Base(file), prefix) {

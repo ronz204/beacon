@@ -73,6 +73,10 @@ func NewStore(directory string) (Store, error) {
 	return Store{directory: directory}, nil
 }
 
+func (s Store) LockFile(name string) string {
+	return filepath.Join(s.directory, name)
+}
+
 func (s Store) ListClaims(ctx context.Context) ([]agenda.TaskClaim, error) {
 	var document claimsDocument
 	if err := s.read(claimsFile, &document); err != nil {

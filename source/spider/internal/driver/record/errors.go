@@ -23,6 +23,11 @@ const (
 	RecordSchemaNewer        RecordCode = "record_schema_newer"
 	RecordFormatUnsafe       RecordCode = "record_format_unsafe"
 	RecordMissing            RecordCode = "record_missing"
+	RecordPayloadInvalid     RecordCode = "payload_invalid"
+	RecordPromiseOmitted     RecordCode = "promise_omitted"
+	RecordPromiseUnknown     RecordCode = "promise_unknown"
+	RecordStampTarget        RecordCode = "record_stamp_target"
+	RecordChanged            RecordCode = "record_changed"
 )
 
 type RecordError = kernel.Error[RecordCode]
@@ -46,6 +51,11 @@ var recordErrors = kernel.ErrorCatalog[RecordCode]{
 	RecordSchemaNewer:        "update beacon to read this schema version",
 	RecordFormatUnsafe:       "formatting would alter the record content",
 	RecordMissing:            "no active record has this id",
+	RecordPayloadInvalid:     "send {type, record} with a known type",
+	RecordPromiseOmitted:     "keep every promise or run beacon close",
+	RecordPromiseUnknown:     "omit the id of a new promise",
+	RecordStampTarget:        "approval names an element not in the record",
+	RecordChanged:            "the record changed; read it again",
 }
 
 func failAt(code RecordCode, file string, line int) RecordError {
