@@ -520,7 +520,7 @@ Se commitea por hito revisado, no por archivo.
 
 # Parte II. Fase 2: Weaver
 
-> **Estado: planificada el 2026-11-25, sin empezar.** Las decisiones D5 a D14 se cerraron con la persona y ya están en la KB. Lo marcado como **Propuesta** se decidió al escribir el plan y se confirma al revisarlo.
+> **Estado: planificada el 2026-11-25, sin empezar.** Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
 
 ## 9. Panorama
 
@@ -594,7 +594,7 @@ action/*                   record, close, claim, check, diff, brief, status
 
 ## 10. Decisiones
 
-D5 a D14 se cerraron con la persona el 2026-11-25. D15 a D20 son **Propuestas** del plan.
+D5 a D14 se cerraron con la persona el 2026-11-25, y D15 a D20, propuestas en el plan, se aprobaron el mismo día.
 
 ### D5. `beacon status` entra en la Fase 2
 
@@ -658,14 +658,14 @@ D5 a D14 se cerraron con la persona el 2026-11-25. D15 a D20 son **Propuestas** 
 - **Por qué:** un script o el pre-commit lo detectan sin leer el JSON, y el agente lo lee como "bloqueado hasta arreglar el código".
 - **Afecta a:** paso 33.
 
-### D15. Frontera pública de Spider con tipos planos (**Propuesta**)
+### D15. Frontera pública de Spider con tipos planos
 
 - **Decisión:** `spider.go` expone structs públicos sin lógica (`RecordView`, `StateChange`, `ProofVerdict`, `RunnerConfig`...), definidos en un segundo archivo del paquete raíz, `views.go`. Ningún tipo de `spider/internal` cruza la frontera.
 - **En Weaver:** `driver/facade` convierte esos structs en valores de su dominio pasando por sus parsers, como cualquier dato que entra de fuera (`code-domain-layer`).
 - **Por qué:** con alias a tipos internos, la API de Spider quedaría atada a su dominio.
 - **Consecuencia:** la regla del `README` "cada pieza se expone por su archivo de entrada" pasa a decir "por su paquete raíz". Se ajusta en el paso 23.
 
-### D16. Forma del payload (**Propuesta**)
+### D16. Forma del payload
 
 ```json
 {"type": "capability", "record": {"id": "bc-7f3a", "name": "...", "promises": []}}
@@ -677,7 +677,7 @@ D5 a D14 se cerraron con la persona el 2026-11-25. D15 a D20 son **Propuestas** 
 - **Los valores se leen por el tipo del esquema**, igual que en el YAML: una fecha o una versión llega como string.
 - `beacon record -` lee de stdin: el `-` es el argumento posicional y `--json` sigue siendo solo el formato de salida. Así, el `beacon record --json -` de `weaver` funciona sin cambios.
 
-### D17. Nivel de cada cambio (**Propuesta**)
+### D17. Nivel de cada cambio
 
 Es la regla mecánica de `deltas`, completada para los casos que la KB no nombra. El atajo del texto normalizado aplica a todo cambio de texto.
 
@@ -699,12 +699,12 @@ Es la regla mecánica de `deltas`, completada para los casos que la KB no nombra
 
 - **Riesgo conocido:** estrechar los `paths` de una capability es nivel 1, aunque puede ocultar deriva. Si en el uso real resulta un agujero, pasa a nivel 3 (anotado en `status`).
 
-### D18. Las promesas no se borran por omisión (**Propuesta**)
+### D18. Las promesas no se borran por omisión
 
 - **Decisión:** un payload de capability que omite una promesa existente se rechaza con código 1 (`promise_omitted`). El `hint` dice que se cierre con `beacon close <promesa> --reason <texto>`.
 - **Por qué:** P5. Lo que deja de valer se cierra con motivo y se archiva; no desaparece.
 
-### D19. Cuándo un cambio de nivel 3 está aprobado (**Propuesta**)
+### D19. Cuándo un cambio de nivel 3 está aprobado
 
 Sirve para la señal "Pendiente de sí" (`brief`, `status`, `diff`), sobre todo con ediciones a mano que no pasan por `record`.
 
@@ -712,7 +712,7 @@ Sirve para la señal "Pendiente de sí" (`brief`, `status`, `diff`), sobre todo 
 - **Capturas base:** cuentan como aprobadas si en el mismo rango cambió el `approved` de alguna capability con una promesa que usa ese ejecutor.
 - **Es un marcado, no una prueba** (`deltas`): la garantía en equipo sigue siendo la review del PR.
 
-### D20. Cómo se corren los checks (**Propuesta**)
+### D20. Cómo se corren los checks
 
 - **Una invocación por combinación distinta de ejecutor y parámetros.** Si dos promesas comparten `{runner, pkg, target}`, el ejecutor corre una vez y el veredicto vale para las dos.
 - **En serie**, en orden de id. El paralelismo se evalúa con la medición del paso 37.
@@ -851,7 +851,7 @@ cmd/beacon → router → weaver.go → action → domain → kernel
 
 - **Objetivo:** que Weaver y `router` usen todo lo que Spider ya calcula sin tocar su `internal`.
 - **Construye:** `views.go` con los tipos planos (D15); en `spider.go`, `Brief(ctx, pending)`, `Context(ctx, paths)`, `HookContext(ctx, session, paths)`, `Ready(ctx, branch)`, `Analyze(ctx)`, `Get(ctx, id)`, `Find(ctx, text)`, `StateChanges(ctx, revision)` y `Runners(ctx)`; y `action/find.go`.
-- **`find` (Propuesta):** busca una subcadena, sin distinguir mayúsculas ni acentos, en los campos de texto (`statement`, `name`, `intent`, `text`, `what`, `why`, `request`, `title`) de los registros activos; con `--archived`, también en `archive/`. Devuelve como máximo 20 resultados, con el aviso `N more`.
+- **`find`:** busca una subcadena, sin distinguir mayúsculas ni acentos, en los campos de texto (`statement`, `name`, `intent`, `text`, `what`, `why`, `request`, `title`) de los registros activos; con `--archived`, también en `archive/`. Devuelve como máximo 20 resultados, con el aviso `N more`.
 - **`Brief(ctx, pending)`** recibe las líneas de pendientes de sí ya armadas por Weaver y las pone en su prioridad (D4).
 - **Cuidado:** `Analyze` lo usan `brief`, `status` y `check`. Se arma una sola vez por comando y se reutiliza.
 - **Hecho cuando:** un test externo (`spider_test`) usa cada operación sin importar nada de `spider/internal`, y el `README` dice "por su paquete raíz".
@@ -1006,7 +1006,7 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
 ### Paso 37. Medición y KB
 
 - **Medir:** con 500 capabilities, cuánto tardan `record` (incluida la validación del grafo completo), `status` y el costo propio de `check` sin contar el ejecutor. Se anota en `layout`, junto a las mediciones de la Fase 1.
-- **Sincronizar:** `status` marca la Fase 2 como cerrada, y la KB recoge las Propuestas confirmadas (D15 a D20) y lo que cambie al implementar.
+- **Sincronizar:** `status` marca la Fase 2 como cerrada, y la KB recoge lo que cambie al implementar.
 - **Hecho cuando:** los números están en `layout` y la KB no contradice el código.
 
 ## 16. Hitos y commits
