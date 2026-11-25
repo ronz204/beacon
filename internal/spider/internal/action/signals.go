@@ -1,8 +1,6 @@
 package action
 
 import (
-	"context"
-
 	"github.com/ronz204/beacon/internal/spider/internal/domain/ledger"
 	"github.com/ronz204/beacon/internal/spider/internal/domain/thread"
 )
@@ -10,17 +8,9 @@ import (
 type Verifications map[ledger.PromiseID]ledger.Verification
 
 func verify(
-	ctx context.Context,
 	snapshot Snapshot,
-	proofs ledger.ProofReader,
-) (Verifications, []error) {
-	var failures []error
-
-	results, err := proofs.ReadResults(ctx)
-	if err != nil {
-		failures = append(failures, err)
-	}
-
+	results map[ledger.PromiseID]ledger.ProofResult,
+) Verifications {
 	verifications := make(Verifications)
 	for _, capability := range snapshot.Capabilities {
 		for _, promise := range capability.Promises() {
@@ -33,7 +23,7 @@ func verify(
 		}
 	}
 
-	return verifications, failures
+	return verifications
 }
 
 func promiseSignalsOf(

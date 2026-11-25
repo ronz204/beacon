@@ -3,6 +3,7 @@ package action
 import (
 	"context"
 	"slices"
+	"sync"
 
 	"github.com/ronz204/beacon/internal/kernel"
 	"github.com/ronz204/beacon/internal/spider/internal/domain/ledger"
@@ -29,11 +30,48 @@ type Analysis struct {
 }
 
 func Analyze(ctx context.Context, sources Sources) (Analysis, []error) {
+	var cache *changeCache
+	if sources.Changes != nil {
+		cache = newChangeCache(sources.Changes)
+		sources.Changes = cache
+	}
+	if sources.History != nil {
+		sources.History = prefetchHistory(ctx, sources.History)
+	}
+
+	var results map[ledger.PromiseID]ledger.ProofResult
+	var proofFailures []error
+	var reading sync.WaitGroup
+	reading.Go(func() {
+		var err error
+		results, err = sources.Proofs.ReadResults(ctx)
+		if err != nil {
+			proofFailures = append(proofFailures, err)
+		}
+		if cache != nil {
+			cache.prefetch(ctx, resultCommits(results))
+		}
+	})
+
 	snapshot := Load(ctx, sources.Repositories)
 	graph, _ := Validate(snapshot)
-	verifications, proofFailures := verify(ctx, snapshot, sources.Proofs)
-	driftFailures := markDrift(ctx, snapshot, verifications, sources)
-	stale, staleFailures := staleRecords(ctx, snapshot, sources)
+	reading.Wait()
+
+	verifications := verify(snapshot, results)
+	var driftFailures, staleFailures []error
+	var stale []StaleRecord
+	var checking sync.WaitGroup
+	if cache != nil {
+		checking.Go(func() {
+			driftFailures = markDrift(ctx, snapshot, verifications, sources)
+		})
+	}
+	if sources.History != nil {
+		checking.Go(func() {
+			stale, staleFailures = staleRecords(ctx, snapshot, sources)
+		})
+	}
+	checking.Wait()
 
 	signals := slices.Concat(
 		promiseSignalsOf(snapshot, graph, verifications),
