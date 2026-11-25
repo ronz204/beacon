@@ -40,7 +40,7 @@ La práctica común con varios agentes es una tarea, una rama, un worktree y una
 - **`owner` y `branch` en el registro avisan al equipo** cuando la rama sube. Si dos ramas reclaman la misma tarea en máquinas distintas, git lo muestra como **conflicto en ese archivo**; el conflicto es visible, que es lo que se quiere.
 - `ready` se calcula **por rama** y tiene en cuenta los claims locales.
 - Un claim no es un candado: la persona puede tomar una tarea reclamada. Lo que evita es que ocurra sin enterarse.
-- **Ramas largas** (qué pasa con una promesa cambiada en la rama principal mientras una rama vive) no está resuelto del todo: la hipótesis es que `beacon diff` compare contra el punto de origen de la rama, y se prueba con casos reales en la Fase 2 (`status`).
+- **Ramas largas** (qué pasa con una promesa cambiada en la rama principal mientras una rama vive) no está resuelto del todo: la hipótesis es que `beacon diff` compare contra el punto de origen de la rama (`git merge-base`, `weaver`), y se prueba con casos reales en la Fase 2 (`status`).
 
 ## Estado visible y preguntas
 

@@ -79,6 +79,8 @@ Beacon **no trae un navegador**: usa los que el proyecto ya tenga a través de e
 
 Una promesa en `Holds` o `Attested` cuyo código (`paths`) cambió desde su última comprobación, incluidos los cambios sin commitear, se muestra como **deriva**: no deja de cumplirse, pero ya no está demostrada. Se resuelve volviendo a comprobar o a atestiguar. Sin `paths` no hay detección de deriva (`ledger`, `spider`).
 
+Un check corrido con cambios sin commitear no produce deriva por sí mismo: el resultado guarda la **huella** de esos cambios (`layout`), y solo hay deriva si lo cambiado desde el commit del check deja de coincidir con ella. Commitear exactamente lo comprobado tampoco produce deriva.
+
 ## Dónde viven los resultados
 
 - Los resultados de ejecutar checks (qué pasó y en qué commit) **no se guardan en los registros**: cambiarían en cada ejecución y llenarían los PRs de ruido. Viven en `.git/beacon/results.json`, fuera de `.beacon/` y sin commitear (`layout`), por id de promesa. Son la base de la deriva en ese clon. Los worktrees de un mismo clon comparten ese archivo, así que **se escribe de forma atómica** (`layout`).

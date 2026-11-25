@@ -63,13 +63,20 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Hooks de Codex | Soportados (`SessionStart`, `Stop`, y `PreCompact` y `PostCompact` para la reinyección); el hook llama al CLI | `anchor` |
 | Idioma | Claves, guía del método y mensajes del binario en inglés; contenido de los registros en cualquier idioma | `design` |
 | Fricción | Medida solo en local | `weaver` |
+| `beacon status` | Entra en la Fase 2, porque el aviso del `brief` lo nombra (P7) | `weaver` |
+| `record` | Registro completo por stdin, sin parches; el sí se transmite reenviando el mismo payload con `--approve`, sin estado pendiente | `weaver`, `deltas` |
+| Aprobación de `config.yaml` | Clave `approved` sellada por `record --approve` | `ledger`, `deltas` |
+| Rama base | `git merge-base HEAD` con `origin/HEAD`, `main` o `master`; `--base` la fuerza | `weaver` |
+| Ejecución de checks | Tope fijo de 10 minutos por invocación (`timeout` es `Violated`); con un rojo, `check` sale con código 2. El tope se vuelve configurable si la fricción lo pide | `weaver` |
+| `results.json` | Lo guarda Spider, con commit y huella de lo no commiteado, para que un check con cambios sin commitear no muestre deriva | `layout`, `pledge` |
+| Archivo | Adelantado a la Fase 2, porque `close` lo necesita; una línea JSON por registro cerrado | `layout` |
 | Benchmark de fricción | Protocolo aprobado: condiciones A (sin Beacon), B (solo guía), C (completo) y D (C sin reinyección); piloto de 10 tareas, 3 repeticiones y un agente (90 sesiones); métricas de proceso, integridad, fricción, resultado y costo. El arnés se construye pronto y el benchmark se corre en la Fase 6 | `survey` 7.6 |
 
 ## Abierto
 
 **No queda nada de diseño abierto.** Las propuestas R1 a R9 que salieron de la investigación del 2026-11-22 se aprobaron ese mismo día y ya están aplicadas en los archivos de arriba (`survey` las llama "propuestas": ese texto es el de la fecha de la investigación). Lo que sigue son detalles de implementación que se resuelven al construir cada fase:
 
-- El formato exacto de `results.json` y del archivo `.jsonl` (`claims.json` e `injected.json` ya están definidos en `layout`).
+- Las Propuestas D15 a D20 del plan de la Fase 2 (`PLANNING.md`): frontera pública de Spider, forma del payload, nivel de cada cambio, promesas que no se borran por omisión, regla del sí fresco y cómo se corren los checks. Se confirman al revisar el plan.
 - Qué hook sirve en cada agente para reinyectar antes de editar y tras compactar, y cómo identificar la sesión (R1).
 - El nombre y el comportamiento exactos del evento `merge_group` de GitHub (`snares`).
 - Si el nivel 3 de las capturas base resulta demasiado ruidoso; se mide en la fricción y se afina el `baseline`.
@@ -122,8 +129,8 @@ Sin recorte de producto; el orden sigue las dependencias. El plan detallado de S
 |---|---|
 | 0 | **Cerrada:** nombre, benchmarks de carga y de git, esquema, guía del método, decisiones de interfaz y las propuestas de la investigación |
 | 1 | **Cerrada el 2026-11-23. Spider:** esquema (con `nongoals`, `rejected` y `evidence`), parser YAML estricto, `fmt`, ids, grafo en memoria, validación, `doctor`, globs |
-| 2 | **Weaver (CLI):** `--json` con el sobre uniforme (`brief`, `context` con `--hook`, `record` con stdin, `close`, `get`, `find`), niveles y `diff` (incluidas las capturas base), `check` con ejecutores, `ready` y `claim` con claim local y escritura atómica de `.git/beacon/`; prueba de ramas largas |
+| 2 | **Weaver (CLI), planificada en `PLANNING.md`:** `--json` con el sobre uniforme (`brief`, `context` con `--hook`, `record` con stdin, `close`, `get`, `find`, `status`), archivo, niveles y `diff` (incluidas las capturas base), `check` con ejecutores y `results.json`, `ready` y `claim` con claim local y escritura atómica de `.git/beacon/`; prueba de ramas largas |
 | 3 | **Anchor sobre el CLI:** guía del método, hooks con reinyección, permisos y marca del actor para Claude Code, luego Codex y Cursor; `beacon install` con `--dry-run` y copias; guía de redacción de promesas; arnés del benchmark; uso del propio Beacon en su desarrollo |
 | 4 | **Snares:** pre-commit, `beacon snares ci` y plantilla de GitHub Actions (con `merge_group`); arranque, `attest` con `--evidence`, `verify`; ejecutores de ejemplo para UI |
-| 5 | Frescura de guides, archivo, `stale` |
+| 5 | Frescura de guides, `stale` |
 | 6 | Segunda ola de agentes, `stats`, correr el benchmark de fricción |

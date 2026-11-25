@@ -36,7 +36,7 @@
 
 Lo que no se comparte vive en `.git/beacon/`, dentro del directorio común de git (`git rev-parse --git-common-dir`), y no en `.beacon/`:
 
-- `results.json`: resultados de los checks por promesa y commit (`pledge`).
+- `results.json`: resultados de los checks por promesa, con commit y huella (`pledge`; formato abajo).
 - `claims.json`: los claims de tareas de este clon, visibles a todos sus worktrees (ver abajo).
 - Las métricas de fricción (`weaver`).
 - `injected.json`: lo que los hooks ya inyectaron en cada sesión, para no repetirlo (`anchor`). Una sesión sin actividad en 7 días se descarta.
@@ -52,13 +52,16 @@ Los worktrees de un mismo repo comparten `.git/beacon/`, y varias sesiones de ag
 - **Y va bajo candado:** quien modifica un archivo crea antes `<archivo>.lock` y lo borra al terminar, así dos procesos no se pisan y ningún claim se pierde. Un candado de más de 30 segundos se considera abandonado.
 - **Los resultados van por commit y promesa** (`pledge`), así que compartirlos entre worktrees es seguro: dos worktrees en el mismo commit producen el mismo resultado.
 - **Los claims se guardan también aquí** (`claims.json`), porque un claim escrito solo en un registro versionado es invisible para un worktree vecino hasta que se commitee y se fusione. `beacon claim` escribe en los dos sitios: el claim local avisa a las sesiones de esta máquina al instante, y `owner` y `branch` en el registro avisan al equipo cuando la rama sube (`method`).
-- `claims.json` e `injected.json` son JSON con un campo `version`. El formato de `results.json` lo fija Weaver al implementar `check`.
+- `claims.json`, `injected.json` y `results.json` son JSON con un campo `version`. Spider es dueño de los tres; Weaver le entrega los veredictos de los checks.
+- `results.json` guarda, por id de promesa, `outcome` (`passed` o `failed`), `reason` (`exit_code` o `timeout`), `commit` (el `HEAD` del check), `footprint` y `at`. La **huella** es el SHA-256 de la lista ordenada de archivos de los `paths` de la capability que diferían de ese commit al correr el check, cada uno con el SHA-256 de su contenido o la marca de borrado. Vacía si no había cambios.
 - `beacon doctor` limpia claims de ramas o worktrees que ya no existen.
 
 ## Archivo de lo cerrado
 
 - Lo cerrado pasa a `archive/` en **segmentos mensuales compactos** (`2026-11.jsonl`): preguntas respondidas, decisiones reemplazadas, metas logradas o descartadas, works y tasks terminados, capabilities descartadas.
 - Los ids siguen siendo únicos y las relaciones hacia un registro archivado se resuelven (el binario lee `archive/` solo cuando una relación o consulta lo pide).
+- **Formato:** una línea JSON por registro cerrado, `{"type": "<tipo>", "record": {...}}`, con las mismas claves que su YAML más `closed` y `reason`. Una promesa cerrada va sola, con `"type": "promise"` y el id de su capability en `capability`. El segmento es el del mes de `closed`, y se reescribe completo con escritura atómica y candado.
+- `beacon close` exige un motivo. Las guides no se cierran (ver abajo).
 - **Las guides no se archivan:** si una queda obsoleta se borra, y git guarda la historia.
 
 ## Formato: YAML estricto
