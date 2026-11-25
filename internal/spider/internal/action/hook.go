@@ -31,7 +31,11 @@ func HookContext(
 	sources Sources,
 	input HookInput,
 ) (HookResult, []error) {
-	result, failures := Context(ctx, sources, input.Paths)
+	light := sources
+	light.Changes = nil
+	light.History = nil
+
+	result, failures := Context(ctx, light, input.Paths)
 
 	injected, err := input.Log.InjectedKeys(ctx, input.Session)
 	if err != nil {
