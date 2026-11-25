@@ -165,7 +165,7 @@ func TestReadyAndAnalyzeExposeTheGraph(t *testing.T) {
 
 	ready, findings, err := project.Ready(
 		context.Background(),
-		"feat/migrar-postgres",
+		"feat/migrate-postgres",
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -192,7 +192,7 @@ func TestFindReturnsMatchesByType(t *testing.T) {
 	if !slices.Contains(view.Matches, spider.Match{
 		Type: "work",
 		ID:   "bc-91cd",
-		Text: "Migrar el almacenamiento a Postgres",
+		Text: "Migrate storage to Postgres",
 	}) {
 		t.Fatalf("matches = %+v", view.Matches)
 	}
@@ -229,7 +229,7 @@ func TestGetReturnsTheGuideBody(t *testing.T) {
 		t.Fatalf("always = %v", got)
 	}
 	body, _ := recordField(t, stored.Record, "body").(string)
-	if !strings.HasPrefix(body, "Tres componentes") {
+	if !strings.HasPrefix(body, "Three components") {
 		t.Fatalf("body = %q", body)
 	}
 }
@@ -248,13 +248,13 @@ func TestStateChangesDecodeBothSides(t *testing.T) {
 	project, root := newProject(t)
 	file := filepath.Join(
 		root, ".beacon", "records", "questions",
-		"bc-e5f6-limite-de-intentos.yaml",
+		"bc-e5f6-attempt-limit.yaml",
 	)
 	data, err := os.ReadFile(file)
 	if err != nil {
 		t.Fatal(err)
 	}
-	answered := "status: answered\nanswer: Cinco"
+	answered := "status: answered\nanswer: Five"
 	edited := strings.Replace(string(data), "status: open", answered, 1)
 	if err := os.WriteFile(file, []byte(edited), 0o644); err != nil {
 		t.Fatal(err)

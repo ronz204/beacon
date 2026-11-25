@@ -54,18 +54,19 @@ func requireLines(t *testing.T, got, want []string) {
 }
 
 const (
-	goalLine = "Goal bc-0001: Que un usuario nuevo complete su primer " +
-		"pago en menos de 2 minutos."
-	nongoalLine = "Not doing: No soportamos pagos recurrentes en esta versión."
-	blockedLine = "Blocked: bc-91cd by question bc-e5f6: ¿Cuántos intentos " +
-		"fallidos antes de bloquear, y por cuánto tiempo?"
-	redLine = "Red: promise bc-c3d4: Tras 5 intentos fallidos la cuenta " +
-		"se bloquea 15 minutos."
-	workLine = "Work bc-91cd: Migrar el almacenamiento a Postgres"
-	taskLine = "Task bc-91cd.1 claimed on feat/migrar-postgres: " +
-		"Crear el esquema nuevo"
+	goalLine = "Goal bc-0001: A new user completes their first " +
+		"payment in under 2 minutes."
+	nongoalLine = "Not doing: We do not support recurring payments " +
+		"in this version."
+	blockedLine = "Blocked: bc-91cd by question bc-e5f6: How many failed " +
+		"attempts before locking, and for how long?"
+	redLine = "Red: promise bc-c3d4: After 5 failed attempts the account " +
+		"locks for 15 minutes."
+	workLine = "Work bc-91cd: Migrate storage to Postgres"
+	taskLine = "Task bc-91cd.1 claimed on feat/migrate-postgres: " +
+		"Create the new schema"
 	checkLine = "Promises without a check result on this machine: 1"
-	guideLine = "Guide bc-0a9b (architecture): Arquitectura general"
+	guideLine = "Guide bc-0a9b (architecture): Architecture overview"
 )
 
 func TestBriefShowsEverySectionInPriorityOrder(t *testing.T) {

@@ -29,14 +29,14 @@ func TestFileNameBuildsReadableSlug(t *testing.T) {
 		title string
 		want  string
 	}{
-		{"Pagos sin fricción", "bc-a1b2-pagos-sin-friccion.yaml"},
-		{"¿Cuántos intentos?", "bc-a1b2-cuantos-intentos.yaml"},
-		{"Ñandú & Co.", "bc-a1b2-nandu-co.yaml"},
+		{"Café crème brûlée", "bc-a1b2-cafe-creme-brulee.yaml"},
+		{"Naïve façade?", "bc-a1b2-naive-facade.yaml"},
+		{"Piñata & Co.", "bc-a1b2-pinata-co.yaml"},
 		{"Über Straße", "bc-a1b2-uber-strasse.yaml"},
 		{"  JWT   corto v2  ", "bc-a1b2-jwt-corto-v2.yaml"},
 		{"src/auth: login", "bc-a1b2-src-auth-login.yaml"},
 		{"日本語", "bc-a1b2-record.yaml"},
-		{"¿?", "bc-a1b2-record.yaml"},
+		{"—?", "bc-a1b2-record.yaml"},
 	}
 
 	for _, c := range cases {
@@ -51,9 +51,9 @@ func TestFileNameBuildsReadableSlug(t *testing.T) {
 }
 
 func TestFileNameKeepsChildIDsAndExtension(t *testing.T) {
-	got := recordName(t, "bc-91cd.1.1", "Crear tablas", ".md")
+	got := recordName(t, "bc-91cd.1.1", "Create tables", ".md")
 
-	if got != "bc-91cd.1.1-crear-tablas.md" {
+	if got != "bc-91cd.1.1-create-tables.md" {
 		t.Fatalf("got %q", got)
 	}
 }

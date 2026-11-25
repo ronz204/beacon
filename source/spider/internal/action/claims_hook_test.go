@@ -158,12 +158,12 @@ func TestHookInjectsEachRecordOncePerSession(t *testing.T) {
 	first := hookOf(t, log, 60, "src/auth/login.go")
 	text := strings.Join(first.Lines, "\n")
 	expected := []string{
-		"Capability bc-7f3a: Inicio de sesión",
-		"Not doing: No incluye inicio de sesión con redes sociales.",
-		"Promise bc-c3d4 (unverified): Tras 5 intentos",
-		"Decision bc-a1b2: Sesiones con JWT",
-		"Rejected: Sesiones en servidor",
-		"Guide bc-0a9b (architecture): Arquitectura general",
+		"Capability bc-7f3a: Sign-in",
+		"Not doing: Does not include social sign-in.",
+		"Promise bc-c3d4 (unverified): After 5 failed",
+		"Decision bc-a1b2: Sessions with 15 min JWTs",
+		"Rejected: Server sessions",
+		"Guide bc-0a9b (architecture): Architecture overview",
 		"Open question bc-e5f6:",
 		"Signal not_run_here: bc-c3d4",
 	}

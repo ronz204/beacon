@@ -1,19 +1,19 @@
 id: bc-7f3a
 created: 2026-11-22
 author: "agent:sample-agent"
-name: Inicio de sesión
-intent: Entrar sin exponer la cuenta.
+name: Sign-in
+intent: Sign in without revealing the account.
 paths: [tests/auth/**, src/auth/**]
 nongoals:
-  - Sin redes sociales.
-  - Sin biometría.
+  - No social sign-in.
+  - No biometrics.
 promises:
   - id: bc-e5f6
-    text: Segunda promesa.
+    text: Second promise.
     check: {runner: test-node, target: auth/b}
     status: proposed
     refers: [bc-ffff, bc-aaaa]
   - id: bc-c3d4
-    text: Primera promesa.
+    text: First promise.
     check: {runner: test-node, target: auth/a}
     status: proposed

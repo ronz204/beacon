@@ -27,12 +27,11 @@ func findIDs(t *testing.T, text string) []string {
 }
 
 func TestFindIgnoresCaseAndAccents(t *testing.T) {
-	ids := findIDs(t, "SESION")
+	ids := findIDs(t, "SÍGN-IN")
 
 	requireLines(t, ids, []string{
 		string(thread.NodeCapability) + ":bc-7f3a",
 		string(thread.NodePromise) + ":bc-c4a1",
-		string(thread.NodeDecision) + ":bc-a1b2",
 	})
 }
 

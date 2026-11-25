@@ -2,6 +2,6 @@ id: bc-91cd
 created: 2026-11-22
 author: "agent:sample-agent"
 request: |
-  Migrar el almacenamiento
-  sin perder datos.
+  Migrate storage
+  without losing data.
 status: active

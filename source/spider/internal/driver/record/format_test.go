@@ -179,7 +179,7 @@ func TestFormatKeepsBooleanFieldsPlain(t *testing.T) {
 }
 
 func TestFormatGuideKeepsBodyBytes(t *testing.T) {
-	body := "  Sangría\n\n---\nFin sin salto"
+	body := "  Indented\n\n---\nEnd without newline"
 	data := []byte("---\nkind: domain\ntitle: Sample\n---\n" + body)
 
 	output, err := record.FormatGuide("guide.md", data)
@@ -316,7 +316,7 @@ func TestStoreFormatNeverTouchesInvalidFiles(t *testing.T) {
 func TestStoreFormatNormalizesWindowsLines(t *testing.T) {
 	path := filepath.Join(
 		"testdata", "valid", "records", "goals",
-		"bc-0001-pagos-sin-friccion.yaml",
+		"bc-0001-frictionless-payments.yaml",
 	)
 	want := readFixture(t, path)
 	windows := strings.ReplaceAll(string(want), "\n", "\r\n")

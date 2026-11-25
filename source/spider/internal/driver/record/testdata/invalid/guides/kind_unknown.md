@@ -1,5 +1,5 @@
 ---
-title: Arquitectura general
+title: Architecture overview
 kind: notes
 applies: [src/**]
 always: true
@@ -10,5 +10,5 @@ audience: both
 status: current
 refers: [bc-7f3a]
 ---
-Tres componentes: API, worker de colas y cliente web. La API nunca habla
-directo con el worker; todo pasa por la cola.
+Three components: API, queue worker and web client. The API never talks
+to the worker directly; everything goes through the queue.

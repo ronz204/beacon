@@ -10,7 +10,7 @@ import (
 	"github.com/ronz204/beacon/testing/utils"
 )
 
-const brokenGoal = ".beacon/records/goals/bc-0001-pagos-sin-friccion.yaml"
+const brokenGoal = ".beacon/records/goals/bc-0001-frictionless-payments.yaml"
 
 type finding struct {
 	Severity string         `json:"severity"`
@@ -154,7 +154,7 @@ func TestDoctorTextNamesFileAndLine(t *testing.T) {
 
 func TestDoctorReportsBrokenRelation(t *testing.T) {
 	root := utils.NewWorkspace(t)
-	path := ".beacon/records/works/bc-91cd-migrar-a-postgres.yaml"
+	path := ".beacon/records/works/bc-91cd-migrate-to-postgres.yaml"
 	absolute := filepath.Join(root, filepath.FromSlash(path))
 	text := strings.Replace(
 		utils.ReadFile(t, absolute),

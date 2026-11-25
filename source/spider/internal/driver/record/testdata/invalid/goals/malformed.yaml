@@ -1,8 +1,8 @@
 id: bc-0001
 created: 2026-11-22
 author: "human:jane"
-statement: [sin cerrar
-success: Tasa de pagos completados al primer intento mayor a 90 %.
+statement: [unclosed
+success: More than 90 % of payments complete on the first attempt.
 nongoals:
-  - No soportamos pagos recurrentes en esta versión.
+  - We do not support recurring payments in this version.
 status: active

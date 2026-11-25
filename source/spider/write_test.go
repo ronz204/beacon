@@ -138,13 +138,13 @@ func TestRecordKeepsUnknownFieldsAndComments(t *testing.T) {
 		1,
 	))
 	fields := storedFields(t, project, "bc-7f3a")
-	fields["intent"] = "Entrar con correo y contraseña."
+	fields["intent"] = "Sign in with email and password."
 
 	save(t, project, payloadOf(t, "capability", fields))
 
 	text := readFile(t, root, capabilityFile)
 	for _, want := range []string{
-		"intent: Entrar con correo y contraseña.\n",
+		"intent: Sign in with email and password.\n",
 		"serves: bc-0001 # the payments goal\n",
 		"extra: kept\n",
 	} {
@@ -176,14 +176,14 @@ func TestRecordCreatesWithBinaryOwnedFields(t *testing.T) {
 	project, root := newProject(t)
 
 	prepared := save(t, project, payloadOf(t, "decision", map[string]any{
-		"what":    "Guardar sesiones en Redis",
-		"why":     "Compartir estado entre instancias.",
+		"what":    "Store sessions in Redis",
+		"why":     "Share state across instances.",
 		"status":  "active",
 		"created": "2020-01-01",
 	}))
 
 	if !strings.HasPrefix(prepared.File, ".beacon/records/decisions/") ||
-		!strings.HasSuffix(prepared.File, "-guardar-sesiones-en-redis.yaml") {
+		!strings.HasSuffix(prepared.File, "-store-sessions-in-redis.yaml") {
 		t.Fatalf("file = %s", prepared.File)
 	}
 	if len(prepared.Ignored) != 1 || prepared.Ignored[0] != "created" {
@@ -200,14 +200,14 @@ func TestRecordIssuesIDsForNewPromisesAndTasks(t *testing.T) {
 	project, _ := newProject(t)
 	fields := storedFields(t, project, "bc-7f3a")
 	fields["promises"] = append(promisesOf(fields), map[string]any{
-		"text":   "Un correo inexistente responde igual que uno válido.",
-		"check":  map[string]any{"manual": "Probar con un correo inventado"},
+		"text":   "An unknown email gets the same response as a valid one.",
+		"check":  map[string]any{"manual": "Try a made-up email"},
 		"status": "proposed",
 	})
 
 	save(t, project, payloadOf(t, "capability", fields))
 	task := save(t, project, payloadOf(t, "task", map[string]any{
-		"title":  "Migrar los datos",
+		"title":  "Migrate the data",
 		"parent": "bc-91cd",
 		"status": "open",
 	}))
@@ -274,7 +274,7 @@ func TestSaveStampsTheApprovedPromise(t *testing.T) {
 	project, root := newProject(t)
 	fields := storedFields(t, project, "bc-7f3a")
 	promise := promisesOf(fields)[0].(map[string]any)
-	promise["text"] = "Tras 10 intentos fallidos la cuenta se bloquea."
+	promise["text"] = "After 10 failed attempts the account locks."
 	prepared, err := project.Prepare(
 		context.Background(),
 		payloadOf(t, "capability", fields),
@@ -337,7 +337,7 @@ func TestRecordCreatesASubtaskFromItsID(t *testing.T) {
 
 	task := save(t, project, payloadOf(t, "task", map[string]any{
 		"id":     "bc-91cd.1.2",
-		"title":  "Crear los índices",
+		"title":  "Create the indexes",
 		"parent": "bc-91cd",
 		"status": "open",
 	}))

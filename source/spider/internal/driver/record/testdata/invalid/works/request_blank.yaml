@@ -6,4 +6,4 @@ implements: [bc-c3d4]
 serves: bc-0001
 status: active
 log:
-  - "2026-11-22: se separó el esquema en dos pasos"
+  - "2026-11-22: the schema was split into two steps"
