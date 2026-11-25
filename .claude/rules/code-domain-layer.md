@@ -1,7 +1,7 @@
 ---
 paths:
-  - "internal/kernel/**"
-  - "internal/*/internal/domain/**"
+  - "source/kernel/**"
+  - "source/*/internal/domain/**"
 ---
 
 # Domain Layer Conventions (Go)
@@ -12,12 +12,12 @@ This governs the domain layer: how bounded contexts are laid out and what they m
 
 ## Bounded contexts
 
-- A context is one Go package at `internal/<piece>/internal/domain/<context>/`, because a Go folder is a package and a concept split across folders would need hand-written re-exports.
+- A context is one Go package at `source/<piece>/internal/domain/<context>/`, because a Go folder is a package and a concept split across folders would need hand-written re-exports.
 - Its name is one lowercase word, six letters when a natural word exists. No underscores, hyphens or glued words, and never a name repeated from the standard library when it would be imported beside it.
-- A context imports only `internal/kernel` and the pure standard library, never another context, `action`, `driver`, `system`, runtime config or a third-party library.
+- A context imports only `source/kernel` and the pure standard library, never another context, `action`, `driver`, `system`, runtime config or a third-party library.
 - Pure standard library means packages such as `context`, `errors`, `maps`, `regexp`, `slices`, `strings`, `time` and `unicode`. Forbidden: `os`, `io/fs`, `net`, `os/exec`, `log`, `math/rand`, `crypto/rand` and calling `time.Now`.
 - Domain types carry no `yaml` or `json` struct tags, because a tag is a storage format inside the domain.
-- `internal/kernel` is the shared kernel. It sits outside every piece's own `internal` folder because every piece must import it, and it holds only what every context needs. Two contexts wanting the same thing is not enough: each keeps its own until a third needs it.
+- `source/kernel` is the shared kernel. It sits outside every piece's own `internal` folder because every piece must import it, and it holds only what every context needs. Two contexts wanting the same thing is not enough: each keeps its own until a third needs it.
 - The package is the public surface and capitalization is the visibility gate. There are no barrels. Exported names are unique across the context and carry their full domain noun (`CapabilityID`, no bare `ID`).
 
 ## Sub-slices
