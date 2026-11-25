@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: Fase 1 cerrada el 2026-11-23.** `beacon fmt` y `beacon doctor` funcionan sobre un `.beacon/` real. Las decisiones D1 a D4 están registradas en la KB. El siguiente es el Bloque 3, desde el paso 17.
+> **Estado: Fase 1 cerrada el 2026-11-23.** `beacon fmt` y `beacon doctor` funcionan sobre un `.beacon/` real. Las decisiones D1 a D4 están registradas en la KB. El Bloque 3 (pasos 17 a 22) está hecho: Spider calcula todo lo que pide `spider`, como librería, y falta exponerlo en el CLI con Engine.
 
 ## 1. Panorama
 
@@ -73,7 +73,7 @@ beacon/
 ├─ cmd/beacon/
 │  └─ main.go                        # 16 · solo llama a router.Run
 │
-├─ internal/
+├─ source/
 │  ├─ kernel/                        # bases puras, sin I/O
 │  │  ├─ error.go                    # 4  · Error[C], códigos y detalles
 │  │  ├─ actor.go                    # 4  · human:<nombre>, agent:<nombre>
@@ -117,7 +117,7 @@ beacon/
 │        │  │  ├─ capability_errors.go      # 5
 │        │  │  ├─ capability_policies.go    # 5
 │        │  │  ├─ capability_repository.go  # 10
-│        │  │  ├─ capability_proofs.go      # 17 · contrato ProofReader
+│        │  │  ├─ capability_proofs.go      # 17 · contrato ProofReader y resultados
 │        │  │  └─ capability_changes.go     # 21 · contrato ChangeReader
 │        │  │
 │        │  ├─ memory/               # lo que el proyecto sabe
@@ -193,7 +193,7 @@ beacon/
 │           └─ states/
 │              └─ states.go          # 22 · claims.json y lo ya inyectado
 │
-└─ specifies/
+└─ testing/
    ├─ e2e/
    │  ├─ doctor_test.go              # 16
    │  └─ format_test.go              # 16
@@ -398,7 +398,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 ### Paso 16. Fachada y CLI mínimo (hecho)
 
 - **Objetivo:** cerrar la Fase 1 con algo ejecutable.
-- **Construye:** `spider.go`, `router`, `cmd/beacon/main.go` y las pruebas de `specifies/`.
+- **Construye:** `spider.go`, `router`, `cmd/beacon/main.go` y las pruebas de `testing/`.
 - **Comandos:** `beacon fmt` y `beacon doctor`, con `--json` y códigos de salida 0, 1 y 2.
 - **Medición:** repetir la carga de 500 archivos y comparar con los ~100 ms de `layout`. **Resultado:** unos 70 ms con carga más grafo, anotado en `layout`.
 - **CLI:** `spf13/cobra` v1.10.2. Los errores de uso también devuelven el sobre `--json` con código 1.
@@ -408,7 +408,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 
 Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una rama nueva, `feat/spider-queries`. Engine solo tendrá que exponerlo.
 
-### Paso 17. Señales
+### Paso 17. Señales (hecho)
 
 - **Objetivo:** que el estado avise sin que se le pregunte.
 - **Construye:** `signal_vos.go`, `signal_policies.go`, `action/signals.go`, el contrato `ProofReader` y `driver/double`.
@@ -425,21 +425,25 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
 | Pendiente de sí | Engine | Clasificación por niveles (D4) |
 
 - **Hecho cuando:** cada señal tiene un caso que aparece y otro que no.
+- **Cómo quedó:** el estado de cada promesa (`Holds`, `Attested`, `Unverified`, `Violated`) lo calcula `ledger.VerifyPromise` a partir del resultado de su check. Las señales de grafo (bloqueo y tensión) viven en `thread`; las que dependen de promesas (rojo, sin comprobar aquí, sin alcance) se calculan en `action/signals.go`. Una pregunta abierta es un nodo `Unfinished` del grafo.
+- **Pendiente:** todavía no hay `ProofReader` real, porque los resultados de checks los produce Engine. Hasta entonces solo existe el doble en memoria, y `context` no se expone en el CLI.
 
-### Paso 18. `context <paths>`
+### Paso 18. `context <paths>` (hecho)
 
 - **Objetivo:** entregar todo lo que aplica a unos archivos.
 - **Devuelve:** capabilities coincidentes con sus `nongoals`, promesas con estado, decisiones con sus `rejected`, guides con `applies` coincidente o `always`, preguntas relacionadas y señales.
 - **Regla clave:** recuperación por globs y relaciones, nunca por búsqueda de texto. No necesita los cuerpos de las guides que no apliquen ni `archive/`.
 - **Hecho cuando:** un archivo sin dueño recibe solo la meta y las guides `always`.
+- **Cómo quedó:** `context` devuelve las metas activas, las capabilities cuyos `paths` coinciden (con el estado de cada promesa), las decisiones activas con `where` coincidente, las guides `always`, con `applies` coincidente o que refieren a una capability tocada, las preguntas abiertas conectadas con lo tocado o con el trabajo que lo implementa, y las señales de todo eso. Las fallas del grafo no detienen `context`: las reporta `doctor`.
 
-### Paso 19. `ready`
+### Paso 19. `ready` (hecho)
 
 - **Objetivo:** saber qué trabajo se puede tomar.
 - **Regla clave:** recorre `blocks` y `parent`; al cerrar un bloqueo, los dependientes quedan disponibles. El bloqueo se hereda a las subtareas, y una tarea con subtareas abiertas no aparece porque se trabaja en las hojas (`ledger`). Recibe la rama como parámetro.
 - **Hecho cuando:** una pregunta abierta saca su trabajo de `ready`, y responderla lo devuelve.
+- **Cómo quedó:** un work está listo si está `active` y nada abierto lo bloquea. Una task está lista si está `open`, o `claimed` en la misma rama que se consulta; si su work está listo; si no tiene subtareas abiertas; y si ni ella ni sus tareas padre están bloqueadas por una pregunta abierta o una tarea sin terminar. Los claims locales de `.git/beacon/` se suman en el paso 22.
 
-### Paso 20. `brief`
+### Paso 20. `brief` (hecho)
 
 - **Objetivo:** el resumen que recibe el agente al empezar.
 - **Regla clave:** tope de `limits.brief` líneas. La meta activa siempre entra, y el resto se recorta en este orden fijo:
@@ -449,8 +453,11 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
   4. Deriva y promesas sin comprobar aquí.
   5. Índice de guides.
 - **Hecho cuando:** con exceso de contenido nunca se pierde lo crítico y aparece `N more, run beacon status`.
+- **Cómo quedó:** la meta y sus `nongoals` entran siempre, aunque superen el tope. El resto se ordena por la prioridad fija y se corta desde el final, reservando una línea para el aviso. Las promesas sin resultado se resumen en una sola línea.
+- **Decidido (2026-11-24):** las guides `always` solo tienen su línea del índice en el `brief`; su cuerpo se lee bajo demanda. `guides.md` quedó alineado.
+- **Pendiente:** el aviso nombra `beacon status`, que todavía no existe (Engine). Hasta entonces ese mensaje no cumple P7.
 
-### Paso 21. Git: `drift`, `stale` y `diff`
+### Paso 21. Git: `drift`, `stale` y `diff` (hecho)
 
 - **Objetivo:** cruzar el estado con la historia del código.
 - **Construye:** `system/git.go`, `driver/commit`, y `action/drift.go`, `stale.go` y `diff.go`.
@@ -460,14 +467,20 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
   - `git` se ejecuta sin shell.
 - **Depende de:** D4.
 - **Hecho cuando:** los tests corren sobre repos temporales reales y 500 capabilities quedan cerca de los 150 a 200 ms de `layout`.
+- **Decidido (2026-11-24):** una guide o decisión está desactualizada si pasó su plazo o si recibió 10 o más commits sobre sus paths desde la última revisión. La deriva cuenta los cambios sin commitear.
+- **Cómo quedó:** `action.Analyze` junta carga, grafo, verificación, deriva y frescura, y lo usan `context` y `brief`. `driver/commit` hace las consultas a git en lote, con `core.quotepath=off` para nombres no ASCII, y valida commits y revisiones antes de pasarlos a git. `StateChanges` entrega los registros y capturas base que cambiaron desde una revisión, con su contenido antes y después, sin clasificar.
+- **Medido (2026-11-24):** con 500 capabilities, 1.000 archivos, 50 commits y cambios sin commitear, el análisis completo con git real tarda unos 100 ms y el hook unos 40 ms, porque git corre en paralelo con la carga y el hook no consulta git.
+- **Pendiente:** leer los globs `baseline` de `runners` en `config.yaml`, al conectar `diff` al CLI en Engine.
 
-### Paso 22. Estado local
+### Paso 22. Estado local (hecho)
 
 - **Objetivo:** compartir estado entre worktrees sin riesgo.
 - **Construye:** `driver/states`, claims locales, `context --hook` y la limpieza de claims en `doctor`.
 - **Reglas clave:** toda escritura en `.git/beacon/` es atómica, y la ruta sale de `git rev-parse --git-common-dir`.
 - **Cuidado:** en Windows, renombrar sobre un archivo que otro proceso tiene abierto puede fallar, así que hace falta reintentar y probarlo con escritores concurrentes.
 - **Hecho cuando:** varios procesos escriben a la vez sin dejar un archivo a medias, y `--hook` no repite lo ya inyectado.
+- **Cómo quedó:** `driver/states` guarda `claims.json` e `injected.json` en `.git/beacon/`, con escritura atómica y un candado de archivo (`system.WithFileLock`), porque la atomicidad sola no evita que dos escritores se pisen. `ready` respeta los claims locales: una tarea reclamada en otra rama no aparece. `doctor` borra los claims cuya rama o worktree ya no existe y lo avisa. `HookContext` entrega solo lo que la sesión no recibió, con tope y aviso, y registra lo entregado.
+- **Pendiente:** escribir un claim (`beacon claim`) y el comando `context --hook` son de Engine; Spider ya los soporta.
 
 ## 7. Hitos y commits
 

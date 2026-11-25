@@ -23,10 +23,10 @@ Carga los registros (`layout`, `ledger`), arma el grafo de relaciones en memoria
 |---|---|---|
 | `brief` | Meta activa con sus `nongoals`, bloqueos y rojos, trabajo en curso, índice de guides | Lee goal, preguntas abiertas, estado de las promesas, works activos y guides; con tope de líneas (ver abajo) |
 | `context <paths>` | Todo lo que aplica a esos archivos: capabilities cuyos `paths` coinciden (con sus `nongoals`), sus promesas con estado, decisiones con esos `where` (con sus alternativas `rejected`), guides con `applies` coincidente o `always`, preguntas relacionadas y las señales | **Recuperación por relación:** coincidencia de globs y recorrido de relaciones, no búsqueda de texto |
-| `context --hook <paths>` | Lo mismo, pero solo lo que la sesión todavía no recibió, con tope de `limits.hook` líneas | Igual que `context`, más el registro local de lo ya inyectado (`layout`, `anchor`) |
+| `context --hook <paths>` | Lo mismo, pero solo lo que la sesión todavía no recibió, con tope de `limits.hook` líneas, y sin deriva ni frescura | Igual que `context` pero **sin consultas a git**, porque corre antes de cada edición; más el registro local de lo ya inyectado (`layout`, `anchor`) |
 | `ready` | Trabajo y tareas sin bloqueos, por rama | Recorre `blocks` y `parent`; al cerrar un bloqueo se desbloquean los dependientes; aplica la jerarquía de tareas (`ledger`) y tiene en cuenta los claims locales (`method`) |
 | `drift` | Promesas que pasaron pero cuyo código cambió desde el último check | Compara el commit del último resultado (`pledge`) con los cambios de git bajo sus `paths` |
-| `stale` | Decisiones y guides que superaron su plazo de revisión o cuyo código cambió mucho | `reviewed` más `review`, y cambio de código desde la última revisión (`guides`) |
+| `stale` | Decisiones y guides que superaron su plazo de revisión o cuyo código recibió 10 o más commits desde la última revisión | `reviewed` más `review`, y cambio de código desde la última revisión (`guides`) |
 | `diff` | Qué cambió en el estado desde un commit, incluidas las capturas base, **sin clasificar** | Compara los registros actuales con los de git y los archivos de `baseline`; Engine asigna el nivel (`deltas`, `engine`) |
 
 **Revelado progresivo:** primero un resumen (`brief`), luego lo que aplica a lo que se toca (`context`), y solo si hace falta el detalle de un registro (`get`).
@@ -37,7 +37,7 @@ Los `nongoals` y los `rejected` aparecen en `context` porque son lo que más ayu
 
 Spider consulta git **en lote**, nunca una vez por promesa (`layout` tiene las mediciones):
 
-- **Deriva:** una consulta `git diff --name-only <base>..HEAD` por cada commit base distinto entre los resultados guardados (suelen ser pocos). El cruce con los `paths` se hace en memoria.
+- **Deriva:** una consulta `git diff --name-only <base>` por cada commit base distinto entre los resultados guardados (suelen ser pocos), más una de archivos nuevos sin seguimiento. Compara contra el árbol de trabajo, así que **cuenta también los cambios sin commitear**. El cruce con los `paths` se hace en memoria. Si el commit base ya no existe (por ejemplo tras un rebase), la promesa se marca con deriva.
 - **Frescura:** una consulta `git log --since=<la fecha de revisión más antigua> --name-only`, y el conteo de cambios por glob también en memoria.
 
 ## El tope del brief

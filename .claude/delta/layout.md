@@ -39,7 +39,7 @@ Lo que no se comparte vive en `.git/beacon/`, dentro del directorio común de gi
 - `results.json`: resultados de los checks por promesa y commit (`pledge`).
 - `claims.json`: los claims de tareas de este clon, visibles a todos sus worktrees (ver abajo).
 - Las métricas de fricción (`engine`).
-- Lo que los hooks ya inyectaron en cada sesión, para no repetirlo (`anchor`).
+- `injected.json`: lo que los hooks ya inyectaron en cada sesión, para no repetirlo (`anchor`). Una sesión sin actividad en 7 días se descarta.
 - `backups/`: copias de los archivos que `beacon install` modificó (`anchor`).
 
 Git no puede commitearlo por accidente, no hay nada que añadir al `.gitignore` y vive y muere con el clon. Se puede borrar sin consecuencias: los resultados se recalculan y solo se pierden las métricas locales, los claims locales y las copias.
@@ -49,9 +49,10 @@ Git no puede commitearlo por accidente, no hay nada que añadir al `.gitignore` 
 Los worktrees de un mismo repo comparten `.git/beacon/`, y varias sesiones de agente pueden escribir al mismo tiempo. Por eso:
 
 - **Toda escritura en `.git/beacon/` es atómica:** se escribe un archivo temporal en el mismo directorio y se renombra sobre el definitivo, para que nadie lea un archivo a medias.
+- **Y va bajo candado:** quien modifica un archivo crea antes `<archivo>.lock` y lo borra al terminar, así dos procesos no se pisan y ningún claim se pierde. Un candado de más de 30 segundos se considera abandonado.
 - **Los resultados van por commit y promesa** (`pledge`), así que compartirlos entre worktrees es seguro: dos worktrees en el mismo commit producen el mismo resultado.
 - **Los claims se guardan también aquí** (`claims.json`), porque un claim escrito solo en un registro versionado es invisible para un worktree vecino hasta que se commitee y se fusione. `beacon claim` escribe en los dos sitios: el claim local avisa a las sesiones de esta máquina al instante, y `owner` y `branch` en el registro avisan al equipo cuando la rama sube (`method`).
-- El formato exacto de estos archivos (por ejemplo un archivo por commit) se decide al construir; el requisito es la escritura atómica.
+- `claims.json` e `injected.json` son JSON con un campo `version`. El formato de `results.json` lo fija Engine al implementar `check`.
 - `beacon doctor` limpia claims de ramas o worktrees que ya no existen.
 
 ## Archivo de lo cerrado
@@ -142,10 +143,14 @@ La deriva y la frescura (`spider`) dependen de git. Medición del 2026-11-22 en 
 
 | Consulta | Tiempo |
 |---|---|
-| `git diff --name-only <base>..HEAD` (una por commit base distinto) | de 5 a 16 ms |
+| `git diff --name-only <base>` (una por commit base distinto; hoy compara con el árbol de trabajo) | de 5 a 16 ms |
 | `git log --since=<fecha> --name-only` | 10 ms (7 días), 27 ms (30 días), 60 ms (toda la historia, 2.000 commits) |
 | `git status --porcelain` | 8 ms |
 | Una consulta por capability (`git log -1 -- <path>`), 500 capabilities | 1.147 ms |
+
+**Medición con el código real (2026-11-24):** un repo de 500 capabilities con 10 promesas cada una, 1.000 archivos, 50 commits y 30 archivos editados sin commitear. Con el repo empaquetado (`git gc`, como un repo real), el análisis completo (carga, grafo, verificación, deriva y frescura con git real) y `context` de un archivo tardan unos **100 ms**, y el hook antes de editar, que no consulta git, unos **40 ms** (mediana de 3 corridas de 10, en un i7-13620H con Windows, donde lanzar procesos es más caro). Las consultas a git corren en paralelo con la carga y entre sí.
+
+**Cuidado al medir:** un repo recién creado guarda cada objeto en un archivo suelto, y en Windows eso multiplica el costo de `git log --name-only` (137 ms contra 21 ms empaquetado). Los benchmarks deben empaquetar el repo antes de medir.
 
 **Conclusión de diseño:** las consultas van **en lote**, no una por promesa. Una por commit base distinto más una de frescura, y el cruce con los `paths` se hace en memoria. Con 500 capabilities, el CLI completo (carga más git) queda en el orden de 150 a 200 ms.
 

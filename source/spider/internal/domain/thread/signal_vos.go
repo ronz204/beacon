@@ -1,0 +1,22 @@
+package thread
+
+import "github.com/ronz204/beacon/source/kernel"
+
+type SignalKind string
+
+const (
+	SignalBlocked    SignalKind = "blocked"
+	SignalRed        SignalKind = "red"
+	SignalUnscoped   SignalKind = "unscoped"
+	SignalNotRunHere SignalKind = "not_run_here"
+	SignalTension    SignalKind = "tension"
+	SignalDrift      SignalKind = "drift"
+	SignalStale      SignalKind = "stale"
+)
+
+type Signal struct {
+	Kind     SignalKind
+	Subject  kernel.RecordID
+	Related  kernel.RecordID
+	Relation RelationKind
+}

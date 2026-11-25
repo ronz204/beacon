@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/ronz204/beacon/internal/router"
+	"github.com/ronz204/beacon/source/router"
 )
 
 func main() {

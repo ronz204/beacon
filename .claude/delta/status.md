@@ -18,6 +18,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Idioma de los mensajes | Inglés fijo, igual que las claves y la guía del método | `design` |
 | Lenguaje y distribución | Go, binario estático, MIT, sin telemetría; Releases, `go install`, Homebrew y Scoop | `design` |
 | Dependencias | `go.yaml.in/yaml/v4` y `spf13/cobra` v1.10.2 para el CLI. Los globs se implementan a mano sobre `regexp`, porque la gramática es pequeña y `doublestar` es inconsistente con `**` dentro de llaves | `layout`, `engine` |
+| Carpetas raíz | `source/` para el código y `testing/` para las pruebas que cruzan el binario. `source/` no protege como `internal`: solo el `internal/` de cada pieza es privado para Go | `README` |
 | Fuente de verdad | Archivos en git, cargados en memoria al arrancar; sin caché persistente | `layout` |
 | Layout | `records/` (7 carpetas en plural), `archive/` mensual y `config.yaml` | `layout` |
 | Estado local | En `.git/beacon/`, no en `.beacon/`: resultados de checks, claims locales, métricas de fricción, lo ya inyectado por los hooks y copias de seguridad. Escritura atómica porque los worktrees lo comparten | `layout` |
@@ -38,7 +39,8 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Paths | Pista gruesa y opcional, pueden solaparse | `ledger` |
 | Guides | Metadatos livianos de una palabra; el `brief` es mínimo, el resto bajo demanda | `guides` |
 | Tope del `brief` | `limits.brief` líneas; se recorta por prioridad fija y con aviso | `spider` |
-| Frescura | `review` (duración) y `reviewed` (fecha); plazos por tipo de 6 y 12 meses, valores iniciales | `guides` |
+| Frescura | `review` (duración) y `reviewed` (fecha); plazos por tipo de 6 y 12 meses, valores iniciales; también se marca con 10 o más commits sobre sus paths desde la revisión | `guides` |
+| Deriva | Compara el commit del último check con el árbol de trabajo, así que incluye cambios sin commitear | `spider`, `pledge` |
 | Spider | Estructura activa con señales; el grafo vive en el contexto `thread` | `spider`, `design` |
 | Frontera de `diff` | Spider detecta qué cambió y Engine lo clasifica por nivel | `spider`, `deltas`, `engine` |
 | Checks | Ejecutores en `config.yaml` más parámetros; sin shell | `pledge` |
@@ -67,7 +69,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 
 **No queda nada de diseño abierto.** Las propuestas R1 a R9 que salieron de la investigación del 2026-11-22 se aprobaron ese mismo día y ya están aplicadas en los archivos de arriba (`survey` las llama "propuestas": ese texto es el de la fecha de la investigación). Lo que sigue son detalles de implementación que se resuelven al construir cada fase:
 
-- El formato exacto de `results.json`, de `claims.json` y del archivo `.jsonl`.
+- El formato exacto de `results.json` y del archivo `.jsonl` (`claims.json` e `injected.json` ya están definidos en `layout`).
 - Qué hook sirve en cada agente para reinyectar antes de editar y tras compactar, y cómo identificar la sesión (R1).
 - El nombre y el comportamiento exactos del evento `merge_group` de GitHub (`sentry`).
 - Si el nivel 3 de las capturas base resulta demasiado ruidoso; se mide en la fricción y se afina el `baseline`.
