@@ -20,6 +20,7 @@ func briefOf(
 		context.Background(),
 		sourcesFor(validRoot, proofs),
 		limit,
+		nil,
 	)
 	if len(failures) != 0 {
 		t.Fatalf("failures = %v", failures)
@@ -121,5 +122,28 @@ func TestBriefAlwaysKeepsTheGoal(t *testing.T) {
 		goalLine,
 		nongoalLine,
 		"5 more, run beacon status",
+	})
+}
+
+func TestBriefPlacesPendingApprovalsAfterProgress(t *testing.T) {
+	result, failures := action.Brief(
+		context.Background(),
+		sourcesFor(validRoot, nil),
+		60,
+		[]string{"promise bc-c3d4 text changed"},
+	)
+	if len(failures) != 0 {
+		t.Fatalf("failures = %v", failures)
+	}
+
+	requireLines(t, briefTexts(result), []string{
+		goalLine,
+		nongoalLine,
+		blockedLine,
+		workLine,
+		taskLine,
+		"Needs approval: promise bc-c3d4 text changed",
+		checkLine,
+		guideLine,
 	})
 }

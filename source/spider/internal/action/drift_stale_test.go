@@ -206,7 +206,7 @@ func TestBriefListsDriftAndStaleRecords(t *testing.T) {
 	sources.Changes = double.Changes{evidenceCommit: {"src/auth/login.go"}}
 	sources.Today = mustDay("2027-06-01")
 
-	result, failures := action.Brief(context.Background(), sources, 60)
+	result, failures := action.Brief(context.Background(), sources, 60, nil)
 
 	requireClean(t, failures)
 	text := strings.Join(briefTexts(result), "\n")

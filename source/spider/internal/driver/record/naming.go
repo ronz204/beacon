@@ -11,22 +11,6 @@ const (
 	fallbackSlug      = "record"
 )
 
-var slugFoldGroups = map[string]string{
-	"a":  "áàäâãå",
-	"ae": "æ",
-	"c":  "ç",
-	"e":  "éèëê",
-	"i":  "íìïî",
-	"n":  "ñ",
-	"o":  "óòöôõø",
-	"oe": "œ",
-	"ss": "ß",
-	"u":  "úùüû",
-	"y":  "ýÿ",
-}
-
-var slugFolds = strings.NewReplacer(slugFoldPairs()...)
-
 func FileName(
 	id kernel.RecordID,
 	title kernel.RecordText,
@@ -35,20 +19,8 @@ func FileName(
 	return id.String() + "-" + slugOf(title.String()) + extension
 }
 
-func slugFoldPairs() []string {
-	var pairs []string
-
-	for ascii, letters := range slugFoldGroups {
-		for _, letter := range letters {
-			pairs = append(pairs, string(letter), ascii)
-		}
-	}
-
-	return pairs
-}
-
 func slugOf(title string) string {
-	folded := slugFolds.Replace(strings.ToLower(title))
+	folded := kernel.FoldText(title)
 	words := strings.FieldsFunc(folded, isSlugBreak)
 
 	if len(words) == 0 {

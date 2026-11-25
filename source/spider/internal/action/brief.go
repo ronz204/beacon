@@ -18,6 +18,7 @@ const (
 	BriefGoal     BriefSection = "goal"
 	BriefBlockers BriefSection = "blockers"
 	BriefProgress BriefSection = "progress"
+	BriefPending  BriefSection = "pending"
 	BriefChecks   BriefSection = "checks"
 	BriefGuides   BriefSection = "guides"
 	BriefOverflow BriefSection = "overflow"
@@ -43,6 +44,7 @@ func Brief(
 	ctx context.Context,
 	sources Sources,
 	limit int,
+	pending []string,
 ) (BriefResult, []error) {
 	analysis, failures := Analyze(ctx, sources)
 	snapshot := analysis.Snapshot
@@ -51,6 +53,7 @@ func Brief(
 	ranked := slices.Concat(
 		texts.blockerLines(analysis.Signals),
 		progressLines(snapshot),
+		pendingLines(pending),
 		texts.checkLines(analysis.Signals, analysis.Stale),
 		guideLines(snapshot.Guides),
 	)
@@ -187,6 +190,20 @@ func claimedTaskLine(task agenda.Task) BriefLine {
 		branch,
 		firstLine(task.Title().String()),
 	)
+}
+
+func pendingLines(pending []string) []BriefLine {
+	lines := make([]BriefLine, 0, len(pending))
+
+	for _, text := range pending {
+		lines = append(lines, briefLine(
+			BriefPending,
+			"Needs approval: %s",
+			firstLine(text),
+		))
+	}
+
+	return lines
 }
 
 func (t briefTexts) checkLines(

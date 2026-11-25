@@ -48,12 +48,14 @@ func (s Store) LoadConfig() (Config, []error) {
 
 	data, err := os.ReadFile(file)
 	if err != nil {
-		return Config{}, []error{kernel.NewRecordFailure(file, 0, err)}
+		return Config{Limits: defaultLimits}, []error{
+			kernel.NewRecordFailure(file, 0, err),
+		}
 	}
 
 	root, err := ParseRecord(file, data)
 	if err != nil {
-		return Config{}, parseFailure(file, err)
+		return Config{Limits: defaultLimits}, parseFailure(file, err)
 	}
 
 	f := newFields(file, root)
@@ -64,7 +66,7 @@ func (s Store) LoadConfig() (Config, []error) {
 	}
 
 	if len(*f.failures) > 0 {
-		return Config{}, *f.failures
+		return Config{Limits: defaultLimits}, *f.failures
 	}
 
 	return config, nil

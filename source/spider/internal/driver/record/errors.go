@@ -22,6 +22,7 @@ const (
 	RecordSchemaMissing      RecordCode = "record_schema_missing"
 	RecordSchemaNewer        RecordCode = "record_schema_newer"
 	RecordFormatUnsafe       RecordCode = "record_format_unsafe"
+	RecordMissing            RecordCode = "record_missing"
 )
 
 type RecordError = kernel.Error[RecordCode]
@@ -44,6 +45,7 @@ var recordErrors = kernel.ErrorCatalog[RecordCode]{
 	RecordSchemaMissing:      "add schema: 1 to config.yaml",
 	RecordSchemaNewer:        "update beacon to read this schema version",
 	RecordFormatUnsafe:       "formatting would alter the record content",
+	RecordMissing:            "no active record has this id",
 }
 
 func failAt(code RecordCode, file string, line int) RecordError {
