@@ -847,7 +847,7 @@ cmd/beacon → router → weaver.go → action → domain → kernel
 
 **Rama:** `feat/spider-writes`, desde `main` actualizado. **Forma de trabajo:** la misma de la Fase 1: primero el test que falla, luego el código mínimo, y al final `go test ./...` en verde.
 
-### Paso 23. Fachada pública
+### Paso 23. Fachada pública (hecho)
 
 - **Objetivo:** que Weaver y `router` usen todo lo que Spider ya calcula sin tocar su `internal`.
 - **Construye:** `views.go` con los tipos planos (D15); en `spider.go`, `Brief(ctx, pending)`, `Context(ctx, paths)`, `HookContext(ctx, session, paths)`, `Ready(ctx, branch)`, `Analyze(ctx)`, `Get(ctx, id)`, `Find(ctx, text)`, `StateChanges(ctx, revision)` y `Runners(ctx)`; y `action/find.go`.
@@ -855,6 +855,14 @@ cmd/beacon → router → weaver.go → action → domain → kernel
 - **`Brief(ctx, pending)`** recibe las líneas de pendientes de sí ya armadas por Weaver y las pone en su prioridad (D4).
 - **Cuidado:** `Analyze` lo usan `brief`, `status` y `check`. Se arma una sola vez por comando y se reutiliza.
 - **Hecho cuando:** un test externo (`spider_test`) usa cada operación sin importar nada de `spider/internal`, y el `README` dice "por su paquete raíz".
+- **Cómo quedó:**
+  - `spider.go` expone `Brief`, `Context`, `HookContext`, `Ready`, `Analyze`, `Find`, `Get` y `StateChanges`; las lecturas devuelven sus fallas como `Finding`, igual que `doctor`.
+  - `Get` y `StateChanges` entregan cada registro como JSON con la forma del payload (D16). Una guide trae `id` (sacado del nombre del archivo) y `body`.
+  - `Runners` pasa al paso 26, junto con el parseo de `runners` en `config.yaml`, que es donde se necesita.
+  - Hasta el paso 26 no hay `results.json`: la fachada usa un lector sin resultados, así que toda promesa automática sale `Unverified` con `not-run-here`.
+  - En una señal, `related` y `relation` se omiten cuando no aplican, en vez de ir como `null`.
+  - El plegado de acentos pasó al kernel (`kernel.FoldText`), porque lo usan `find` y los slugs de archivo.
+  - Si `config.yaml` falla, los límites quedan en sus valores por defecto y la falla se reporta, para que `brief` no quede con tope 0.
 
 ### Paso 24. Escritura de registros
 

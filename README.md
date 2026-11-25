@@ -68,7 +68,7 @@ Las carpetas se crean cuando su fase las necesita (`.claude/delta/status.md`).
 ## Reglas de la estructura
 
 - **Dependencias en una sola dirección:** `router → snares → weaver → spider`, y `router → anchor`. Todas pueden usar `kernel` y `system`, salvo `domain`, que solo usa `kernel`.
-- **Cada pieza se expone por su archivo de entrada** (`spider.go`, `weaver.go`). Lo demás va en su `internal/`, y el compilador impide importarlo desde fuera.
+- **Cada pieza se expone por su paquete raíz**: su archivo de entrada (`spider.go`, `weaver.go`) y, si hace falta, los tipos públicos planos que devuelve (`views.go`). Ningún tipo de su `internal/` cruza esa frontera. Lo demás va en su `internal/`, y el compilador impide importarlo desde fuera.
 - **`source/` no es privado para Go:** al no llamarse `internal`, otro módulo podría importar `kernel`, `system`, `router` y las fachadas de cada pieza. No se promete que esas APIs sean estables; lo que de verdad es privado vive en el `internal/` de cada pieza.
 - **Cada pieza tiene solo las capas que necesita:** `domain` (reglas), `action` (casos de uso) y `driver` (YAML, git y otros sistemas).
 - **Una pieza nueva** se agrega como `source/<pieza>/` con su archivo de entrada y se conecta en `router`.
