@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"unicode"
 
 	"github.com/ronz204/beacon/internal/kernel"
@@ -64,15 +65,22 @@ func (r Repository) FilesChangedSince(
 		return nil, kernel.FailHistory(errInvalidCommit)
 	}
 
-	tracked, err := r.git(
-		ctx,
-		"diff", "--name-only", "--relative", "--no-renames", commit, "--",
-	)
-	if err != nil {
-		return nil, err
-	}
+	var tracked string
+	var trackedErr error
+	var group sync.WaitGroup
+	group.Go(func() {
+		tracked, trackedErr = r.git(
+			ctx,
+			"diff", "--name-only", "--relative", "--no-renames", commit, "--",
+		)
+	})
 
 	untracked, err := r.untracked(ctx)
+	group.Wait()
+
+	if trackedErr != nil {
+		return nil, trackedErr
+	}
 	if err != nil {
 		return nil, err
 	}
