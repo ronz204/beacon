@@ -26,6 +26,7 @@ Reglas de la inyección antes de editar, para que no se vuelva ruido:
 - **Una vez por archivo y sesión:** `--hook` recuerda en `.git/beacon/` qué ya inyectó (`layout`); la sesión la identifica el hook con lo que el agente le pase.
 - **Con tope** de `limits.hook` líneas (20 por defecto, `ledger`); lo que no cabe se resume con un aviso, igual que el `brief` (`spider`).
 - **Sin salida** cuando no hay nada nuevo que decir.
+- **Sin consultas a git:** corre antes de cada edición, así que solo lee los registros. La deriva y la frescura llegan por el `brief` al empezar y tras compactar, y por `doctor`.
 - Se mide: el binario cuenta cuánto se inyectó y cuántas veces, y el benchmark compara con y sin esta reinyección (`status`).
 
 **Qué eventos existen varía por agente y cambia rápido.** Codex lista `SessionStart`, `Stop`, `UserPromptSubmit`, `PreCompact`, `PostCompact` y `SessionEnd`; para Claude Code y Cursor hay que verificar al implementar cada adaptador qué hook sirve antes de editar y tras compactar (el hook de inicio de Claude Code distingue el arranque, la reanudación y la compactación según su documentación, a confirmar). Si un agente no tiene el evento, ese momento queda cubierto solo por la guía del método.

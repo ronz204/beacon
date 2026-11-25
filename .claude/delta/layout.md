@@ -148,7 +148,9 @@ La deriva y la frescura (`spider`) dependen de git. Medición del 2026-11-22 en 
 | `git status --porcelain` | 8 ms |
 | Una consulta por capability (`git log -1 -- <path>`), 500 capabilities | 1.147 ms |
 
-**Medición con el código real (2026-11-24):** un repo de 500 capabilities con 10 promesas cada una, 1.000 archivos, 50 commits y 30 archivos editados sin commitear. El análisis completo (carga, grafo, verificación, deriva y frescura con git real) y `context` de un archivo tardan unos **155 ms** (mediana de 3 corridas de 10, en un i7-13620H con Windows, donde lanzar procesos es más caro). Queda dentro de la meta de 150 a 200 ms.
+**Medición con el código real (2026-11-24):** un repo de 500 capabilities con 10 promesas cada una, 1.000 archivos, 50 commits y 30 archivos editados sin commitear. Con el repo empaquetado (`git gc`, como un repo real), el análisis completo (carga, grafo, verificación, deriva y frescura con git real) y `context` de un archivo tardan unos **100 ms**, y el hook antes de editar, que no consulta git, unos **40 ms** (mediana de 3 corridas de 10, en un i7-13620H con Windows, donde lanzar procesos es más caro). Las consultas a git corren en paralelo con la carga y entre sí.
+
+**Cuidado al medir:** un repo recién creado guarda cada objeto en un archivo suelto, y en Windows eso multiplica el costo de `git log --name-only` (137 ms contra 21 ms empaquetado). Los benchmarks deben empaquetar el repo antes de medir.
 
 **Conclusión de diseño:** las consultas van **en lote**, no una por promesa. Una por commit base distinto más una de frescura, y el cruce con los `paths` se hace en memoria. Con 500 capabilities, el CLI completo (carga más git) queda en el orden de 150 a 200 ms.
 
