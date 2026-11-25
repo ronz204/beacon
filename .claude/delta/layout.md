@@ -71,9 +71,9 @@ Los worktrees de un mismo repo comparten `.git/beacon/`, y varias sesiones de ag
 - **Estricto:** sin anclas ni alias, sin claves de combinación (`<<`) y sin claves duplicadas. La librería no rechaza estas últimas al leer nodos, así que las valida el binario.
 - **Sin tipos implícitos:** el parser lee cada valor por el tipo que dice el esquema (`ledger`). `beacon fmt` entrecomilla con comillas dobles **solo lo que otra herramienta podría reinterpretar**: `yes`, `no`, `on`, `off`, `true`, `false`, `null` y `~` en cualquier capitalización, números (`1.0`, `1e3`, `0x1f`, `1234567`), fechas dentro de un campo de texto, strings vacíos, valores con `:` o `#`, con espacios al inicio o al final, valores que empiezan con un indicador YAML (`*`, `&`, `!`, `%`, `@`, `` ` ``, `?`, `- `, `|`, `>`, `[`, `{`, `'`, `"`), como el glob `"**/*.go"`, o con caracteres de flujo (`,`, `{`, `}`, `[`, `]`) dentro de un valor en línea. Los campos de fecha (`2026-11-22`) y las enumeraciones (`status: active`) van sin comillas.
 - **`beacon fmt`** formatea de forma canónica: orden fijo de claves, un campo por línea, listas de ids y promesas ordenadas por id. Un formato canónico da diffs pequeños y estables.
-- **En línea o en bloque:** `check`, `approved`, `attested` y las listas de ids, globs y etiquetas van en línea. Las listas de texto (`nongoals`, `rejected`, `log`) y `promises` van en bloque, y conservan su orden salvo `promises`. `request` usa un bloque literal cuando tiene saltos de línea, sin alterar su contenido.
+- **En línea o en bloque:** `check`, `approved`, `attested` y las listas de ids, globs y etiquetas van en línea, igual que `run`, `baseline` y `agents` en `config.yaml`. Las listas de texto (`nongoals`, `rejected`, `log`) y `promises` van en bloque, y conservan su orden salvo `promises`. `request` usa un bloque literal cuando tiene saltos de línea, sin alterar su contenido.
 - **Orden de claves:** el de la tabla. Los campos desconocidos van después de los conocidos, en orden alfabético y sin cambios por dentro.
-- **Alcance de `fmt`:** formatea los registros y el frontmatter de las guides, sin tocar su cuerpo ni `config.yaml`. Conserva los comentarios YAML junto a su clave, deja en bloque una sección que tiene comentarios, nunca parte líneas largas, escribe LF y no toca un archivo inválido. Formatea hasta que la salida no cambia (máximo 3 pasadas); si no se estabiliza o el contenido cambiaría, no escribe y lo reporta. `.beacon/**` lleva `text eol=lf` en `.gitattributes`.
+- **Alcance de `fmt`:** formatea los registros, el frontmatter de las guides (sin tocar su cuerpo) y `config.yaml`; `record` aplica el mismo formato al escribir. Conserva los comentarios YAML junto a su clave, deja en bloque una sección que tiene comentarios, nunca parte líneas largas, escribe LF y no toca un archivo inválido. Formatea hasta que la salida no cambia (máximo 3 pasadas); si no se estabiliza o el contenido cambiaría, no escribe y lo reporta. `.beacon/**` lleva `text eol=lf` en `.gitattributes`.
 
 | Tipo | Orden |
 |---|---|
@@ -88,6 +88,7 @@ Los worktrees de un mismo repo comparten `.git/beacon/`, y varias sesiones de ag
 | `check` | `runner` y sus parámetros en orden alfabético, o `manual` |
 | `approved` | `by`, `at`, `via` |
 | `attested` | `by`, `at`, `commit`, `evidence` |
+| `config.yaml` | `schema`, `runners`, `review`, `limits`, `agents`, `approved`. Los ejecutores van en orden alfabético, cada uno con `run` y `baseline`; `review` y `limits` siguen el orden de `ledger` |
 
 - El binario valida contra un esquema y, si algo no encaja, dice cómo arreglarlo.
 

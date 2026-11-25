@@ -390,7 +390,7 @@ cmd/beacon → router → weaver.go → action → domain → kernel
   - Archivar y borrar del registro ocurren bajo el mismo candado que `record` (`.git/beacon/records.lock`), después de comprobar que el archivo no cambió desde `PrepareClose`.
   - `get` devuelve `archived: true` cuando el registro está archivado, y `find` recibe si debe buscar también en el archivo. El payload de `record` acepta la clave `archived` para que el ciclo `get` → `record` siga cerrado.
   - Errores nuevos: `guide_not_archivable` y `task_has_open_children`, con las subtareas abiertas en `details.subtasks`.
-  - **Límite conocido:** se archiva primero y se borra después. Si el proceso muere en medio, el registro queda activo y archivado a la vez, y `doctor` lo reporta como id repetido (`graph_node_repeated`). Se arregla borrando el archivo de `records/`. Si pasa en la práctica, se agrega a `doctor` una reparación automática.
+  - Se archiva primero y se borra después. Si el proceso muere en medio, el registro queda activo y archivado a la vez; como la línea archivada prueba que se pidió el cierre, `doctor` lo termina (borra el registro o saca la promesa de su capability) y lo reporta como `close_completed`.
 
 ### Paso 26. Resultados, huella y `config.yaml` (hecho)
 
@@ -409,9 +409,10 @@ cmd/beacon → router → weaver.go → action → domain → kernel
   - La huella es el SHA-256 de las líneas `ruta NUL sha256-del-contenido` (o `deleted`) de los archivos cambiados que caen en los `paths`, ordenadas por ruta. Vacía si no hay ninguno.
   - La deriva pasa a ser "la huella actual difiere de la guardada". Con una huella guardada vacía es idéntica a la regla anterior, y solo se calcula cuando algún archivo de los `paths` cambió.
   - Sin git, la fachada sigue usando un lector sin resultados.
+  - En Windows, un antivirus o el indexador pueden retener un archivo un instante: soltar un candado y borrar un registro reintentan como ya lo hacía el renombrado, y un candado que no se pudo soltar se reporta en vez de ignorarse. Era la causa más probable de una falla intermitente que no se pudo reproducir en más de 40 corridas.
   - `config.yaml` parsea `runners` (`run` no vacío y `baseline` opcional) y `approved`; un ejecutor sin `run` da `record_runner_invalid`. `Runners()` los expone, y `Config()` devuelve el `config` con la forma del payload.
   - `StateChanges` usa los `baseline` reales e incluye los cambios en `config.yaml` (tipo `config`).
-  - El payload `{"type": "config"}` se fusiona como un registro, con `approved` como única clave del binario, y el sello usa el id `config`. Si no cambia nada, el archivo queda igual byte por byte; si cambia, se reescribe con el estilo de la librería YAML, porque `fmt` no tiene un formato canónico para `config.yaml`.
+  - El payload `{"type": "config"}` se fusiona como un registro, con `approved` como única clave del binario, y el sello usa el id `config`. Si no cambia nada, el archivo queda igual byte por byte; si cambia, se escribe con el formato canónico de `config.yaml`, que también aplica `fmt` (`layout`).
 
 ## 5. Bloque 5: dominio de Weaver
 

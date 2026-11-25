@@ -109,12 +109,12 @@ Los campos desconocidos se conservan al reescribir y las versiones nuevas del es
 schema: 1
 runners:
   test-node:
-    run: ["pnpm", "--filter", "{pkg}", "test", "--", "{target}"]
+    run: [pnpm, --filter, "{pkg}", test, --, "{target}"]
   test-go:
-    run: ["go", "test", "{pkg}", "-run", "{target}"]
+    run: [go, test, "{pkg}", -run, "{target}"]
   visual:
-    run: ["pnpm", "exec", "playwright", "test", "--grep", "{target}"]
-    baseline: ["tests/**/*-snapshots/**"]
+    run: [pnpm, exec, playwright, test, --grep, "{target}"]
+    baseline: [tests/**/*-snapshots/**]
 review:
   convention: 6mo
   architecture: 12mo
