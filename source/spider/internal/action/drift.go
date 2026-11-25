@@ -33,21 +33,14 @@ func markDrift(
 		}
 
 		for _, group := range groups[commit] {
-			drifted := err != nil
-			if !drifted {
-				var matchErr error
-				drifted, matchErr = globsTouch(
-					sources.Matcher,
-					group.paths,
-					files,
-				)
-				if matchErr != nil {
-					failures = append(failures, matchErr)
-				}
+			current, groupErr := groupFootprint(ctx, sources, group, files)
+			if groupErr != nil {
+				failures = append(failures, groupErr)
 			}
 
-			if drifted {
-				for _, id := range group.promises {
+			for _, id := range group.promises {
+				stale := verifications[id].Footprint() != current
+				if err != nil || groupErr != nil || stale {
 					verifications[id] = verifications[id].WithDrift()
 				}
 			}
@@ -114,4 +107,39 @@ func changedFiles(
 	group.Wait()
 
 	return results
+}
+
+func groupFootprint(
+	ctx context.Context,
+	sources Sources,
+	group driftGroup,
+	files []string,
+) (string, error) {
+	matched, err := globsMatched(sources.Matcher, group.paths, files)
+	if err != nil {
+		return "", err
+	}
+
+	return sources.Changes.FootprintOf(ctx, matched)
+}
+
+func globsMatched(
+	matcher kernel.PathMatcher,
+	globs []kernel.PathGlob,
+	files []string,
+) ([]string, error) {
+	var matched []string
+
+	for _, file := range files {
+		touched, err := globsTouch(matcher, globs, []string{file})
+		if err != nil {
+			return nil, err
+		}
+
+		if touched {
+			matched = append(matched, file)
+		}
+	}
+
+	return matched, nil
 }

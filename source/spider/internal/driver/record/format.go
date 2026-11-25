@@ -82,15 +82,28 @@ var (
 		"id", "text", "check", "status", "approved", "attested",
 		"origin", "refers",
 	}
+	configKeys = []string{
+		"schema", "runners", "review", "limits", "agents", "approved",
+	}
+	reviewKeys = []string{
+		"convention", "architecture", "product", "domain", "runbook",
+		"decision",
+	}
+	limitKeys    = []string{"guide", "brief", "hook"}
+	runnerKeys   = []string{"run", "baseline"}
 	approvedKeys = []string{"by", "at", "via"}
 	attestedKeys = []string{"by", "at", "commit", "evidence"}
 	checkKeys    = []string{"runner", "manual"}
 	flowLists    = []string{
 		"paths", "where", "blocks", "implements", "refers", "tags", "applies",
+		"run", "baseline", "agents",
 	}
 	sortedLists = []string{"blocks", "implements", "refers"}
 	blockLists  = []string{"nongoals", "rejected", "log"}
-	typedFields = []string{"created", "reviewed", "at", "always"}
+	typedFields = []string{
+		"created", "reviewed", "at", "always", "schema", "guide", "brief",
+		"hook",
+	}
 )
 
 type formatTarget struct {
@@ -136,6 +149,10 @@ func renderStable(
 	return nil, failAt(RecordFormatUnsafe, file, 1)
 }
 
+func FormatConfig(file string, data []byte) ([]byte, error) {
+	return renderStable(file, normalizeText(data), 0, configKeys)
+}
+
 func FormatGuide(file string, data []byte) ([]byte, error) {
 	front, body, found := splitFrontmatter(normalizeText(data))
 	if !found {
@@ -170,7 +187,27 @@ func (s Store) Format(ctx context.Context, write bool) ([]string, []error) {
 		}
 	}
 
+	if _, err := os.Stat(s.ConfigFile()); err == nil {
+		file := s.ConfigFile()
+		differs, failed := formatFile(ctx, file, configTarget(), write)
+		failures = append(failures, failed...)
+
+		if differs {
+			changed = append(changed, file)
+		}
+	}
+
 	return changed, failures
+}
+
+func configTarget() formatTarget {
+	return formatTarget{
+		check: func(file string, data []byte) []error {
+			_, failures := decodeConfig(file, data)
+			return failures
+		},
+		format: FormatConfig,
+	}
 }
 
 func formatTargets() []formatTarget {
@@ -474,6 +511,26 @@ func canonicalSection(name string, section *yaml.Node) {
 	case "attested":
 		section.Style = inlineStyle(section)
 		canonicalMapping(section, attestedKeys)
+	case "runners":
+		section.Style = 0
+		canonicalRunners(section)
+	case "review":
+		section.Style = 0
+		canonicalMapping(section, reviewKeys)
+	case "limits":
+		section.Style = 0
+		canonicalMapping(section, limitKeys)
+	}
+}
+
+func canonicalRunners(section *yaml.Node) {
+	orderKeys(section, nil)
+
+	for index := 1; index < len(section.Content); index += 2 {
+		if runner := section.Content[index]; runner.Kind == yaml.MappingNode {
+			runner.Style = 0
+			canonicalMapping(runner, runnerKeys)
+		}
 	}
 }
 

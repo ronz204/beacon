@@ -206,14 +206,14 @@ func TestBriefListsDriftAndStaleRecords(t *testing.T) {
 	sources.Changes = double.Changes{evidenceCommit: {"src/auth/login.go"}}
 	sources.Today = mustDay("2027-06-01")
 
-	result, failures := action.Brief(context.Background(), sources, 60)
+	result, failures := action.Brief(context.Background(), sources, 60, nil)
 
 	requireClean(t, failures)
 	text := strings.Join(briefTexts(result), "\n")
 	expected := []string{
-		"Drift: promise bc-c3d4: Tras 5 intentos",
-		"Drift: promise bc-c4a1: La pantalla",
-		"Stale: decision bc-a1b2: Sesiones con JWT",
+		"Drift: promise bc-c3d4: After 5 failed",
+		"Drift: promise bc-c4a1: The sign-in screen",
+		"Stale: decision bc-a1b2: Sessions with 15 min JWTs",
 	}
 	for _, line := range expected {
 		if !strings.Contains(text, line) {

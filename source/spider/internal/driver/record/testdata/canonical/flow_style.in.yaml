@@ -1,15 +1,15 @@
 id: bc-7f3a
 created: 2026-11-22
 author: "agent:sample-agent"
-name: Inicio de sesión
-intent: Entrar sin exponer la cuenta.
+name: Sign-in
+intent: Sign in without revealing the account.
 paths:
   - src/auth/**
   - tests/auth/**
-nongoals: [Sin redes sociales.]
+nongoals: [No social sign-in.]
 promises:
   - id: bc-c3d4
-    text: Primera promesa.
+    text: First promise.
     check:
       target: auth/a
       pkg: api

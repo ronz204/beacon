@@ -217,7 +217,7 @@ func TestParseRecordKeepsSyntaxCause(t *testing.T) {
 
 func TestParseRecordAcceptsWindowsText(t *testing.T) {
 	text := "\xef\xbb\xbfid: bc-0001\r\n" +
-		"request: |\r\n  uno\r\n  dos\r\n"
+		"request: |\r\n  one\r\n  two\r\n"
 
 	root, err := record.ParseRecord("sample.yaml", []byte(text))
 	if err != nil {
@@ -227,7 +227,7 @@ func TestParseRecordAcceptsWindowsText(t *testing.T) {
 	if got := mappingValue(t, root, "id").Value; got != "bc-0001" {
 		t.Fatalf("id = %q", got)
 	}
-	if got := mappingValue(t, root, "request").Value; got != "uno\ndos\n" {
+	if got := mappingValue(t, root, "request").Value; got != "one\ntwo\n" {
 		t.Fatalf("request = %q", got)
 	}
 }
@@ -238,11 +238,11 @@ func TestParseGuideSplitsFrontmatterAndBody(t *testing.T) {
 		text string
 		body string
 	}{
-		{"body", "---\ntitle: x\n---\nuno\n", "uno\n"},
-		{"no final newline", "---\ntitle: x\n---\nuno", "uno"},
+		{"body", "---\ntitle: x\n---\none\n", "one\n"},
+		{"no final newline", "---\ntitle: x\n---\none", "one"},
 		{"closing at end", "---\ntitle: x\n---", ""},
 		{"rule in body", "---\ntitle: x\n---\nu\n---\nd\n", "u\n---\nd\n"},
-		{"windows", "---\r\ntitle: x\r\n---\r\nuno\r\n", "uno\n"},
+		{"windows", "---\r\ntitle: x\r\n---\r\none\r\n", "one\n"},
 	}
 
 	for _, c := range cases {
@@ -273,18 +273,18 @@ func TestParseGuideRejectsMissingFrontmatter(t *testing.T) {
 }
 
 func TestParseGuideRejectsEmptyFrontmatter(t *testing.T) {
-	_, err := record.ParseGuide("guide.md", []byte("---\n---\nuno\n"))
+	_, err := record.ParseGuide("guide.md", []byte("---\n---\none\n"))
 
 	requireFailure(t, err, record.RecordDocumentEmpty, 2)
 }
 
 func TestParseGuideReportsFileLines(t *testing.T) {
-	data := []byte("---\ntitle: x\ntitle: y\n---\nuno\n")
+	data := []byte("---\ntitle: x\ntitle: y\n---\none\n")
 
 	_, err := record.ParseGuide("guide.md", data)
 	requireFailure(t, err, record.RecordKeyRepeated, 3)
 
-	data = []byte("---\ntitle: x\nkind: [a\n---\nuno\n")
+	data = []byte("---\ntitle: x\nkind: [a\n---\none\n")
 
 	_, err = record.ParseGuide("guide.md", data)
 

@@ -1,10 +1,10 @@
 id: bc-7f3a
 created: 2026-11-22
 author: "agent:sample-agent"
-name: Inicio de sesión
-intent: Que un usuario entre con correo y contraseña sin exponer si la cuenta existe.
+name: Sign-in
+intent: A user signs in with email and password without revealing whether the account exists.
 paths: [src/auth/**, tests/auth/**]
 serves: bc-0001
 nongoals:
-  - No incluye inicio de sesión con redes sociales.
+  - Does not include social sign-in.
 promises: none

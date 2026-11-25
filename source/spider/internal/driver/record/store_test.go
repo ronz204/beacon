@@ -126,8 +126,8 @@ func TestStoreLoadsEveryValidType(t *testing.T) {
 		t.Fatalf("first task = %q", tasks[0].ID())
 	}
 
-	wantRequest := "Migrar el almacenamiento a Postgres\n" +
-		"sin perder los datos actuales.\n"
+	wantRequest := "Migrate storage to Postgres\n" +
+		"without losing current data.\n"
 	if works[0].Request().String() != wantRequest {
 		t.Fatalf("request = %q", works[0].Request())
 	}
@@ -197,7 +197,7 @@ func TestStoreReportsInvalidFixtures(t *testing.T) {
 }
 
 func TestStoreRejectsIDDifferentFromFileName(t *testing.T) {
-	const name = "bc-ffff-id-distinto-al-archivo.yaml"
+	const name = "bc-ffff-id-differs-from-file.yaml"
 	path := filepath.Join("testdata", "invalid", "goals", name)
 	root := t.TempDir()
 	writeRecord(t, root, "goals", name, readFixture(t, path))
@@ -224,7 +224,7 @@ func TestStoreRejectsGuideNameWithoutID(t *testing.T) {
 func TestStoreKeepsLoadingAfterBrokenFiles(t *testing.T) {
 	valid := readFixture(t, filepath.Join(
 		"testdata", "valid", "records", "goals",
-		"bc-0001-pagos-sin-friccion.yaml",
+		"bc-0001-frictionless-payments.yaml",
 	))
 	root := t.TempDir()
 	writeRecord(t, root, "goals", "bc-0001-sample.yaml", valid)
@@ -312,7 +312,7 @@ func TestStoreHandlesForeignFiles(t *testing.T) {
 func TestStoreHonorsCancelledContext(t *testing.T) {
 	path := filepath.Join(
 		"testdata", "valid", "records", "goals",
-		"bc-0001-pagos-sin-friccion.yaml",
+		"bc-0001-frictionless-payments.yaml",
 	)
 	root := t.TempDir()
 	writeRecord(t, root, "goals", "bc-0001-sample.yaml", readFixture(t, path))

@@ -1,8 +1,8 @@
 id: bc-0001
 created: 2026-11-22
 author: "human:jane"
-statement: Que un usuario nuevo complete su primer pago en menos de 2 minutos.
-success: &metric Tasa de pagos completados al primer intento mayor a 90 %.
+statement: A new user completes their first payment in under 2 minutes.
+success: &metric More than 90 % of payments complete on the first attempt.
 nongoals:
-  - No soportamos pagos recurrentes en esta versión.
+  - We do not support recurring payments in this version.
 status: active

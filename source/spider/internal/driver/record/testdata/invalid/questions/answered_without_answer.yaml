@@ -1,6 +1,6 @@
 id: bc-e5f6
 created: 2026-11-22
 author: "agent:sample-agent"
-text: ¿Cuántos intentos fallidos antes de bloquear, y por cuánto tiempo?
+text: How many failed attempts before locking, and for how long?
 blocks: [bc-91cd]
 status: answered

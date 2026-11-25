@@ -2,10 +2,10 @@ id: bc-91cd
 created: 2026-11-22
 author: "agent:sample-agent"
 request: |
-  Migrar el almacenamiento a Postgres
-  sin perder los datos actuales.
+  Migrate storage to Postgres
+  without losing current data.
 implements: [bc-c3d4]
 serves: bc-0001
 status: active
 log:
-  - "2026-11-22: se separó el esquema en dos pasos"
+  - "2026-11-22: the schema was split into two steps"

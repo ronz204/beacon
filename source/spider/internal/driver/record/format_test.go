@@ -179,7 +179,7 @@ func TestFormatKeepsBooleanFieldsPlain(t *testing.T) {
 }
 
 func TestFormatGuideKeepsBodyBytes(t *testing.T) {
-	body := "  Sangría\n\n---\nFin sin salto"
+	body := "  Indented\n\n---\nEnd without newline"
 	data := []byte("---\nkind: domain\ntitle: Sample\n---\n" + body)
 
 	output, err := record.FormatGuide("guide.md", data)
@@ -316,7 +316,7 @@ func TestStoreFormatNeverTouchesInvalidFiles(t *testing.T) {
 func TestStoreFormatNormalizesWindowsLines(t *testing.T) {
 	path := filepath.Join(
 		"testdata", "valid", "records", "goals",
-		"bc-0001-pagos-sin-friccion.yaml",
+		"bc-0001-frictionless-payments.yaml",
 	)
 	want := readFixture(t, path)
 	windows := strings.ReplaceAll(string(want), "\n", "\r\n")
@@ -355,5 +355,29 @@ func TestStoreFormatCoversGuides(t *testing.T) {
 	want := "---\ntitle: Sample\nkind: domain\n---\nBody\n"
 	if got := readFixture(t, path); string(got) != want {
 		t.Fatalf("got:\n%s", got)
+	}
+}
+
+func TestFormatConfigIsCanonicalAndStable(t *testing.T) {
+	input := "agents:\n  - codex\nlimits: {hook: 20, brief: 60}\n" +
+		"runners:\n  visual:\n    baseline: [\"shots/**\"]\n" +
+		"    run: [\"npx\", \"--yes\", \"{target}\"]\n" +
+		"  alpha:\n    run: [go]\nschema: 1\nextra: kept\n"
+	want := "schema: 1\nrunners:\n  alpha:\n    run: [go]\n" +
+		"  visual:\n    run: [npx, --yes, \"{target}\"]\n" +
+		"    baseline: [shots/**]\nlimits:\n  brief: 60\n  hook: 20\n" +
+		"agents: [codex]\nextra: kept\n"
+
+	got, err := record.FormatConfig("config.yaml", []byte(input))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != want {
+		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
+	}
+
+	again, err := record.FormatConfig("config.yaml", got)
+	if err != nil || string(again) != want {
+		t.Fatalf("second pass:\n%s (%v)", again, err)
 	}
 }

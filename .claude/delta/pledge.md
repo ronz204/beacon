@@ -27,7 +27,7 @@ Un `check` no es un comando: son **datos** que apuntan a un ejecutor declarado e
 # config.yaml (código: pocos y revisados)
 runners:
   test-node:
-    run: ["pnpm", "--filter", "{pkg}", "test", "--", "{target}"]
+    run: [pnpm, --filter, "{pkg}", test, --, "{target}"]
 ```
 
 ```yaml

@@ -41,6 +41,7 @@ func Validate(snapshot Snapshot) (thread.Graph, []error) {
 	for _, task := range snapshot.Tasks {
 		builder.addTask(task)
 	}
+	builder.nodes = append(builder.nodes, snapshot.Archived...)
 
 	graph, failures := thread.NewGraph(builder.nodes, builder.edges)
 

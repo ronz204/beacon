@@ -1,6 +1,6 @@
 ---
-title: Arquitectura general
+title: Architecture overview
 kind: architecture
 future: conservar este campo
 ---
-El cuerpo no cambia.
+The body does not change.

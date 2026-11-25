@@ -1,0 +1,8 @@
+id: bc-0001
+created: 2026-11-22
+author: "human:jane"
+statement: A new user completes their first payment in under 2 minutes.
+success: More than 90 % of payments complete on the first attempt.
+nongoals:
+  - We do not support recurring payments in this version.
+status: active

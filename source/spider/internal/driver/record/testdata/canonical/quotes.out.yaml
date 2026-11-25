@@ -1,8 +1,8 @@
 id: bc-0001
 created: 2026-11-22
 author: "human:jane"
-statement: Completar el primer pago.
-success: Más del 90 % lo logra.
+statement: Complete the first payment.
+success: More than 90 % succeed.
 nongoals:
-  - "Sin pagos: recurrentes."
+  - "No payments: recurring."
 status: active

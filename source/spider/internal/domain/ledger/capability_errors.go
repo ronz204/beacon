@@ -15,6 +15,8 @@ const (
 	PromiseAttestManual    CapabilityCode = "promise_attest_manual"
 	PromiseFieldMissing    CapabilityCode = "promise_field_missing"
 	PromiseRepeated        CapabilityCode = "promise_repeated"
+	ProofOutcomeInvalid    CapabilityCode = "proof_outcome_invalid"
+	ProofReasonInvalid     CapabilityCode = "proof_reason_invalid"
 )
 
 type CapabilityError = kernel.Error[CapabilityCode]
@@ -30,6 +32,8 @@ var capabilityErrors = kernel.ErrorCatalog[CapabilityCode]{
 	PromiseAttestManual:    "only manual promises can be attested",
 	PromiseFieldMissing:    "promise is missing a required field",
 	PromiseRepeated:        "promise id is repeated in the capability",
+	ProofOutcomeInvalid:    "check outcome must be passed or failed",
+	ProofReasonInvalid:     "check reason must be exit_code or timeout",
 }
 
 func invalidCapabilityValue(

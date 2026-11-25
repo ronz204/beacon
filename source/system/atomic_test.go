@@ -1,6 +1,8 @@
 package system_test
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -41,5 +43,19 @@ func TestWriteFileAtomicFailsWithoutDirectory(t *testing.T) {
 
 	if err := system.WriteFileAtomic(path, []byte("data")); err == nil {
 		t.Fatal("expected an error")
+	}
+}
+
+func TestRemoveFileDeletesAndReportsMissing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "sample.txt")
+	if err := os.WriteFile(path, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := system.RemoveFile(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := system.RemoveFile(path); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("second remove = %v", err)
 	}
 }

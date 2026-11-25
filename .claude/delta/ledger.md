@@ -73,6 +73,8 @@ Las relaciones son **campos tipados** en el registro que corresponde, no una lis
 
 - **Sintaxis de globs estilo doublestar:** `*` (dentro de un segmento), `**` (varios segmentos), `?` y `{a,b}`. Siempre desde la raíz del repo, con `/` como separador y sensibles a mayúsculas.
 - **Sin negaciones** (`!`): para excluir algo se acota el glob. Así es fácil razonar qué cubre qué cuando varias capabilities se solapan.
+- **Sin corchetes** (`[...]`): se rechazan, así que `app/[id]/page.tsx` se escribe `app/*/page.tsx` hasta que haga falta un escape.
+- **Límite conocido:** una alternativa vacía pegada a una barra, como `{a,}/b`, genera un segmento vacío y su resultado puede diferir del de `doublestar`.
 - Tan gruesos como se quiera (`apps/api/src/auth/**`).
 - Pueden solaparse, y puede haber código sin ningún dueño (recibe solo la meta y las guides `always`).
 - Son **opcionales**: una promesa sin `paths` funciona pero no puede avisar de deriva, y eso se muestra como una señal, no como error.
@@ -107,12 +109,12 @@ Los campos desconocidos se conservan al reescribir y las versiones nuevas del es
 schema: 1
 runners:
   test-node:
-    run: ["pnpm", "--filter", "{pkg}", "test", "--", "{target}"]
+    run: [pnpm, --filter, "{pkg}", test, --, "{target}"]
   test-go:
-    run: ["go", "test", "{pkg}", "-run", "{target}"]
+    run: [go, test, "{pkg}", -run, "{target}"]
   visual:
-    run: ["pnpm", "exec", "playwright", "test", "--grep", "{target}"]
-    baseline: ["tests/**/*-snapshots/**"]
+    run: [pnpm, exec, playwright, test, --grep, "{target}"]
+    baseline: [tests/**/*-snapshots/**]
 review:
   convention: 6mo
   architecture: 12mo

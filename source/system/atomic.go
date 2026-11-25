@@ -1,6 +1,7 @@
 package system
 
 import (
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -52,6 +53,21 @@ func targetMode(path string) fs.FileMode {
 	}
 
 	return info.Mode().Perm()
+}
+
+func RemoveFile(path string) error {
+	var err error
+
+	for attempt := range renameAttempts {
+		err = os.Remove(path)
+		if err == nil || errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+
+		time.Sleep(time.Duration(attempt+1) * renameBackoff)
+	}
+
+	return err
 }
 
 func renameWithRetry(source, target string) error {

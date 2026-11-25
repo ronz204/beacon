@@ -1,8 +1,8 @@
 status: active
 nongoals:
-  - No soportamos pagos recurrentes.
-success: Más del 90 % lo logra.
-statement: Completar el primer pago.
+  - We do not support recurring payments.
+success: More than 90 % succeed.
+statement: Complete the first payment.
 author: "human:jane"
 created: 2026-11-22
 id: bc-0001

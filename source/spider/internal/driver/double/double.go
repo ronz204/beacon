@@ -5,6 +5,7 @@ import (
 	"errors"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/ronz204/beacon/source/kernel"
 	"github.com/ronz204/beacon/source/spider/internal/domain/agenda"
@@ -39,6 +40,20 @@ func (c Changes) FilesChangedSince(
 	}
 
 	return slices.Clone(files), nil
+}
+
+func (c Changes) FootprintOf(
+	_ context.Context,
+	files []string,
+) (string, error) {
+	if len(files) == 0 {
+		return "", nil
+	}
+
+	ordered := slices.Clone(files)
+	slices.Sort(ordered)
+
+	return strings.Join(ordered, ","), nil
 }
 
 func (h History) CommitsSince(

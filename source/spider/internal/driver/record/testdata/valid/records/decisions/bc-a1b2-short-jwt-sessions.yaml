@@ -1,0 +1,12 @@
+id: bc-a1b2
+created: 2026-11-22
+author: "agent:sample-agent"
+what: Sessions with 15 min JWTs plus a refresh token.
+why: We avoid server session state and limit the damage if a token leaks.
+where: [src/auth/**]
+rejected:
+  - "Server sessions: they need shared state across instances."
+  - "Long-lived JWTs: a leaked token works for days."
+status: active
+review: 6mo
+reviewed: 2026-11-22

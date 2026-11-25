@@ -70,13 +70,13 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Ejecución de checks | Tope fijo de 10 minutos por invocación (`timeout` es `Violated`); con un rojo, `check` sale con código 2. El tope se vuelve configurable si la fricción lo pide | `weaver` |
 | `results.json` | Lo guarda Spider, con commit y huella de lo no commiteado, para que un check con cambios sin commitear no muestre deriva | `layout`, `pledge` |
 | Archivo | Adelantado a la Fase 2, porque `close` lo necesita; una línea JSON por registro cerrado | `layout` |
+| Detalle de Weaver | Aprobado el 2026-11-25: frontera pública de Spider con tipos planos, forma del payload, nivel de cada cambio, promesas que no se borran por omisión, regla del sí fresco y cómo se corren los checks (D15 a D20) | `PLANNING.md` |
 | Benchmark de fricción | Protocolo aprobado: condiciones A (sin Beacon), B (solo guía), C (completo) y D (C sin reinyección); piloto de 10 tareas, 3 repeticiones y un agente (90 sesiones); métricas de proceso, integridad, fricción, resultado y costo. El arnés se construye pronto y el benchmark se corre en la Fase 6 | `survey` 7.6 |
 
 ## Abierto
 
 **No queda nada de diseño abierto.** Las propuestas R1 a R9 que salieron de la investigación del 2026-11-22 se aprobaron ese mismo día y ya están aplicadas en los archivos de arriba (`survey` las llama "propuestas": ese texto es el de la fecha de la investigación). Lo que sigue son detalles de implementación que se resuelven al construir cada fase:
 
-- Las Propuestas D15 a D20 del plan de la Fase 2 (`PLANNING.md`): frontera pública de Spider, forma del payload, nivel de cada cambio, promesas que no se borran por omisión, regla del sí fresco y cómo se corren los checks. Se confirman al revisar el plan.
 - Qué hook sirve en cada agente para reinyectar antes de editar y tras compactar, y cómo identificar la sesión (R1).
 - El nombre y el comportamiento exactos del evento `merge_group` de GitHub (`snares`).
 - Si el nivel 3 de las capturas base resulta demasiado ruidoso; se mide en la fricción y se afina el `baseline`.
@@ -123,7 +123,7 @@ Fuera del orden de construcción hasta que se cumpla su condición.
 
 ## Orden de construcción
 
-Sin recorte de producto; el orden sigue las dependencias. El plan detallado de Spider está en `PLANNING.md`.
+Sin recorte de producto; el orden sigue las dependencias. El plan detallado de la fase en curso está en `PLANNING.md`; el de la Fase 1 (Spider), cerrado, queda en el historial de git.
 
 | Fase | Contenido |
 |---|---|
