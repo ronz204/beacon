@@ -36,6 +36,7 @@ var nodeKinds = map[string]thread.NodeKind{
 }
 
 type Entry struct {
+	ID     string
 	Type   string
 	Record json.RawMessage
 	File   string
@@ -131,7 +132,11 @@ func readSegment(file string) ([]Entry, error) {
 			return nil, kernel.NewRecordFailure(file, number, err)
 		}
 
+		var ids recordIDs
+		_ = json.Unmarshal(line.Record, &ids)
+
 		entries = append(entries, Entry{
+			ID:     ids.ID,
 			Type:   line.Type,
 			Record: line.Record,
 			File:   file,
@@ -212,8 +217,7 @@ func (s Store) Find(ctx context.Context, id string) (Entry, bool, error) {
 	}
 
 	for _, entry := range entries {
-		var ids recordIDs
-		if json.Unmarshal(entry.Record, &ids) == nil && ids.ID == id {
+		if entry.ID == id {
 			return entry, true, nil
 		}
 	}

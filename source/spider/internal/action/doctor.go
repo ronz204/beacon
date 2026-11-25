@@ -12,13 +12,15 @@ import (
 )
 
 const (
-	CodeNotCanonical = "record_not_canonical"
-	CodeGuideTooLong = "guide_too_long"
-	CodeClaimRemoved = "claim_removed"
+	CodeNotCanonical   = "record_not_canonical"
+	CodeGuideTooLong   = "guide_too_long"
+	CodeClaimRemoved   = "claim_removed"
+	CodeCloseCompleted = "close_completed"
 
-	notCanonicalMessage = "run beacon fmt to format this record"
-	guideTooLongMessage = "split this guide into smaller guides"
-	claimRemovedMessage = "removed a claim whose branch or worktree is gone"
+	notCanonicalMessage   = "run beacon fmt to format this record"
+	guideTooLongMessage   = "split this guide into smaller guides"
+	claimRemovedMessage   = "removed a claim whose branch or worktree is gone"
+	closeCompletedMessage = "completed a close that was interrupted"
 )
 
 type FindingSeverity string

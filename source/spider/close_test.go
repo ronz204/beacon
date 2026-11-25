@@ -164,3 +164,39 @@ func TestFindSearchesTheArchiveOnRequest(t *testing.T) {
 		t.Fatalf("active = %+v, all = %+v", active, all)
 	}
 }
+
+func TestDoctorCompletesAnInterruptedClose(t *testing.T) {
+	project, root := newProject(t)
+	closeRecord(t, project, "bc-7f3a", nil)
+	runGit(t, root, "checkout", "--", capabilityFile)
+
+	findings := project.Doctor(context.Background())
+
+	if _, err := os.Stat(filepath.Join(root, capabilityFile)); err == nil {
+		t.Fatal("the interrupted close left the capability in records")
+	}
+	completed := 0
+	for _, finding := range findings {
+		if finding.Code == "close_completed" {
+			completed++
+		}
+		if strings.HasPrefix(finding.Code, "graph_") {
+			t.Fatalf("finding = %+v", finding)
+		}
+	}
+	if completed != 1 {
+		t.Fatalf("findings = %+v", findings)
+	}
+}
+
+func TestDoctorCompletesAnInterruptedPromiseClose(t *testing.T) {
+	project, root := newProject(t)
+	closeRecord(t, project, "bc-c4a1", nil)
+	runGit(t, root, "checkout", "--", capabilityFile)
+
+	project.Doctor(context.Background())
+
+	if strings.Contains(readFile(t, root, capabilityFile), "bc-c4a1") {
+		t.Fatal("the interrupted close left the promise in its capability")
+	}
+}
