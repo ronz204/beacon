@@ -37,7 +37,7 @@ check: {runner: test-node, pkg: api, target: auth/lockout}
 
 - Los parámetros se pasan como **argumentos separados, sin shell**, y no pueden empezar con `-`, para que nadie inyecte una opción.
 - Un monorepo de 40 paquetes usa el **mismo** ejecutor con otro `pkg`. Si los paquetes usan toolchains distintas, hay un ejecutor por ecosistema (`test-node`, `test-go`).
-- Cambiar un ejecutor es el único cambio peligroso: es de nivel 3 y en CI se usan los `runners` de la rama base (`deltas`, `sentry`).
+- Cambiar un ejecutor es el único cambio peligroso: es de nivel 3 y en CI se usan los `runners` de la rama base (`deltas`, `snares`).
 
 ## Cada test cita el id de su promesa
 

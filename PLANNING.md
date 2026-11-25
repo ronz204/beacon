@@ -1,6 +1,6 @@
 # Plan de construcción: Spider
 
-> **Estado: Fase 1 cerrada el 2026-11-23.** `beacon fmt` y `beacon doctor` funcionan sobre un `.beacon/` real. Las decisiones D1 a D4 están registradas en la KB. El Bloque 3 (pasos 17 a 22) está hecho: Spider calcula todo lo que pide `spider`, como librería, y falta exponerlo en el CLI con Engine.
+> **Estado: Fase 1 cerrada el 2026-11-23.** `beacon fmt` y `beacon doctor` funcionan sobre un `.beacon/` real. Las decisiones D1 a D4 están registradas en la KB. El Bloque 3 (pasos 17 a 22) está hecho: Spider calcula todo lo que pide `spider`, como librería, y falta exponerlo en el CLI con Weaver.
 
 ## 1. Panorama
 
@@ -26,7 +26,7 @@ El detalle funcional vive en la KB. Este plan solo dice **en qué orden se const
 |---|---|
 | **Bloque 1: preparar** | Reglas corregidas, decisiones cerradas y rama lista |
 | **Bloque 2: fundación** (Fase 1) | `beacon fmt` y `beacon doctor` funcionan sobre un `.beacon/` real |
-| **Bloque 3: cálculos** | Spider responde `brief`, `context`, `ready`, `drift`, `stale` y `diff` como librería, listo para que Engine lo exponga |
+| **Bloque 3: cálculos** | Spider responde `brief`, `context`, `ready`, `drift`, `stale` y `diff` como librería, listo para que Weaver lo exponga |
 
 ### Cómo fluye la información
 
@@ -46,7 +46,7 @@ action/load        reúne todos los registros y errores
 domain/thread      grafo: nodos, relaciones y validación (D3)
         │
         ├──────────── driver/commit    qué cambió en git
-        ├──────────── ProofReader      resultados de checks (los produce Engine)
+        ├──────────── ProofReader      resultados de checks (los produce Weaver)
         ▼
 action/*           context, ready, brief, drift, stale, diff
         │
@@ -54,15 +54,15 @@ action/*           context, ready, brief, drift, stale, diff
 spider.go          la única puerta de entrada
         │
         ▼
-router / engine    comandos del CLI
+router / weaver    comandos del CLI
 ```
 
 ### Qué queda fuera de este plan
 
-- **Ejecutar checks, clasificar niveles y calcular riesgo:** son de Engine.
-- **`record`, `close`, `claim` como comandos completos:** son de Engine (Fase 2). Spider les da la lectura, la validación y la escritura de bajo nivel.
+- **Ejecutar checks, clasificar niveles y calcular riesgo:** son de Weaver.
+- **`record`, `close`, `claim` como comandos completos:** son de Weaver (Fase 2). Spider les da la lectura, la validación y la escritura de bajo nivel.
 - **Archivo mensual (`archive/`):** Fase 5. Hasta entonces nada se archiva, así que una referencia ausente es una referencia rota. Cuando exista, la validación del grafo deberá consultarlo.
-- **`render`, Anchor y Sentry:** fases posteriores. `beacon install` deberá agregar `.beacon/** text eol=lf` a `.gitattributes` (`anchor`).
+- **Anchor y Snares:** fases posteriores. `beacon install` deberá agregar `.beacon/** text eol=lf` a `.gitattributes` (`anchor`).
 
 ## 2. Estructura objetivo
 
@@ -210,7 +210,7 @@ beacon/
 | Lo necesitan tres o más contextos y es puro | `kernel` |
 | Coordina varios contextos o arma una respuesta | `action` |
 | Habla con YAML, git, el disco o una librería externa | `driver` |
-| Es I/O genérico que también usará Engine | `system` |
+| Es I/O genérico que también usará Weaver | `system` |
 | Lee argumentos o imprime | `router` |
 
 ### Quién puede importar a quién
@@ -250,10 +250,10 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 - **Por qué:** la regla impide que un contexto importe a otro, y las reglas del grafo deben probarse como dominio puro.
 - **Afecta a:** pasos 14 y 17.
 
-### D4. Spider detecta, Engine clasifica
+### D4. Spider detecta, Weaver clasifica
 
-- **Decisión:** Spider entrega **qué cambió** en los registros, y Engine lo **clasifica** en nivel 1, 2 o 3.
-- **Consecuencia:** la señal "Pendiente de sí" no existe hasta que Engine la provea. El `brief` deja su espacio listo.
+- **Decisión:** Spider entrega **qué cambió** en los registros, y Weaver lo **clasifica** en nivel 1, 2 o 3.
+- **Consecuencia:** la señal "Pendiente de sí" no existe hasta que Weaver la provea. El `brief` deja su espacio listo.
 - **Afecta a:** pasos 20 y 21.
 
 ## 4. Bloque 1: preparar (cerrado)
@@ -406,7 +406,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 
 ## 6. Bloque 3: cálculos de Spider
 
-Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una rama nueva, `feat/spider-queries`. Engine solo tendrá que exponerlo.
+Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una rama nueva, `feat/spider-queries`. Weaver solo tendrá que exponerlo.
 
 ### Paso 17. Señales (hecho)
 
@@ -422,11 +422,11 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
 | Sin comprobar aquí | 17 | `ProofReader` |
 | Deriva | 21 | Git y `ProofReader` |
 | Desactualizado | 21 | Git y fechas |
-| Pendiente de sí | Engine | Clasificación por niveles (D4) |
+| Pendiente de sí | Weaver | Clasificación por niveles (D4) |
 
 - **Hecho cuando:** cada señal tiene un caso que aparece y otro que no.
 - **Cómo quedó:** el estado de cada promesa (`Holds`, `Attested`, `Unverified`, `Violated`) lo calcula `ledger.VerifyPromise` a partir del resultado de su check. Las señales de grafo (bloqueo y tensión) viven en `thread`; las que dependen de promesas (rojo, sin comprobar aquí, sin alcance) se calculan en `action/signals.go`. Una pregunta abierta es un nodo `Unfinished` del grafo.
-- **Pendiente:** todavía no hay `ProofReader` real, porque los resultados de checks los produce Engine. Hasta entonces solo existe el doble en memoria, y `context` no se expone en el CLI.
+- **Pendiente:** todavía no hay `ProofReader` real, porque los resultados de checks los produce Weaver. Hasta entonces solo existe el doble en memoria, y `context` no se expone en el CLI.
 
 ### Paso 18. `context <paths>` (hecho)
 
@@ -449,13 +449,13 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
 - **Regla clave:** tope de `limits.brief` líneas. La meta activa siempre entra, y el resto se recorta en este orden fijo:
   1. Bloqueos y rojos.
   2. Trabajo en curso.
-  3. Pendientes de sí (vacío hasta que exista Engine, D4).
+  3. Pendientes de sí (vacío hasta que exista Weaver, D4).
   4. Deriva y promesas sin comprobar aquí.
   5. Índice de guides.
 - **Hecho cuando:** con exceso de contenido nunca se pierde lo crítico y aparece `N more, run beacon status`.
 - **Cómo quedó:** la meta y sus `nongoals` entran siempre, aunque superen el tope. El resto se ordena por la prioridad fija y se corta desde el final, reservando una línea para el aviso. Las promesas sin resultado se resumen en una sola línea.
 - **Decidido (2026-11-24):** las guides `always` solo tienen su línea del índice en el `brief`; su cuerpo se lee bajo demanda. `guides.md` quedó alineado.
-- **Pendiente:** el aviso nombra `beacon status`, que todavía no existe (Engine). Hasta entonces ese mensaje no cumple P7.
+- **Pendiente:** el aviso nombra `beacon status`, que todavía no existe (Weaver). Hasta entonces ese mensaje no cumple P7.
 
 ### Paso 21. Git: `drift`, `stale` y `diff` (hecho)
 
@@ -470,7 +470,7 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
 - **Decidido (2026-11-24):** una guide o decisión está desactualizada si pasó su plazo o si recibió 10 o más commits sobre sus paths desde la última revisión. La deriva cuenta los cambios sin commitear.
 - **Cómo quedó:** `action.Analyze` junta carga, grafo, verificación, deriva y frescura, y lo usan `context` y `brief`. `driver/commit` hace las consultas a git en lote, con `core.quotepath=off` para nombres no ASCII, y valida commits y revisiones antes de pasarlos a git. `StateChanges` entrega los registros y capturas base que cambiaron desde una revisión, con su contenido antes y después, sin clasificar.
 - **Medido (2026-11-24):** con 500 capabilities, 1.000 archivos, 50 commits y cambios sin commitear, el análisis completo con git real tarda unos 100 ms y el hook unos 40 ms, porque git corre en paralelo con la carga y el hook no consulta git.
-- **Pendiente:** leer los globs `baseline` de `runners` en `config.yaml`, al conectar `diff` al CLI en Engine.
+- **Pendiente:** leer los globs `baseline` de `runners` en `config.yaml`, al conectar `diff` al CLI en Weaver.
 
 ### Paso 22. Estado local (hecho)
 
@@ -480,7 +480,7 @@ Corresponde a las Fases 2 y 5 de `status`. Se construye como librería en una ra
 - **Cuidado:** en Windows, renombrar sobre un archivo que otro proceso tiene abierto puede fallar, así que hace falta reintentar y probarlo con escritores concurrentes.
 - **Hecho cuando:** varios procesos escriben a la vez sin dejar un archivo a medias, y `--hook` no repite lo ya inyectado.
 - **Cómo quedó:** `driver/states` guarda `claims.json` e `injected.json` en `.git/beacon/`, con escritura atómica y un candado de archivo (`system.WithFileLock`), porque la atomicidad sola no evita que dos escritores se pisen. `ready` respeta los claims locales: una tarea reclamada en otra rama no aparece. `doctor` borra los claims cuya rama o worktree ya no existe y lo avisa. `HookContext` entrega solo lo que la sesión no recibió, con tope y aviso, y registra lo entregado.
-- **Pendiente:** escribir un claim (`beacon claim`) y el comando `context --hook` son de Engine; Spider ya los soporta.
+- **Pendiente:** escribir un claim (`beacon claim`) y el comando `context --hook` son de Weaver; Spider ya los soporta.
 
 ## 7. Hitos y commits
 
@@ -502,7 +502,7 @@ Se commitea por hito revisado, no por archivo.
 | YAML v4 es reciente (2026-11-04) | Los fixtures de los pasos 8 a 12 la prueban antes de depender de ella; v3.0.6 queda como alternativa cercana |
 | CRLF en Windows genera diffs falsos | `fmt` escribe LF, más `text eol=lf` para `.beacon/**` (paso 12) |
 | Renombrado atómico falla en Windows | Reintentos y prueba concurrente (paso 22) |
-| El dominio en Go resulta verboso por la regla | Se evalúa al cerrar H1, antes de replicarlo en Engine |
-| Spider crece antes de que Engine valide su interfaz | El Bloque 3 se construye contra los comandos definidos en `engine` |
+| El dominio en Go resulta verboso por la regla | Se evalúa al cerrar H1, antes de replicarlo en Weaver |
+| Spider crece antes de que Weaver valide su interfaz | El Bloque 3 se construye contra los comandos definidos en `weaver` |
 | Sobreingeniería | Cada paso implementa solo lo que la KB pide |
 | Benchmarks sintéticos | Se miden de nuevo en los pasos 16 y 21, con el código real |

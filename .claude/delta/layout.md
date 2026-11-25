@@ -38,7 +38,7 @@ Lo que no se comparte vive en `.git/beacon/`, dentro del directorio común de gi
 
 - `results.json`: resultados de los checks por promesa y commit (`pledge`).
 - `claims.json`: los claims de tareas de este clon, visibles a todos sus worktrees (ver abajo).
-- Las métricas de fricción (`engine`).
+- Las métricas de fricción (`weaver`).
 - `injected.json`: lo que los hooks ya inyectaron en cada sesión, para no repetirlo (`anchor`). Una sesión sin actividad en 7 días se descarta.
 - `backups/`: copias de los archivos que `beacon install` modificó (`anchor`).
 
@@ -52,7 +52,7 @@ Los worktrees de un mismo repo comparten `.git/beacon/`, y varias sesiones de ag
 - **Y va bajo candado:** quien modifica un archivo crea antes `<archivo>.lock` y lo borra al terminar, así dos procesos no se pisan y ningún claim se pierde. Un candado de más de 30 segundos se considera abandonado.
 - **Los resultados van por commit y promesa** (`pledge`), así que compartirlos entre worktrees es seguro: dos worktrees en el mismo commit producen el mismo resultado.
 - **Los claims se guardan también aquí** (`claims.json`), porque un claim escrito solo en un registro versionado es invisible para un worktree vecino hasta que se commitee y se fusione. `beacon claim` escribe en los dos sitios: el claim local avisa a las sesiones de esta máquina al instante, y `owner` y `branch` en el registro avisan al equipo cuando la rama sube (`method`).
-- `claims.json` e `injected.json` son JSON con un campo `version`. El formato de `results.json` lo fija Engine al implementar `check`.
+- `claims.json` e `injected.json` son JSON con un campo `version`. El formato de `results.json` lo fija Weaver al implementar `check`.
 - `beacon doctor` limpia claims de ramas o worktrees que ya no existen.
 
 ## Archivo de lo cerrado
@@ -100,14 +100,14 @@ Los worktrees de un mismo repo comparten `.git/beacon/`, y varias sesiones de ag
 - Un conflicto ocurre solo si dos personas tocan **el mismo archivo**; `beacon doctor` ayuda a resolverlo.
 - Las listas internas (promesas dentro de una capability) van **ordenadas por id**. Como los ids son aleatorios, dos personas que añaden promesas distintas casi nunca insertan en el mismo punto y git las fusiona sin conflicto.
 - Los borrados son borrados de archivo: git los entiende.
-- Hay conflictos que git no ve: dos cambios que fusionan limpio pero rompen el proyecto. Esos solo los detecta un CI que corra sobre el **resultado de la fusión** (`sentry`).
+- Hay conflictos que git no ve: dos cambios que fusionan limpio pero rompen el proyecto. Esos solo los detecta un CI que corra sobre el **resultado de la fusión** (`snares`).
 
 ## Ruido en PRs y navegación humana
 
 | Problema | Solución |
 |---|---|
-| Ruido en los PRs | Formato canónico (diffs pequeños y estables); `.gitattributes` con `linguist-generated` para que GitHub colapse `.beacon/**`; comentario de CI con `beacon diff` clasificado por nivel, que es lo que lee el revisor (`sentry`); menos archivos |
-| Un humano no puede navegar el directorio | Navega la **vista renderizada** (`engine`); los nombres con slug hacen legible el directorio |
+| Ruido en los PRs | Formato canónico (diffs pequeños y estables); `.gitattributes` con `linguist-generated` para que GitHub colapse `.beacon/**`; comentario de CI con `beacon diff` clasificado por nivel, que es lo que lee el revisor (`snares`); menos archivos |
+| Un humano no puede navegar el directorio | Los nombres con slug hacen legible el directorio, y `beacon get`, `find` y `status` resumen el estado (`weaver`) |
 
 ## Edición humana
 
@@ -122,7 +122,7 @@ Una persona puede editar el YAML a mano. El binario valida en el siguiente coman
 
 ## Carga en memoria
 
-Todo el estado está en los archivos. Al arrancar, el binario los lee y arma el grafo en memoria. Como el CLI es la única interfaz (`engine`), **cada llamada paga esa carga**.
+Todo el estado está en los archivos. Al arrancar, el binario los lee y arma el grafo en memoria. Como el CLI es la única interfaz (`weaver`), **cada llamada paga esa carga**.
 
 Medición en Go con `gopkg.in/yaml.v3` v3.0.1 (2026-11-22). Cada archivo es una capability con 10 promesas; se decodifica a structs conservando campos desconocidos, se arma el índice de ids y de rutas y se resuelve una consulta de contexto. Máquina de 2 núcleos, caché de archivos caliente, mediana de 7 corridas:
 

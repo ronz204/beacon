@@ -15,7 +15,7 @@ Una estructura así:
 
 ## Qué hace Spider
 
-Carga los registros (`layout`, `ledger`), arma el grafo de relaciones en memoria y calcula, **sin modelo**, lo que el resto del sistema necesita. Engine expone estos cálculos como comandos y herramientas (`engine`).
+Carga los registros (`layout`, `ledger`), arma el grafo de relaciones en memoria y calcula, **sin modelo**, lo que el resto del sistema necesita. Weaver expone estos cálculos como comandos y herramientas (`weaver`).
 
 ## Qué calcula
 
@@ -27,7 +27,7 @@ Carga los registros (`layout`, `ledger`), arma el grafo de relaciones en memoria
 | `ready` | Trabajo y tareas sin bloqueos, por rama | Recorre `blocks` y `parent`; al cerrar un bloqueo se desbloquean los dependientes; aplica la jerarquía de tareas (`ledger`) y tiene en cuenta los claims locales (`method`) |
 | `drift` | Promesas que pasaron pero cuyo código cambió desde el último check | Compara el commit del último resultado (`pledge`) con los cambios de git bajo sus `paths` |
 | `stale` | Decisiones y guides que superaron su plazo de revisión o cuyo código recibió 10 o más commits desde la última revisión | `reviewed` más `review`, y cambio de código desde la última revisión (`guides`) |
-| `diff` | Qué cambió en el estado desde un commit, incluidas las capturas base, **sin clasificar** | Compara los registros actuales con los de git y los archivos de `baseline`; Engine asigna el nivel (`deltas`, `engine`) |
+| `diff` | Qué cambió en el estado desde un commit, incluidas las capturas base, **sin clasificar** | Compara los registros actuales con los de git y los archivos de `baseline`; Weaver asigna el nivel (`deltas`, `weaver`) |
 
 **Revelado progresivo:** primero un resumen (`brief`), luego lo que aplica a lo que se toca (`context`), y solo si hace falta el detalle de un registro (`get`).
 
@@ -46,7 +46,7 @@ El `brief` tiene un tope de `limits.brief` líneas (60 por defecto, `ledger`). L
 
 1. Bloqueos y rojos.
 2. Trabajo en curso.
-3. Pendientes de sí (los aporta Engine).
+3. Pendientes de sí (los aporta Weaver).
 4. Deriva y la línea de promesas sin comprobar aquí.
 5. Índice de guides (lo primero en recortarse).
 
@@ -65,4 +65,4 @@ Spider las emite sin que se le pregunte, dentro de `brief` y `context`:
 | **Sin comprobar aquí** | Una promesa automática sin resultado en este clon (`not-run-here`) | Se resume en una línea del `brief` |
 | **Desactualizado** | Una guide o decisión pasada de su plazo de `review` o con mucho cambio de código | Aparece en `stale` y en el `brief` |
 | **Tensión por relación** | Tocar un hilo | Se muestran los vecinos afectados |
-| **Pendiente de sí** | Un cambio de nivel 3 sin aprobar. Engine lo clasifica y Spider lo muestra | Bloquea el guardado o el PR |
+| **Pendiente de sí** | Un cambio de nivel 3 sin aprobar. Weaver lo clasifica y Spider lo muestra | Bloquea el guardado o el PR |

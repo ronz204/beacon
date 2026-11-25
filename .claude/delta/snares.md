@@ -1,4 +1,4 @@
-# Sentry
+# Snares
 
 Git hooks y CI. Es la capa más fuerte: no depende de que el agente coopere (`design`).
 
@@ -10,9 +10,9 @@ Git hooks y CI. Es la capa más fuerte: no depende de que el agente coopere (`de
 
 ## CI
 
-Sentry no se ata a una plataforma: el binario trae **un comando genérico, `beacon sentry ci`**, que cualquier CI puede correr, y se entrega con **una plantilla de GitHub Actions** (la primera plataforma). Otras plataformas, como GitLab, son otra plantilla y no tocan el binario.
+Snares no se ata a una plataforma: el binario trae **un comando genérico, `beacon snares ci`**, que cualquier CI puede correr, y se entrega con **una plantilla de GitHub Actions** (la primera plataforma). Otras plataformas, como GitLab, son otra plantilla y no tocan el binario.
 
-`beacon sentry ci` hace, en una sola llamada:
+`beacon snares ci` hace, en una sola llamada:
 
 1. **Recalcula los checks desde cero**: es la fuente compartida de verdad (`pledge`).
 2. **Usa los `runners` de `config.yaml` de la rama base** hasta que un cambio a los ejecutores esté aprobado. Un PR no puede ejecutar ejecutores que él mismo introduce.
@@ -26,7 +26,7 @@ Sentry no se ata a una plataforma: el binario trae **un comando genérico, `beac
 
 Hay cambios que fusionan limpio en git pero dejan el proyecto roto: una persona renombra una función y otra escribe código nuevo que la llama por el nombre viejo. Un CI que solo comprueba la rama del PR no lo ve; solo lo ve uno que corre sobre **el resultado de la fusión** (`layout`).
 
-- La plantilla de GitHub Actions escucha `pull_request` y también `merge_group`, el evento de la **cola de merge**, para que `beacon sentry ci` corra sobre el commit ya fusionado antes de que llegue a la rama principal.
+- La plantilla de GitHub Actions escucha `pull_request` y también `merge_group`, el evento de la **cola de merge**, para que `beacon snares ci` corra sobre el commit ya fusionado antes de que llegue a la rama principal.
 - En ese evento la base de la comparación es la que trae el propio evento, no la punta de la rama del PR.
 - La cola de merge es opcional en GitHub: sin ella, el evento no se dispara y la plantilla sigue funcionando para PRs. **El nombre y el comportamiento exactos del evento se verifican al escribir la plantilla** (viene de mi conocimiento de GitHub, no de una fuente consultada).
 
@@ -38,7 +38,3 @@ Hay cambios que fusionan limpio en git pero dejan el proyecto roto: una persona 
 ## Seguridad
 
 El CI ejecuta código del repo, por eso los ejecutores son pocos, sin shell, con parámetros que no pueden empezar con `-`, y su cambio es de nivel 3 (`pledge`, `deltas`).
-
-## Nombre
-
-Se mantiene "Sentry", aunque coincide con una herramienta conocida de seguimiento de errores. Guard queda descartado.

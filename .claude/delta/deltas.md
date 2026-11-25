@@ -34,7 +34,7 @@ Un ejecutor visual declara en `config.yaml` los globs de sus capturas base (`bas
 
 ## Quién detecta
 
-El binario, no el modelo. Spider detecta qué cambió (`spider`) y Engine asigna el nivel:
+El binario, no el modelo. Spider detecta qué cambió (`spider`) y Weaver asigna el nivel:
 
 - Cuando el cambio pasa por una operación del agente, compara el registro antes y después.
 - En el pre-commit y en el CI compara contra la versión de git, así que también se detectan las ediciones manuales.
@@ -48,7 +48,7 @@ La promesa dice *"tras 5 intentos fallidos la cuenta se bloquea 15 minutos"*. Pa
 No hay un sistema propio de aprobaciones; se reutiliza lo que git ya hace.
 
 - **En solo:** la persona dice sí en el chat y el agente lo transmite con `beacon record --approve`. El binario guarda `approved: {by, at, via}` en el registro afectado: `by` es la persona (`human:<user.name de git>`) y `via` es el agente que transmitió el sí (`ledger`, sección Actor). Para una captura base, que no es un registro, el sí queda en el registro de la capability o promesa afectada.
-- **En equipo:** Sentry exige en el PR dos cosas (`sentry`): que cada cambio de nivel 3 traiga un `approved.by` humano, y que el PR tenga una review aprobada de una persona con permiso sobre `.beacon/records/capabilities/**` (CODEOWNERS o review obligatoria del hosting). Las capturas base se protegen igual: la review de la persona sobre esos archivos es la garantía.
+- **En equipo:** Snares exige en el PR dos cosas (`snares`): que cada cambio de nivel 3 traiga un `approved.by` humano, y que el PR tenga una review aprobada de una persona con permiso sobre `.beacon/records/capabilities/**` (CODEOWNERS o review obligatoria del hosting). Las capturas base se protegen igual: la review de la persona sobre esos archivos es la garantía.
 - **Qué garantiza y qué no:** el campo `approved` es un **marcado, no una prueba**, porque el agente corre con el mismo usuario del sistema y podría escribir un sí que la persona no dio. Lo que sí es una garantía en equipo es la revisión del PR por una persona: ahí se ve el diff clasificado por nivel. En uso personal la protección es la confianza y que todo queda a la vista.
 
 ## Riesgo y revisión independiente
@@ -61,8 +61,8 @@ No hay un sistema propio de aprobaciones; se reutiliza lo que git ya hace.
 
 ## Los ejecutores son código sensible
 
-Los `runners` de `config.yaml` contienen lo que el CI ejecuta. Cambiarlos, igual que el `schema`, es de nivel 3, y en CI se usan los `runners` de la rama base hasta que alguien apruebe el cambio (`sentry`). Las demás claves de `config.yaml` no ejecutan nada y son de nivel 1, para no gastar síes en cambios inofensivos.
+Los `runners` de `config.yaml` contienen lo que el CI ejecuta. Cambiarlos, igual que el `schema`, es de nivel 3, y en CI se usan los `runners` de la rama base hasta que alguien apruebe el cambio (`snares`). Las demás claves de `config.yaml` no ejecutan nada y son de nivel 1, para no gastar síes en cambios inofensivos.
 
 ## Medir la fricción
 
-Si el nivel 3 pide demasiado, se desactiva: un sistema que obliga a ceremonia para cambiar una coma se desinstala en tres días. Por eso la fricción se mide (`engine`).
+Si el nivel 3 pide demasiado, se desactiva: un sistema que obliga a ceremonia para cambiar una coma se desinstala en tres días. Por eso la fricción se mide (`weaver`).

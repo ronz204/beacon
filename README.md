@@ -39,23 +39,22 @@ beacon/
 │  │        ├─ match/           # globs
 │  │        ├─ double/          # contratos en memoria para tests
 │  │        └─ states/          # estado local en .git/beacon/
-│  ├─ engine/                   # checks, niveles de cambio, riesgo y vistas
-│  │  ├─ engine.go
+│  ├─ weaver/                   # checks, niveles de cambio y riesgo
+│  │  ├─ weaver.go
 │  │  └─ internal/
 │  │     ├─ domain/
 │  │     │  ├─ deltas/
 │  │     │  └─ checks/
 │  │     ├─ action/
-│  │     ├─ driver/
-│  │     └─ render/
+│  │     └─ driver/
 │  ├─ anchor/                   # instalación en cada agente
 │  │  ├─ anchor.go
 │  │  └─ internal/
 │  │     ├─ action/
 │  │     ├─ agents/             # claude, codex, cursor
 │  │     └─ assets/
-│  └─ sentry/                   # git hooks y CI
-│     ├─ sentry.go
+│  └─ snares/                   # git hooks y CI
+│     ├─ snares.go
 │     └─ internal/
 │        ├─ action/
 │        └─ assets/
@@ -68,8 +67,8 @@ Las carpetas se crean cuando su fase las necesita (`.claude/delta/status.md`).
 
 ## Reglas de la estructura
 
-- **Dependencias en una sola dirección:** `router → sentry → engine → spider`, y `router → anchor`. Todas pueden usar `kernel` y `system`, salvo `domain`, que solo usa `kernel`.
-- **Cada pieza se expone por su archivo de entrada** (`spider.go`, `engine.go`). Lo demás va en su `internal/`, y el compilador impide importarlo desde fuera.
+- **Dependencias en una sola dirección:** `router → snares → weaver → spider`, y `router → anchor`. Todas pueden usar `kernel` y `system`, salvo `domain`, que solo usa `kernel`.
+- **Cada pieza se expone por su archivo de entrada** (`spider.go`, `weaver.go`). Lo demás va en su `internal/`, y el compilador impide importarlo desde fuera.
 - **`source/` no es privado para Go:** al no llamarse `internal`, otro módulo podría importar `kernel`, `system`, `router` y las fachadas de cada pieza. No se promete que esas APIs sean estables; lo que de verdad es privado vive en el `internal/` de cada pieza.
 - **Cada pieza tiene solo las capas que necesita:** `domain` (reglas), `action` (casos de uso) y `driver` (YAML, git y otros sistemas).
 - **Una pieza nueva** se agrega como `source/<pieza>/` con su archivo de entrada y se conecta en `router`.
