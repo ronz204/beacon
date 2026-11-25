@@ -4,7 +4,7 @@ Este plan cubre solo la fase en curso: en qué orden se construye y qué archivo
 
 La numeración de pasos y decisiones sigue la del plan de la Fase 1 (Spider), ya cerrada, para que las referencias de la KB y de los commits sigan valiendo: por eso los pasos empiezan en el 23 y las decisiones en D5. Ese plan está en el historial de git (`git show 967f5aa:PLANNING.md`).
 
-> **Estado: en curso.** Pasos 23 y 24 hechos; sigue el paso 25. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
+> **Estado: en curso.** Pasos 23 a 25 hechos; sigue el paso 26. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
 
 ## 1. Panorama
 
@@ -371,7 +371,7 @@ cmd/beacon → router → weaver.go → action → domain → kernel
   - Escribir compara el archivo con lo leído en `Prepare`, bajo el candado `.git/beacon/records.lock`. Si alguien lo cambió en medio, falla con `record_changed`.
   - El payload de `config` llega en el paso 26, junto con su clave `approved` (D13).
 
-### Paso 25. Archivo y `close`
+### Paso 25. Archivo y `close` (hecho)
 
 - **Objetivo:** cerrar sin perder historia ni romper referencias (D6, P5).
 - **Construye:** `driver/archive/archive.go` y `action/close.go`. La validación del grafo (`action/validate.go`) aprende a resolver referencias contra el archivo.
@@ -384,6 +384,13 @@ cmd/beacon → router → weaver.go → action → domain → kernel
 - **Lectura perezosa:** `archive/` solo se lee cuando una referencia no se resuelve en `records/`, o cuando `get` o `find --archived` lo piden (`layout`).
 - **Cuidado:** el segmento se reescribe completo con escritura atómica y candado, para que dos `close` simultáneos no pierdan una línea.
 - **Hecho cuando:** cerrar un registro referenciado deja el grafo válido, `get` lo encuentra archivado y dos `close` concurrentes dejan las dos líneas.
+- **Cómo quedó:**
+  - Los registros archivados entran al grafo como nodos cerrados: resuelven referencias y jerarquía, pero no bloquean ni dan señales. `Load` lee `archive/` solo si el grafo reporta una referencia o una tarea padre que falta; `Prepare` lo lee siempre, para que un id nuevo nunca repita uno archivado.
+  - `close` va en dos fases, como `record`: `PrepareClose` devuelve el antes, el después (la capability sin la promesa, si se cierra una promesa) y la línea que se archivará; `Close` la escribe. El sello de `--approve` solo puede ir sobre el elemento que se cierra, y queda en su línea archivada.
+  - Archivar y borrar del registro ocurren bajo el mismo candado que `record` (`.git/beacon/records.lock`), después de comprobar que el archivo no cambió desde `PrepareClose`.
+  - `get` devuelve `archived: true` cuando el registro está archivado, y `find` recibe si debe buscar también en el archivo. El payload de `record` acepta la clave `archived` para que el ciclo `get` → `record` siga cerrado.
+  - Errores nuevos: `guide_not_archivable` y `task_has_open_children`, con las subtareas abiertas en `details.subtasks`.
+  - **Límite conocido:** se archiva primero y se borra después. Si el proceso muere en medio, el registro queda activo y archivado a la vez, y `doctor` lo reporta como id repetido (`graph_node_repeated`). Se arregla borrando el archivo de `records/`. Si pasa en la práctica, se agrega a `doctor` una reparación automática.
 
 ### Paso 26. Resultados, huella y `config.yaml`
 
