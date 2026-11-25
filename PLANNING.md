@@ -73,7 +73,7 @@ beacon/
 ├─ cmd/beacon/
 │  └─ main.go                        # 16 · solo llama a router.Run
 │
-├─ internal/
+├─ source/
 │  ├─ kernel/                        # bases puras, sin I/O
 │  │  ├─ error.go                    # 4  · Error[C], códigos y detalles
 │  │  ├─ actor.go                    # 4  · human:<nombre>, agent:<nombre>
@@ -193,7 +193,7 @@ beacon/
 │           └─ states/
 │              └─ states.go          # 22 · claims.json y lo ya inyectado
 │
-└─ specifies/
+└─ testing/
    ├─ e2e/
    │  ├─ doctor_test.go              # 16
    │  └─ format_test.go              # 16
@@ -398,7 +398,7 @@ Cerradas el 2026-11-23 en el paso 2 y sincronizadas en `.claude/delta/`.
 ### Paso 16. Fachada y CLI mínimo (hecho)
 
 - **Objetivo:** cerrar la Fase 1 con algo ejecutable.
-- **Construye:** `spider.go`, `router`, `cmd/beacon/main.go` y las pruebas de `specifies/`.
+- **Construye:** `spider.go`, `router`, `cmd/beacon/main.go` y las pruebas de `testing/`.
 - **Comandos:** `beacon fmt` y `beacon doctor`, con `--json` y códigos de salida 0, 1 y 2.
 - **Medición:** repetir la carga de 500 archivos y comparar con los ~100 ms de `layout`. **Resultado:** unos 70 ms con carga más grafo, anotado en `layout`.
 - **CLI:** `spf13/cobra` v1.10.2. Los errores de uso también devuelven el sobre `--json` con código 1.

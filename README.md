@@ -11,11 +11,11 @@ beacon/
 │  └─ rules/                    # convenciones del proyecto
 ├─ .github/workflows/           # CI
 ├─ cmd/beacon/main.go           # punto de entrada del binario
-├─ specifies/
+├─ testing/
 │  ├─ e2e/                      # pruebas del binario real
 │  ├─ utils/                    # ayudas compartidas de prueba
 │  └─ bench/                    # arnés del benchmark de fricción
-├─ internal/
+├─ source/
 │  ├─ kernel/                   # bases puras: errores, ids, actor
 │  ├─ system/                   # escritura atómica y ejecución de git
 │  ├─ router/                   # CLI
@@ -70,8 +70,9 @@ Las carpetas se crean cuando su fase las necesita (`.claude/delta/status.md`).
 
 - **Dependencias en una sola dirección:** `router → sentry → engine → spider`, y `router → anchor`. Todas pueden usar `kernel` y `system`, salvo `domain`, que solo usa `kernel`.
 - **Cada pieza se expone por su archivo de entrada** (`spider.go`, `engine.go`). Lo demás va en su `internal/`, y el compilador impide importarlo desde fuera.
+- **`source/` no es privado para Go:** al no llamarse `internal`, otro módulo podría importar `kernel`, `system`, `router` y las fachadas de cada pieza. No se promete que esas APIs sean estables; lo que de verdad es privado vive en el `internal/` de cada pieza.
 - **Cada pieza tiene solo las capas que necesita:** `domain` (reglas), `action` (casos de uso) y `driver` (YAML, git y otros sistemas).
-- **Una pieza nueva** se agrega como `internal/<pieza>/` con su archivo de entrada y se conecta en `router`.
+- **Una pieza nueva** se agrega como `source/<pieza>/` con su archivo de entrada y se conecta en `router`.
 - **Nombres de carpeta:** una sola palabra en minúsculas, de seis letras cuando exista una natural.
 - **Dominio:** cada contexto es un paquete Go y sus archivos son `<subslice>_<kind>.go` (`.claude/rules/code-domain-layer.md`).
-- **Las pruebas unitarias** van junto al código como `*_test.go`. `specifies/` guarda solo las que cruzan todo el binario y sus ayudas.
+- **Las pruebas unitarias** van junto al código como `*_test.go`. `testing/` guarda solo las que cruzan todo el binario y sus ayudas.

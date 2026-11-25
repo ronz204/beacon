@@ -18,6 +18,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Idioma de los mensajes | Inglés fijo, igual que las claves y la guía del método | `design` |
 | Lenguaje y distribución | Go, binario estático, MIT, sin telemetría; Releases, `go install`, Homebrew y Scoop | `design` |
 | Dependencias | `go.yaml.in/yaml/v4` y `spf13/cobra` v1.10.2 para el CLI. Los globs se implementan a mano sobre `regexp`, porque la gramática es pequeña y `doublestar` es inconsistente con `**` dentro de llaves | `layout`, `engine` |
+| Carpetas raíz | `source/` para el código y `testing/` para las pruebas que cruzan el binario. `source/` no protege como `internal`: solo el `internal/` de cada pieza es privado para Go | `README` |
 | Fuente de verdad | Archivos en git, cargados en memoria al arrancar; sin caché persistente | `layout` |
 | Layout | `records/` (7 carpetas en plural), `archive/` mensual y `config.yaml` | `layout` |
 | Estado local | En `.git/beacon/`, no en `.beacon/`: resultados de checks, claims locales, métricas de fricción, lo ya inyectado por los hooks y copias de seguridad. Escritura atómica porque los worktrees lo comparten | `layout` |
