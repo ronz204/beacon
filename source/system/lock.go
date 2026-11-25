@@ -21,9 +21,13 @@ func WithFileLock(path string, work func() error) error {
 	if err := acquireLock(lock); err != nil {
 		return err
 	}
-	defer os.Remove(lock)
 
-	return work()
+	err := work()
+	if released := RemoveFile(lock); err == nil {
+		err = released
+	}
+
+	return err
 }
 
 func acquireLock(lock string) error {

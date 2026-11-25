@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/ronz204/beacon/source/kernel"
+	"github.com/ronz204/beacon/source/system"
 	yaml "go.yaml.in/yaml/v4"
 )
 
@@ -137,7 +138,7 @@ func Remove(file string, before []byte) error {
 		return err
 	}
 
-	if err := os.Remove(file); err != nil {
+	if err := system.RemoveFile(file); err != nil {
 		return kernel.NewRecordFailure(file, 0, err)
 	}
 
