@@ -28,6 +28,7 @@ const (
 	RecordPromiseUnknown     RecordCode = "promise_unknown"
 	RecordStampTarget        RecordCode = "record_stamp_target"
 	RecordChanged            RecordCode = "record_changed"
+	RecordRunnerInvalid      RecordCode = "record_runner_invalid"
 )
 
 type RecordError = kernel.Error[RecordCode]
@@ -56,6 +57,7 @@ var recordErrors = kernel.ErrorCatalog[RecordCode]{
 	RecordPromiseUnknown:     "omit the id of a new promise",
 	RecordStampTarget:        "approval names an element not in the record",
 	RecordChanged:            "the record changed; read it again",
+	RecordRunnerInvalid:      "give each runner a non-empty run list",
 }
 
 func failAt(code RecordCode, file string, line int) RecordError {

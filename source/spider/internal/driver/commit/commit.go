@@ -20,6 +20,7 @@ import (
 
 const (
 	recordsFolder = ".beacon/records/"
+	configPath    = ".beacon/config.yaml"
 	guidesFolder  = ".beacon/records/guides"
 	commitMark    = "\x00"
 	commitFormat  = "--format=%x00%cs"
@@ -191,7 +192,7 @@ func (r Repository) StateChanges(
 			return nil, err
 		}
 
-		if !baseline && !strings.HasPrefix(entry.Path, recordsFolder) {
+		if !baseline && !isStatePath(entry.Path) {
 			continue
 		}
 
@@ -379,4 +380,8 @@ func matchesAny(
 	}
 
 	return false, nil
+}
+
+func isStatePath(path string) bool {
+	return path == configPath || strings.HasPrefix(path, recordsFolder)
 }

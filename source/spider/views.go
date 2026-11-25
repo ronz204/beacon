@@ -258,3 +258,9 @@ func findView(result action.FindResult) FindView {
 
 	return view
 }
+
+type RunnerConfig struct {
+	Name     string   `json:"name"`
+	Run      []string `json:"run"`
+	Baseline []string `json:"baseline"`
+}

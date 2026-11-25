@@ -93,6 +93,10 @@ func (s Store) Draft(input DraftInput) (Draft, []error) {
 		return Draft{}, []error{err}
 	}
 
+	if kind == ConfigKind {
+		return s.configDraft(incoming)
+	}
+
 	draft := Draft{Kind: kind}
 	body, hasBody := takeKey(incoming, bodyKey)
 	given, hasID := takeKey(incoming, idKey)
@@ -147,7 +151,8 @@ func parsePayload(data []byte) (string, *yaml.Node, error) {
 	if !hasKind || kindNode.Kind != yaml.ScalarNode {
 		return "", nil, payloadFailure(payloadTypeKey)
 	}
-	if _, known := kindFolders[kindNode.Value]; !known {
+	_, known := kindFolders[kindNode.Value]
+	if !known && kindNode.Value != ConfigKind {
 		return "", nil, payloadFailure(payloadTypeKey)
 	}
 
@@ -537,7 +542,11 @@ func (d Draft) Stamp(stamps map[string]kernel.Approval) (Draft, []error) {
 	}
 
 	root := cloneNode(d.root)
-	targets := stampTargets(d.ID.String(), root)
+	target := d.ID.String()
+	if d.Kind == ConfigKind {
+		target = ConfigKind
+	}
+	targets := stampTargets(target, root)
 
 	for _, id := range slices.Sorted(maps.Keys(stamps)) {
 		target, found := targets[id]
@@ -613,6 +622,15 @@ func (d Draft) render() (Draft, []error) {
 		return Draft{}, []error{failAt(RecordFormatUnsafe, d.File, 1)}
 	}
 
+	if d.Kind == ConfigKind {
+		d.Output = raw
+		_, failures := decodeConfig(d.File, raw)
+		if len(failures) > 0 {
+			return Draft{}, failures
+		}
+		return d, nil
+	}
+
 	if d.Kind == guideKind {
 		raw = []byte(frontmatterOpen + string(raw) + frontmatterEnd + d.body)
 		d.Output, err = FormatGuide(d.File, raw)
@@ -657,4 +675,33 @@ func (d Draft) Commit() error {
 	}
 
 	return nil
+}
+
+func (s Store) configDraft(incoming *yaml.Node) (Draft, []error) {
+	draft := Draft{Kind: ConfigKind, File: s.ConfigFile()}
+
+	data, err := os.ReadFile(draft.File)
+	if err != nil {
+		return Draft{}, []error{kernel.NewRecordFailure(draft.File, 0, err)}
+	}
+	draft.Before = data
+
+	existing, err := ParseRecord(draft.File, data)
+	if err != nil {
+		return Draft{}, parseFailure(draft.File, err)
+	}
+
+	merge := &merger{}
+	draft.root = merge.mapping(existing, incoming, []string{approvedKey}, "")
+	if len(merge.failures) > 0 {
+		return Draft{}, merge.failures
+	}
+	draft.Ignored = merge.ignored
+
+	if sameNode(existing, draft.root) {
+		draft.Output = data
+		return draft, nil
+	}
+
+	return draft.render()
 }

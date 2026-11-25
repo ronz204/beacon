@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	guideKind = "guide"
-	bodyKey   = "body"
-	idKey     = "id"
+	guideKind  = "guide"
+	ConfigKind = "config"
+	bodyKey    = "body"
+	idKey      = "id"
 )
 
 var kindFolders = map[string]string{
@@ -53,6 +54,10 @@ func RecordKinds() []string {
 }
 
 func KindOfFile(file string) (string, bool) {
+	if filepath.Base(file) == configName {
+		return ConfigKind, true
+	}
+
 	folder := filepath.Base(filepath.Dir(file))
 
 	for kind, name := range kindFolders {

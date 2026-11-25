@@ -3,6 +3,7 @@ package spider
 import (
 	"context"
 	"encoding/json"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -328,11 +329,16 @@ func (p Project) StateChanges(
 	ctx context.Context,
 	revision string,
 ) ([]StateChange, error) {
+	config, failures := p.store.LoadConfig()
+	if len(failures) > 0 {
+		return nil, failures[0]
+	}
+
 	repository := commit.NewRepository(p.root)
 	changes, err := repository.StateChanges(
 		ctx,
 		revision,
-		nil,
+		baselinesOf(config),
 		match.NewMatcher(),
 	)
 	if err != nil {
@@ -556,9 +562,14 @@ func (p Project) prepared(draft record.Draft) (Prepared, error) {
 		return Prepared{}, err
 	}
 
+	id := draft.ID.String()
+	if draft.Kind == record.ConfigKind {
+		id = record.ConfigKind
+	}
+
 	return Prepared{
 		Type:      draft.Kind,
-		ID:        draft.ID.String(),
+		ID:        id,
 		File:      p.relative(draft.File),
 		Before:    before,
 		After:     *after,
@@ -879,4 +890,54 @@ func parseVerdicts(verdicts []Verdict) ([]action.Verdict, error) {
 	}
 
 	return parsed, nil
+}
+
+func baselinesOf(config record.Config) []kernel.PathGlob {
+	var globs []kernel.PathGlob
+
+	for _, name := range slices.Sorted(maps.Keys(config.Runners)) {
+		globs = append(globs, config.Runners[name].Baseline...)
+	}
+
+	return globs
+}
+
+func (p Project) Runners() ([]RunnerConfig, []Finding) {
+	config, failures := p.store.LoadConfig()
+	runners := make([]RunnerConfig, 0, len(config.Runners))
+
+	for _, name := range slices.Sorted(maps.Keys(config.Runners)) {
+		runner := config.Runners[name]
+		view := RunnerConfig{
+			Name:     name,
+			Run:      slices.Clone(runner.Run),
+			Baseline: make([]string, 0, len(runner.Baseline)),
+		}
+		for _, glob := range runner.Baseline {
+			view.Baseline = append(view.Baseline, glob.String())
+		}
+
+		runners = append(runners, view)
+	}
+
+	return runners, p.findings(failures)
+}
+
+func (p Project) Config() (StoredRecord, error) {
+	file := p.store.ConfigFile()
+
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return StoredRecord{}, kernel.NewRecordFailure(p.relative(file), 0, err)
+	}
+
+	document, err := record.ReadDocument(file, data)
+	if err != nil {
+		return StoredRecord{}, err
+	}
+
+	return StoredRecord{
+		Record: Record{Type: document.Kind, Data: document.JSON},
+		File:   p.relative(file),
+	}, nil
 }

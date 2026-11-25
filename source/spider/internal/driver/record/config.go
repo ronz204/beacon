@@ -14,6 +14,8 @@ import (
 
 const supportedSchema = 1
 
+const configName = "config.yaml"
+
 var positivePattern = regexp.MustCompile(`^[1-9][0-9]*$`)
 
 var defaultLimits = ConfigLimits{
@@ -38,13 +40,24 @@ type ConfigLimits struct {
 }
 
 type Config struct {
-	Schema int
-	Limits ConfigLimits
-	Review map[string]memory.ReviewSpan
+	Schema   int
+	Limits   ConfigLimits
+	Review   map[string]memory.ReviewSpan
+	Runners  map[string]Runner
+	Approved kernel.Approval
+}
+
+type Runner struct {
+	Run      []string
+	Baseline []kernel.PathGlob
+}
+
+func (s Store) ConfigFile() string {
+	return filepath.Join(s.root, configName)
 }
 
 func (s Store) LoadConfig() (Config, []error) {
-	file := filepath.Join(s.root, "config.yaml")
+	file := s.ConfigFile()
 
 	data, err := os.ReadFile(file)
 	if err != nil {
@@ -53,6 +66,10 @@ func (s Store) LoadConfig() (Config, []error) {
 		}
 	}
 
+	return decodeConfig(file, data)
+}
+
+func decodeConfig(file string, data []byte) (Config, []error) {
 	root, err := ParseRecord(file, data)
 	if err != nil {
 		return Config{Limits: defaultLimits}, parseFailure(file, err)
@@ -60,9 +77,11 @@ func (s Store) LoadConfig() (Config, []error) {
 
 	f := newFields(file, root)
 	config := Config{
-		Schema: configSchema(f),
-		Limits: configLimits(f),
-		Review: configReview(f),
+		Schema:   configSchema(f),
+		Limits:   configLimits(f),
+		Review:   configReview(f),
+		Runners:  configRunners(f),
+		Approved: approval(f),
 	}
 
 	if len(*f.failures) > 0 {
@@ -70,6 +89,41 @@ func (s Store) LoadConfig() (Config, []error) {
 	}
 
 	return config, nil
+}
+
+func configRunners(f *fields) map[string]Runner {
+	section, found := f.mapping("runners")
+	if !found {
+		return map[string]Runner{}
+	}
+
+	runners := make(map[string]Runner, len(section.values))
+	for name, node := range section.values {
+		spec, valid := section.nested(node)
+		if !valid {
+			continue
+		}
+
+		run := many(spec, "run", parseArgument)
+		if len(run) == 0 {
+			spec.fail(node.Line, failAt(RecordRunnerInvalid, f.file, node.Line))
+		}
+
+		runners[name] = Runner{
+			Run:      run,
+			Baseline: many(spec, "baseline", kernel.ParsePathGlob),
+		}
+	}
+
+	return runners
+}
+
+func parseArgument(raw string) (string, error) {
+	if raw == "" {
+		return "", recordErrors.Fail(RecordRunnerInvalid, nil)
+	}
+
+	return raw, nil
 }
 
 func configSchema(f *fields) int {
