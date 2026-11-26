@@ -4,7 +4,7 @@ Este plan cubre solo la fase en curso: en qué orden se construye y qué archivo
 
 La numeración de pasos y decisiones sigue la del plan de la Fase 1 (Spider), ya cerrada, para que las referencias de la KB y de los commits sigan valiendo: por eso los pasos empiezan en el 23 y las decisiones en D5. Ese plan está en el historial de git (`git show 967f5aa:PLANNING.md`).
 
-> **Estado: en curso.** Bloques 4, 5 y 6 cerrados y paso 36 hecho; sigue el paso 37, con la rama `feat/weaver-cli`. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
+> **Estado: cerrada el 2026-11-26.** Los pasos 23 a 37 están hechos en las ramas `feat/spider-writes` y `feat/weaver-cli`. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB, y las mediciones están en `layout`. Sigue la Fase 3 (Anchor).
 
 ## 1. Panorama
 
@@ -584,28 +584,33 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
   - `doctor` distingue los registros con CRLF (`record_line_endings`) de los demás no canónicos, y su `hint` manda a `.gitattributes` y a `beacon fmt`.
   - El repo de prueba de e2e lleva ahora `.gitattributes` con `.beacon/** text eol=lf`, como lo hará `install` (Fase 3): sin eso, en Windows `git checkout` dejaba los registros con CRLF y `doctor` los marcaba como no canónicos.
 
-### Paso 37. Medición y KB
+### Paso 37. Medición y KB (hecho)
 
 - **Medir:** con 500 capabilities, cuánto tardan `record` (incluida la validación del grafo completo), `status` y el costo propio de `check` sin contar el ejecutor. Se anota en `layout`, junto a las mediciones anteriores.
 - **Sincronizar:** `status` marca la Fase 2 como cerrada, y la KB recoge lo que cambie al implementar.
 - **Hecho cuando:** los números están en `layout` y la KB no contradice el código.
+- **Cómo quedó:**
+  - Se midió el binario completo, un proceso por llamada, con 500 capabilities de 10 promesas (5.000), el repo empaquetado con `git gc` y un ejecutor de prueba que sale al instante. Los números, con su método, están en `layout`, en "Medición de la Fase 2". En resumen: `record` 117 ms (con el grafo completo), `context` 105 ms, `brief` y `status` 230 ms, `doctor` 424 ms y el costo propio de `check` entre 357 y 480 ms.
+  - **Sobre D20:** el costo propio de `check` no justifica paralelizar; lo que tarda es el ejecutor. Sigue en serie, y `layout` anota cuándo se reconsidera.
+  - **Sobre el riesgo del grafo completo en `record`:** no es lento (16 ms más que no escribir).
+  - **Sincronización:** `status` marca la Fase 2 como cerrada, suma la decisión del sello repetido (`n`) y actualiza el riesgo de arranque con los números reales; `layout`, `method`, `weaver`, `deltas`, `ledger`, `pledge`, `spider` y `survey` recogen lo que cambió al implementar. Lo que la KB describe y todavía no existe es de fases posteriores (`install`, `verify`, `attest`, `stale`, `migrate`, `stats`, `snares ci`).
 
 ## 8. Hitos y commits
 
 | Hito | Pasos | Rama | Resultado verificable |
 |---|---|---|---|
-| H6. Spider para Weaver | 23 a 26 | `feat/spider-writes` | `get` → `record` idempotente; archivo y huella probados |
-| H7. Dominio de Weaver | 27 y 28 | `feat/weaver-cli` | Tabla de niveles e invocaciones en verde |
-| H8. Lecturas y escritura | 29 a 32 | `feat/weaver-cli` | `get`, `find`, `context`, `ready`, `record`, `close` y `claim` en e2e |
-| H9. Checks y estado | 33 a 35 | `feat/weaver-cli` | `check`, `diff`, `brief` y `status` en e2e |
-| H10. Fase 2 cerrada | 36 y 37 | `feat/weaver-cli` | Ramas largas probadas y tiempos en `layout` |
+| H6. Spider para Weaver (hecho) | 23 a 26 | `feat/spider-writes` | `get` → `record` idempotente; archivo y huella probados |
+| H7. Dominio de Weaver (hecho) | 27 y 28 | `feat/weaver-cli` | Tabla de niveles e invocaciones en verde |
+| H8. Lecturas y escritura (hecho) | 29 a 32 | `feat/weaver-cli` | `get`, `find`, `context`, `ready`, `record`, `close` y `claim` en e2e |
+| H9. Checks y estado (hecho) | 33 a 35 | `feat/weaver-cli` | `check`, `diff`, `brief` y `status` en e2e |
+| H10. Fase 2 cerrada (hecho) | 36 y 37 | `feat/weaver-cli` | Ramas largas probadas y tiempos en `layout` |
 
 ## 9. Riesgos de la Fase 2
 
 | Riesgo | Qué lo mitiga |
 |---|---|
 | En Windows, matar un ejecutor no mata a sus hijos (un `pnpm` que lanza `node`) | `cmd.Cancel` más `WaitDelay`, y un test con un ejecutor que lanza un hijo. Si no alcanza, un job object de Windows en `driver/runner`, sin tocar el dominio |
-| Validar el grafo completo en cada `record` es lento en repos grandes | Se mide en el paso 37; la carga ya ronda los 70 ms con 500 capabilities |
+| Validar el grafo completo en cada `record` es lento en repos grandes | Medido en el paso 37: 117 ms con 500 capabilities y 5.000 promesas, 16 ms más que no escribir. Resuelto |
 | El payload completo de una capability grande es largo para el agente | `get --json` da la base exacta; si molesta, se reconsidera el parche (D7) con datos de fricción |
 | El agente escribe un `approved` que la persona no dio | El `approved` del payload se ignora (D16) y el sello solo sale de `--approve`. Sigue siendo un marcado (`deltas`) |
 | La huella cuesta con muchos archivos sin commitear | Se calcula solo sobre los archivos del diff en lote que caen en los `paths` (paso 26) |

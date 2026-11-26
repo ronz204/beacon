@@ -21,6 +21,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Carpetas raíz | `source/` para el código y `testing/` para las pruebas que cruzan el binario. `source/` no protege como `internal`: solo el `internal/` de cada pieza es privado para Go | `README` |
 | Fuente de verdad | Archivos en git, cargados en memoria al arrancar; sin caché persistente | `layout` |
 | Layout | `records/` (7 carpetas en plural), `archive/` mensual y `config.yaml` | `layout` |
+| Sello repetido | `approved` admite `n` (`n: 2`, `n: 3`...), que el binario añade solo cuando un sello sería idéntico al guardado (mismo actor, día y `via`), para que un segundo sí del mismo día se reconozca | `ledger`, `deltas` |
 | Estado local | En `.git/beacon/`, no en `.beacon/`: resultados de checks, claims locales, métricas de fricción, lo ya inyectado por los hooks y copias de seguridad. Escritura atómica porque los worktrees lo comparten | `layout` |
 | Formato | YAML estricto con `beacon fmt`; guides en Markdown con frontmatter | `layout`, `guides` |
 | Comillas | `beacon fmt` entrecomilla solo lo que otra herramienta podría reinterpretar | `layout` |
@@ -98,7 +99,7 @@ Fuera del orden de construcción hasta que se cumpla su condición.
 - **Correr el benchmark de fricción.** Solo está diseñado.
 - **Gentle-AI en profundidad:** no se leyeron los documentos enlazados desde el README (Review and Architecture, Telemetry, Agents).
 - **Probar las herramientas de UI:** Playwright MCP, `agent-browser` y ProofShot se leyeron, no se usaron.
-- **Ramas largas en equipo:** sin investigación; se prueba en la Fase 2.
+- **Ramas largas en equipo:** probadas en la Fase 2 con casos reales (`method`); sin investigación externa.
 - **Verificar al implementar:** los hooks de cada agente, el evento `merge_group` y las fuentes de nivel bajo.
 
 ## Riesgos
@@ -108,7 +109,7 @@ Fuera del orden de construcción hasta que se cumpla su condición.
 | **El agente no llama a las herramientas** | El central: las garantías cubren promesas, no que la memoria se use. Los hooks que inyectan el `brief` y el contexto lo reducen (`design`, `anchor`), pero la obediencia decae dentro de la sesión (E7) y los hooks pueden no ejecutarse |
 | Sobreingeniería | Se construye todo sin recorte, así que hay que vigilar el alcance |
 | Evidencia débil | Fuentes de vendedores, benchmarks sintéticos, hipótesis de cognición; ningún estudio muestra que las specs reduzcan defectos (E9) y Beacon tampoco lo ha mostrado (`survey`) |
-| Arranque lento | Con el CLI como única interfaz cada llamada carga el estado, y los hooks de reinyección llaman más veces. Medido en sintético: unos 150 a 200 ms con 500 capabilities; los repos reales pueden ser más lentos (`layout`) |
+| Arranque lento | Con el CLI como única interfaz cada llamada carga el estado, y los hooks de reinyección llaman más veces. Medido con el binario completo y 500 capabilities con 10 promesas: `context` 105 ms, `brief` y `status` 230 ms, `check` unos 0,4 a 0,5 s propios; los repos reales pueden ser más lentos (`layout`) |
 | Ruido de los hooks | Inyectar antes de cada edición puede cansar o gastar contexto; por eso hay tope, una vez por archivo y sesión, y se mide (`anchor`) |
 | Marcado del actor no infalible | El agente corre con el mismo usuario del sistema; la garantía real es la review del PR por una persona (`deltas`) |
 | Fatiga del nivel 3 | Demasiados síes se desactivan (`deltas`); las capturas base pueden sumar (ver Abierto) |
@@ -123,13 +124,13 @@ Fuera del orden de construcción hasta que se cumpla su condición.
 
 ## Orden de construcción
 
-Sin recorte de producto; el orden sigue las dependencias. El plan detallado de la fase en curso está en `PLANNING.md`; el de la Fase 1 (Spider), cerrado, queda en el historial de git.
+Sin recorte de producto; el orden sigue las dependencias. El plan detallado de la Fase 2 (Weaver), cerrada, está en `PLANNING.md`; el de la Fase 1 (Spider) queda en el historial de git.
 
 | Fase | Contenido |
 |---|---|
 | 0 | **Cerrada:** nombre, benchmarks de carga y de git, esquema, guía del método, decisiones de interfaz y las propuestas de la investigación |
 | 1 | **Cerrada el 2026-11-23. Spider:** esquema (con `nongoals`, `rejected` y `evidence`), parser YAML estricto, `fmt`, ids, grafo en memoria, validación, `doctor`, globs |
-| 2 | **Weaver (CLI), planificada en `PLANNING.md`:** `--json` con el sobre uniforme (`brief`, `context` con `--hook`, `record` con stdin, `close`, `get`, `find`, `status`), archivo, niveles y `diff` (incluidas las capturas base), `check` con ejecutores y `results.json`, `ready` y `claim` con claim local y escritura atómica de `.git/beacon/`; prueba de ramas largas |
+| 2 | **Cerrada el 2026-11-26. Weaver (CLI):** `--json` con el sobre uniforme y códigos 0, 1 y 2; `brief`, `status`, `context` con `--hook`, `get`, `find`, `ready`, `record` con stdin y `--approve`, `close` con archivo, `claim` con claim local, `check` con ejecutores y `results.json`, y `diff` con niveles (incluidas las capturas base) y pendientes de sí; ramas largas probadas y tiempos medidos |
 | 3 | **Anchor sobre el CLI:** guía del método, hooks con reinyección, permisos y marca del actor para Claude Code, luego Codex y Cursor; `beacon install` con `--dry-run` y copias; guía de redacción de promesas; arnés del benchmark; uso del propio Beacon en su desarrollo |
 | 4 | **Snares:** pre-commit, `beacon snares ci` y plantilla de GitHub Actions (con `merge_group`); arranque, `attest` con `--evidence`, `verify`; ejecutores de ejemplo para UI |
 | 5 | Frescura de guides, `stale` |

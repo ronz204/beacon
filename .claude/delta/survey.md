@@ -159,7 +159,7 @@ Solo leí el README; no los documentos enlazados (Review and Architecture, Telem
 2. `.git/beacon/` lo comparten todos los worktrees, así que dos sesiones pueden escribir a la vez. La escritura tiene que ser atómica (R2).
 3. Un conflicto semántico solo lo detecta el CI si corre sobre el resultado de la fusión. En GitHub eso significa también el evento de la cola de merge (R3).
 
-**Sin investigar a fondo:** ramas largas (qué pasa con una promesa cambiada en la rama principal mientras la rama vive). Hipótesis: `beacon diff` compara contra el punto de origen de la rama, no contra la punta de la principal. Se prueba en la Fase 2 con casos reales.
+**Sin investigar a fondo:** ramas largas (qué pasa con una promesa cambiada en la rama principal mientras la rama vive). Hipótesis: `beacon diff` compara contra el punto de origen de la rama, no contra la punta de la principal. Se probó en la Fase 2 con casos reales y funciona, con un límite que cubre el CI (`method`).
 
 ### 7.5 Verificación de UI
 
