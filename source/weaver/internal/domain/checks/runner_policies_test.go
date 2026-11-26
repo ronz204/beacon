@@ -168,3 +168,25 @@ func TestParsePromiseCheckRejectsAnOptionLikeParam(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestBuildInvocationLeavesLiteralBracesAlone(t *testing.T) {
+	spec, err := checks.ParseRunnerSpec(checks.RunnerSpecInput{
+		Name: "emit",
+		Run:  []string{"emit", `{"mode":"fast"}`, "{target}"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	invocation, err := checks.BuildInvocation(
+		spec,
+		map[string]string{"target": "auth"},
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	if invocation.Argv()[1] != `{"mode":"fast"}` {
+		t.Fatalf("argv = %q", invocation.Argv())
+	}
+}

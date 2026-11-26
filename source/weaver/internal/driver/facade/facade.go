@@ -56,11 +56,20 @@ func convertChange(change spider.StateChange) (deltas.StateChange, error) {
 		return deltas.StateChange{}, err
 	}
 
+	closed := make([]deltas.ClosureInput, 0, len(change.Closed))
+	for _, entry := range change.Closed {
+		closed = append(closed, deltas.ClosureInput{
+			ID:       entry.ID,
+			Approved: entry.Approved,
+		})
+	}
+
 	return deltas.ParseStateChange(deltas.StateChangeInput{
 		Path:     change.Path,
 		Kind:     change.Kind,
 		Baseline: change.Baseline,
 		Runners:  change.Runners,
+		Closed:   closed,
 		Before:   before,
 		After:    after,
 	})

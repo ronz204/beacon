@@ -54,6 +54,9 @@ func ClassifyElements(change StateChange) []Finding {
 	if record == nil {
 		record = change.before
 	}
+	if record == nil {
+		return nil
+	}
 
 	switch record.kind {
 	case RecordConfig:

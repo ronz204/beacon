@@ -35,6 +35,10 @@ func StampApproval(
 }
 
 func IsFreshlyApproved(target ChangeTarget, changes []StateChange) bool {
+	if isApprovedClosure(target, changes) {
+		return true
+	}
+
 	switch target.kind {
 	case TargetPromise:
 		return freshPromiseApproval(target.value, changes)
@@ -44,6 +48,19 @@ func IsFreshlyApproved(target ChangeTarget, changes []StateChange) bool {
 		return freshRecordApproval(recordNamed(target.value), changes)
 	case TargetBaseline:
 		return freshBaselineApproval(target.value, changes)
+	}
+
+	return false
+}
+
+func isApprovedClosure(target ChangeTarget, changes []StateChange) bool {
+	for _, change := range changes {
+		for _, closed := range change.closed {
+			sameID := closed.id.String() == target.value
+			if sameID && closed.approved != "" {
+				return true
+			}
+		}
 	}
 
 	return false

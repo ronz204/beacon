@@ -223,11 +223,17 @@ func (r ChangedRecord) promiseByID(id kernel.RecordID) (ChangedPromise, bool) {
 	return ChangedPromise{}, false
 }
 
+type ClosureInput struct {
+	ID       string
+	Approved string
+}
+
 type StateChangeInput struct {
 	Path     string
 	Kind     string
 	Baseline bool
 	Runners  []string
+	Closed   []ClosureInput
 	Before   *ChangedRecordInput
 	After    *ChangedRecordInput
 }
@@ -237,6 +243,7 @@ type StateChange struct {
 	kind     ChangeKind
 	baseline bool
 	runners  []string
+	closed   []closure
 	before   *ChangedRecord
 	after    *ChangedRecord
 }
@@ -257,7 +264,12 @@ func ParseStateChange(input StateChangeInput) (StateChange, error) {
 		return StateChange{}, err
 	}
 
-	if !input.Baseline && before == nil && after == nil {
+	closed, err := parseClosures(input.Closed)
+	if err != nil {
+		return StateChange{}, err
+	}
+
+	if !isStandalone(input, closed) && before == nil && after == nil {
 		return StateChange{}, invalidChangeValue(
 			ChangeRecordInvalid,
 			input.Path,
@@ -269,9 +281,34 @@ func ParseStateChange(input StateChangeInput) (StateChange, error) {
 		kind:     kind,
 		baseline: input.Baseline,
 		runners:  slices.Clone(input.Runners),
+		closed:   closed,
 		before:   before,
 		after:    after,
 	}, nil
+}
+
+type closure struct {
+	id       kernel.RecordID
+	approved string
+}
+
+func parseClosures(inputs []ClosureInput) ([]closure, error) {
+	closures := make([]closure, 0, len(inputs))
+
+	for _, input := range inputs {
+		id, err := kernel.ParseRecordID(input.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		closures = append(closures, closure{id: id, approved: input.Approved})
+	}
+
+	return closures, nil
+}
+
+func isStandalone(input StateChangeInput, closed []closure) bool {
+	return input.Baseline || len(closed) > 0
 }
 
 func parseOptionalRecord(input *ChangedRecordInput) (*ChangedRecord, error) {

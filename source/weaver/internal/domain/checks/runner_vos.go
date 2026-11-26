@@ -14,7 +14,7 @@ var runnerNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
 
 var paramNamePattern = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_]*$`)
 
-var placeholderPattern = regexp.MustCompile(`\{([^{}]*)\}`)
+var placeholderPattern = regexp.MustCompile(`\{[A-Za-z][A-Za-z0-9_]*\}`)
 
 type RunnerName struct {
 	value string

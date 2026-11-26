@@ -193,3 +193,39 @@ func TestFreshApprovalForABaselineNeedsAPromiseOfThatRunner(t *testing.T) {
 		t.Fatalf("fresh = %v, stale = %v", fresh, stale)
 	}
 }
+
+func closureChange(t *testing.T, approved string) deltas.StateChange {
+	t.Helper()
+
+	change, err := deltas.ParseStateChange(deltas.StateChangeInput{
+		Path:   ".beacon/archive/2026-11.jsonl",
+		Kind:   "modified",
+		Closed: []deltas.ClosureInput{{ID: "bc-c3d4", Approved: approved}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return change
+}
+
+func TestFreshApprovalSeesTheStampOfAnArchivedClosure(t *testing.T) {
+	target := promiseTarget(t)
+	stamped := closureChange(t, `{"by":"human:jane","at":"2026-11-26"}`)
+	bare := closureChange(t, "")
+
+	fresh := deltas.IsFreshlyApproved(target, []deltas.StateChange{stamped})
+	stale := deltas.IsFreshlyApproved(target, []deltas.StateChange{bare})
+
+	if !fresh || stale {
+		t.Fatalf("fresh = %v, stale = %v", fresh, stale)
+	}
+}
+
+func TestClassifyChangeIgnoresAnArchiveSegment(t *testing.T) {
+	level, needsYes := levelOf(t, closureChange(t, ""))
+
+	if level != 1 || needsYes {
+		t.Fatalf("got %d/%v", level, needsYes)
+	}
+}
