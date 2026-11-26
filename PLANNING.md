@@ -258,16 +258,21 @@ cmd/beacon → router → anchor.go → action → domain/blocks → kernel
 
 **Rama:** `feat/anchor-core`, desde `main` actualizado. **Forma de trabajo:** primero el test que falla, luego el código mínimo, y al final `go test ./...` en verde.
 
-### Paso 1. Bloques gestionados y bloque de guía
+### Paso 1. Bloques gestionados y bloque de guía (hecho)
 
 - **Objetivo:** que reescribir y quitar lo instalado sea una función pura y probada (D6).
 - **Construye:** `anchor.go` (solo el constructor), el contexto `blocks`, y `assets/method.md` con el bloque de guía de `anchor` (siete reglas en inglés, sin sangría).
 - **`Upsert(text, block)`:** inserta el bloque al final si no existe y lo reemplaza si existe. Idempotente: aplicarlo dos veces da el mismo texto.
 - **`Remove(text, block)`:** quita el bloque **solo si coincide byte a byte** con el instalado. Si la persona lo editó, lo deja y devuelve que quedó editado.
 - **Cuidado:** respetar el salto de línea del archivo (LF o CRLF) y no tocar nada fuera de los marcadores.
-- **Hecho cuando:** `Upsert` dos veces no cambia el texto, `Remove` devuelve el archivo original, un bloque editado se conserva, y el bloque de guía tiene entre 20 y 30 líneas (`survey`, E2).
+- **Hecho cuando:** `Upsert` dos veces no cambia el texto, `Remove` devuelve el archivo original, un bloque editado se conserva, y el bloque de guía no pasa de 30 líneas (`survey`, E2).
+- **Cómo quedó:**
+  - El bloque de guía mide 15 líneas, no 20: el `20 a 30` de `anchor` cuenta líneas dibujadas en pantalla y el test limita las líneas del archivo.
+  - `ParseBlock` acepta dos estilos de marcador, `<!-- BEGIN BEACON ... -->` y `# BEGIN BEACON`, porque `.gitattributes` no admite HTML. El estilo lo da la primera línea. `anchor.New` ya no es solo un constructor: abre el repo (paso 2).
+  - `Upsert` conserva el salto de línea del archivo (LF o CRLF) y deja una línea en blanco antes del bloque. `Remove` devuelve `removed`, `absent` o `edited`, y si el bloque estaba al final se lleva también esa línea en blanco, así que el ciclo `Upsert` → `Remove` devuelve el archivo original si terminaba en salto de línea.
+  - **Límite:** un archivo que no terminaba en salto de línea lo gana al instalar y desinstalar. No se corrige: cambia un byte final y la alternativa es recordar cómo era el archivo.
 
-### Paso 2. Contrato de agente, plan y aplicación
+### Paso 2. Contrato de agente, plan y aplicación (hecho)
 
 - **Objetivo:** calcular qué cambiaría antes de tocar nada, y aplicarlo sin perder lo que había.
 - **Construye:** `views.go`, `agents/agent.go`, `domain/blocks/entry_policies.go`, `action/plan.go`, `action/apply.go`, `driver/files` y `driver/double`.
@@ -275,6 +280,12 @@ cmd/beacon → router → anchor.go → action → domain/blocks → kernel
 - **Entradas JSON (D6):** `MergeEntries` y `RemoveEntries` sobre un permiso, una variable de entorno o un hook; comparan por valor y conservan el resto del archivo.
 - **Copia de seguridad:** antes de modificar un archivo que existe, se guarda en `.git/beacon/backups/` con su ruta relativa y la fecha. Un archivo nuevo no tiene copia.
 - **Hecho cuando:** el plan de un repo vacío lista los archivos que crearía, aplicar y volver a planear da cero cambios, y un archivo existente queda copiado antes de cambiar.
+- **Cómo quedó:**
+  - **Contrato `Agent`:** `Name`, `Moments` (los cuatro momentos que puede cubrir) y `Contribute(Options)`, que devuelve **declaraciones**, no texto: bloques por archivo (`BlockFile`) y entradas JSON por archivo (`EntryFile`), cada una con su parte (`guide`, `import`, `permission`, `actor`, `hooks`, `reinject`). Así instalar y desinstalar usan la misma declaración.
+  - **Entradas JSON** (`entry_vos.go`, `entry_policies.go`): dos modos, `set` (una clave con un valor) y `append` (un elemento en una lista). Se conserva el orden de las claves, la sangría (espacios o tabulador), el salto de línea y el salto final; un archivo sin cambios no se reescribe. Una clave `set` que ya tiene **otro** valor falla con `entry_conflict` en vez de pisarlo, y `RemoveEntries` deja y devuelve lo que la persona cambió. Un archivo que no es un objeto JSON falla con `document_invalid`. Los escapes de HTML (`<`, `>`, `&`) no se alteran.
+  - **Plan y aplicación** (`action/plan.go`, `action/apply.go`): `Planner` lee cada archivo una vez, acumula los cambios de todas las contribuciones sobre el mismo texto y devuelve solo los archivos que cambian, con las partes que los cambiaron y los momentos que cada agente no cubre. `Applier` guarda todas las copias antes de escribir el primer archivo, así que una copia que falla no deja nada a medias.
+  - **Archivos:** el contrato `FileStore` (`Read`, `Write`, `Backup`) vive en `action`; `driver/files` lo implementa sobre el repo, con escritura atómica y copias en `.git/beacon/backups/<fecha>/<ruta>` del directorio común de git, y rechaza rutas que salgan del repo (`file_path_invalid`). `driver/double` es la versión en memoria.
+  - **Fachada:** `anchor.New(ctx, directorio)` y `Install(ctx, InstallOptions)`, que planifica y, sin `DryRun`, aplica. Con un solo método, `--dry-run` y la instalación comparten el cálculo. Todavía no hay adaptadores: el plan solo trae la guía en `AGENTS.md`.
 
 ### Paso 3. `beacon install`
 
