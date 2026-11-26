@@ -38,7 +38,7 @@ func runHelper(mode string) {
 	case "hang":
 		time.Sleep(time.Minute)
 	case "spawn":
-		child := exec.Command(os.Args[0])
+		child := exec.Command(testExecutable())
 		child.Env = append(os.Environ(), helperVariable+"=hang")
 		child.Stdout = os.Stdout
 		child.Stderr = os.Stderr
@@ -48,7 +48,16 @@ func runHelper(mode string) {
 }
 
 func helperArgv() []string {
-	return []string{os.Args[0]}
+	return []string{testExecutable()}
+}
+
+func testExecutable() string {
+	path, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+
+	return path
 }
 
 func withMode(t *testing.T, mode string) {
