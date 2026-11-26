@@ -66,7 +66,7 @@ When Beacon blocks something, its message says exactly what to do. Follow it.
 
 ## Agentes
 
-**Primera ola:** Claude Code, Codex, Cursor. **Segunda ola:** OpenCode, Gemini CLI, Copilot.
+**Primera ola (Fase 3):** Claude Code. **Segunda ola (Fase 6):** Codex, Cursor, OpenCode, Gemini CLI, Copilot. Las filas de la tabla de abajo son notas de investigación, a verificar al implementar cada adaptador.
 
 | Agente | Instrucciones | Notas |
 |---|---|---|
@@ -89,3 +89,19 @@ Verificado el 2026-11-22 en la documentación de Codex (developers.openai.com/co
 - Codex pide revisar y confiar los hooks nuevos o modificados desde `/hooks`. Instalar o actualizar el hook de Beacon exige ese paso, y `beacon install` debe avisarlo.
 - El hook de `SessionStart` llama al **CLI** (`beacon brief`).
 - Un usuario reportó (issue #35863 del repo de Codex) que en Codex Desktop un hook de `SessionStart` aparece en la interfaz pero no se ejecuta. Es coherente con la regla de que los hooks son recordatorio y no garantía (`design`).
+
+### Hooks de Claude Code
+
+Verificado el 2026-11-26 leyendo la documentación (code.claude.com/docs/en/hooks, `memory`, `permissions` y `env-vars`) a través de resúmenes, no del texto literal: los nombres exactos se **confirman en vivo en el paso 8 de la Fase 3** con `claude --debug`.
+
+- **Registro:** `.claude/settings.json`, `hooks.<Evento>` con una lista de `{matcher, hooks: [{type: "command", command, timeout}]}`. Un matcher de solo letras, dígitos, `_`, `-`, `,` y `|` es una lista de nombres exactos; cualquier otro es una expresión regular sin anclar.
+- **Inicio y reanudación:** `SessionStart` entrega `source` con `startup`, `resume`, `clear`, `compact` (compactación manual o automática) y `fork`. Un matcher `startup|resume|compact` cubre el inicio, la reanudación y la reinyección tras compactar con un solo hook.
+- **Antes de editar:** `PreToolUse` con matcher `Edit|Write`. Entrega por stdin `session_id`, `cwd`, `tool_name` y `tool_input.file_path`, que es **absoluta y con barras invertidas en Windows**. `MultiEdit` no aparece en lo leído; no se usa.
+- **Cómo se agrega contexto:** en `SessionStart`, texto plano por stdout o `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "..."}}`, con tope de 10.000 caracteres. En `PreToolUse`, `hookSpecificOutput` con `hookEventName: "PreToolUse"` y `additionalContext`; para no tocar el permiso de la edición, **no** se envía `permissionDecision`, porque `allow` se salta la confirmación.
+- **Códigos de salida:** 0 con stdout vacío no decide nada y la herramienta sigue su flujo normal. El 2 bloquea. Cualquier otro código es un error que no bloquea. Es lo que apoya la regla de que un hook nunca falla la sesión (`PLANNING.md`, D5).
+- **Cierre:** `Stop` entrega `stop_hook_active` y `last_assistant_message`; con `stop_hook_active` verdadero hay que salir sin hacer nada, para no encadenar continuaciones. Se puede dar guía sin forzar continuar con `additionalContext`. **Sin confirmar:** si el stdout plano de `Stop` llega al modelo o a la persona.
+- **Marca del actor:** la clave `env` de `settings.json` se lee directamente del archivo. La página no dice que quede limitada a los comandos de `Bash`, ni que la hereden los hooks: **a probar**. Los valores son literales, sin expandir `~` ni `$HOME`.
+- **Permiso:** `Bash(beacon *)` (con espacio antes del `*`) permite `beacon` y sus subcomandos, y no `beaconx`. No permite un comando compuesto (`beacon x && otro`), que pide permiso por cada parte.
+- **Windows:** el `command` corre con Git Bash si está instalado y, si no, con PowerShell. Que un `beacon` sin ruta se resuelva por el `PATH` con Git Bash **no está confirmado**. El directorio de trabajo del hook sigue al de Claude y no necesariamente a la raíz del proyecto; `$CLAUDE_PROJECT_DIR` la da.
+- **Instrucciones:** Claude Code lee `AGENTS.md` por sí solo desde la v2.1.277, pero solo cuando no existe ningún `CLAUDE.md`. Con uno, solo lee ese, y `@AGENTS.md` dentro de él lo importa (hasta cuatro saltos; se ignora dentro de bloques de código). Por eso la instalación crea `CLAUDE.md` con el import, y el hook de inicio no repite el bloque de guía.
+- **Transcript:** `transcript_path` apunta a un JSONL en `~/.claude/projects/<proyecto>/<sesión>.jsonl`, escrito de forma asíncrona. El esquema de cada línea no está documentado: el arnés del benchmark lo lee de transcripts reales (`PLANNING.md`, paso 9).

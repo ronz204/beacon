@@ -1,0 +1,37 @@
+package anchor
+
+type InstallOptions struct {
+	DryRun   bool
+	Hooks    bool
+	Reinject bool
+}
+
+type ChangeView struct {
+	Path   string   `json:"path"`
+	Action string   `json:"action"`
+	Parts  []string `json:"parts"`
+	Before string   `json:"before,omitempty"`
+	After  string   `json:"after"`
+}
+
+type AgentView struct {
+	Name    string   `json:"name"`
+	Covers  []string `json:"covers"`
+	Missing []string `json:"missing"`
+}
+
+type KeptView struct {
+	Path string `json:"path"`
+	Part string `json:"part"`
+}
+
+type InstallView struct {
+	DryRun      bool         `json:"dryRun"`
+	Uninstall   bool         `json:"uninstall"`
+	Initialized bool         `json:"initialized"`
+	Changes     []ChangeView `json:"changes"`
+	Agents      []AgentView  `json:"agents"`
+	Skipped     []string     `json:"skipped"`
+	Kept        []KeptView   `json:"kept"`
+	Review      []string     `json:"review"`
+}

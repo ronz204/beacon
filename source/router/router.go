@@ -75,6 +75,7 @@ func newRoot(printer *output.Printer, exit *int) *cobra.Command {
 		handle.Find(printer, exit),
 		handle.Format(printer, exit),
 		handle.Get(printer, exit),
+		handle.Install(printer, exit),
 		handle.Ready(printer, exit),
 		handle.Record(printer, exit),
 		handle.Status(printer, exit),
