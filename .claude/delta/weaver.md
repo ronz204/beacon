@@ -9,7 +9,7 @@ El binario `beacon`: un CLI sobre Spider. Toda decisión determinista vive aquí
 - **Los hooks** ejecutan el CLI e inyectan el resultado en la sesión donde el agente lo permita: `beacon brief` al empezar y tras compactar el contexto, y `beacon context --hook` antes de editar un archivo (`anchor`). Así el agente recibe el estado sin tener que acordarse de pedirlo, que es lo que más ataca el riesgo central (`design`).
 - **Payloads largos:** `beacon record --json -` lee el registro por stdin, para evitar problemas de quoting en la shell.
 - **Permisos:** el agente suele pedir aprobación para cada comando nuevo, así que Anchor instala la regla que permite `beacon` (`anchor`).
-- **Actor:** cada comando toma el actor de `BEACON_ACTOR` o, si no existe, de `human:<user.name de git>` (`ledger`).
+- **Actor:** cada comando lo decide por si hay una persona en una terminal y, si no, por el agente cuyo hook corrió por último en el worktree; `BEACON_ACTOR` lo fuerza (`ledger`).
 
 ## Salida
 

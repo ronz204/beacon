@@ -37,8 +37,11 @@ No hay un tipo especial de capability para diseño de UI: una capability de UI e
 
 `author`, `approved.by` y `via` salen del **actor** que ejecuta el comando:
 
-- Si existe la variable de entorno `BEACON_ACTOR` (por ejemplo `agent:claude-code`), ese es el actor. La pone Anchor en los comandos del agente (`anchor`).
-- Si no, el actor es la persona: `human:<user.name de git>`.
+- Si existe la variable de entorno `BEACON_ACTOR` (por ejemplo `agent:ci`), ese es el actor. Es un **override opcional**: ni Anchor ni ningún comando la instalan.
+- Si no, decide **si hay una persona en una terminal**: con la salida estándar en una terminal interactiva, el actor es la persona (`human:<user.name de git>`, sin `via`).
+- Sin terminal (la salida va a una tubería, como en los comandos de un agente, un script o el CI), el sello lo transmite un agente: `by` sigue siendo `human:<user.name de git>` y `via` es `agent:<nombre>`. El nombre es el del agente cuyo hook corrió por última vez en este worktree en las últimas 24 horas (`.git/beacon/activity.json`, lo escribe `beacon hook`), o `agent:unknown` si no hay ninguno.
+
+El error cae del lado conservador: ante la duda, el sí queda marcado como transmitido y nunca como dicho directamente por la persona. Un `!beacon ...` que la persona escribe dentro de la sesión de un agente también queda como transmitido, y el nombre del agente puede ser el de otra sesión que corra a la vez en el mismo worktree.
 
 Es un **marcado, no una prueba**: el agente corre con el mismo usuario del sistema y podría saltárselo. La garantía real en equipo es la revisión del PR por una persona (`deltas`, `snares`).
 
