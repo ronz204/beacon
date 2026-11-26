@@ -13,3 +13,7 @@ type ApprovalError = kernel.Error[ApprovalCode]
 var approvalErrors = kernel.ErrorCatalog[ApprovalCode]{
 	ApprovalIdentityMissing: "an agent approval needs the git user.name",
 }
+
+func FailIdentityMissing() ApprovalError {
+	return approvalErrors.Fail(ApprovalIdentityMissing, nil)
+}

@@ -183,3 +183,16 @@ func TestParseStateChangeRejectsUnknownKind(t *testing.T) {
 		t.Fatal("expected an error")
 	}
 }
+
+func TestClassifyElementsSkipsUntouchedPromises(t *testing.T) {
+	active := promise("bc-c3d4", lockout, "active")
+	other := promise("bc-d5e6", "Locks for admins", "active")
+	renamed := with(caps(active, other), "name", "Sign in")
+
+	change := changeOf("modified", caps(active, other), renamed)
+
+	findings := deltas.ClassifyElements(change)
+	if len(findings) != 1 || findings[0].Target.Value() != "bc-7f3a" {
+		t.Fatalf("findings = %+v", findings)
+	}
+}

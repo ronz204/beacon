@@ -213,6 +213,14 @@ func (r ChangedRecord) ID() kernel.RecordID {
 	return r.id
 }
 
+func (p ChangedPromise) sameContent(other ChangedPromise) bool {
+	if p.text != other.text || p.check != other.check {
+		return false
+	}
+
+	return p.active == other.active
+}
+
 func (r ChangedRecord) promiseByID(id kernel.RecordID) (ChangedPromise, bool) {
 	for _, promise := range r.promises {
 		if promise.id == id {

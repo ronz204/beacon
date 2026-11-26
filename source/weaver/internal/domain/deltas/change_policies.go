@@ -1,6 +1,7 @@
 package deltas
 
 import (
+	"maps"
 	"slices"
 	"strings"
 	"unicode"
@@ -141,20 +142,16 @@ func capabilityFindings(change StateChange) []Finding {
 		record = change.before
 	}
 
-	findings := []Finding{capabilityOwnFinding(change, record)}
-	findings = append(findings, promiseFindings(change)...)
+	var findings []Finding
 
-	return findings
-}
-
-func capabilityOwnFinding(change StateChange, record *ChangedRecord) Finding {
-	target := recordTarget(record)
-
-	if change.before == nil {
-		return addition(target, false)
+	switch {
+	case change.before == nil:
+		findings = append(findings, addition(recordTarget(record), false))
+	case !maps.Equal(change.before.fields, record.fields):
+		findings = append(findings, maintenance(recordTarget(record)))
 	}
 
-	return maintenance(target)
+	return append(findings, promiseFindings(change)...)
 }
 
 func promiseFindings(change StateChange) []Finding {
@@ -170,6 +167,9 @@ func promiseFindings(change StateChange) []Finding {
 
 	for _, next := range after {
 		previous, existed := promiseIn(before, next.id)
+		if existed && previous.sameContent(next) {
+			continue
+		}
 
 		findings = append(findings, promiseFinding(previous, next, existed))
 	}
