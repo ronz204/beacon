@@ -89,13 +89,7 @@ func hookContext(
 		return printer.Failure(*failure)
 	}
 
-	lines := append([]string{}, view.Lines...)
-	if view.Omitted > 0 {
-		lines = append(lines, fmt.Sprintf(
-			"%d more, run beacon context <paths>",
-			view.Omitted,
-		))
-	}
+	lines := hookLines(view)
 
 	return printer.Done(output.Result{
 		Data: struct {
@@ -104,6 +98,18 @@ func hookContext(
 		}{Lines: lines, Omitted: view.Omitted},
 		Lines: lines,
 	})
+}
+
+func hookLines(view spider.HookView) []string {
+	lines := append([]string{}, view.Lines...)
+	if view.Omitted > 0 {
+		lines = append(lines, fmt.Sprintf(
+			"%d more, run beacon context <paths>",
+			view.Omitted,
+		))
+	}
+
+	return lines
 }
 
 func contextLines(view spider.ContextView) []string {

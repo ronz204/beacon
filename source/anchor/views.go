@@ -35,3 +35,10 @@ type InstallView struct {
 	Kept        []KeptView   `json:"kept"`
 	Review      []string     `json:"review"`
 }
+
+type HookInput struct {
+	Session string
+	Cwd     string
+	Path    string
+	Skip    bool
+}

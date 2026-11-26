@@ -231,6 +231,41 @@ func TestRecordAcceptsANewProposedPromiseWithoutAYes(t *testing.T) {
 	}
 }
 
+func TestRecordGivesTheWritingGuideWhenItCreatesAPromise(t *testing.T) {
+	root := utils.NewRepository(t)
+	payload := storedPayload(t, root, "bc-7f3a")
+	body := payload["record"].(map[string]any)
+	body["promises"] = append(body["promises"].([]any), map[string]any{
+		"text":   "Locked accounts show a neutral message.",
+		"check":  map[string]any{"manual": "Lock an account and read the page"},
+		"status": "proposed",
+	})
+
+	result := record(t, root, sampleAgent, jsonOf(t, payload))
+
+	var data struct {
+		Guidance []string `json:"guidance"`
+	}
+	decodeData(t, result.Stdout, &data)
+
+	if result.Code != 0 || len(data.Guidance) == 0 {
+		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
+	}
+}
+
+func TestRecordOmitsTheGuideWhenNoPromiseIsCreated(t *testing.T) {
+	root := utils.NewRepository(t)
+	payload := storedPayload(t, root, "bc-7f3a")
+	body := payload["record"].(map[string]any)
+	body["name"] = "Sign in"
+
+	result := record(t, root, sampleAgent, jsonOf(t, payload))
+
+	if result.Code != 0 || strings.Contains(result.Stdout, "guidance") {
+		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
+	}
+}
+
 func TestRecordRejectsAnOmittedPromise(t *testing.T) {
 	root := utils.NewRepository(t)
 	payload := storedPayload(t, root, "bc-7f3a")

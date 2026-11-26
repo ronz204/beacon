@@ -33,6 +33,7 @@ type RecordView struct {
 	Unchanged bool         `json:"unchanged"`
 	Changes   []ChangeView `json:"changes"`
 	Ignored   []string     `json:"ignored"`
+	Guidance  []string     `json:"guidance,omitempty"`
 }
 
 type CloseView struct {
@@ -397,6 +398,7 @@ func recordView(result action.RecordResult) RecordView {
 		Unchanged: result.Unchanged,
 		Changes:   changeViews(result.Changes),
 		Ignored:   result.Ignored,
+		Guidance:  result.Guidance,
 	}
 	if view.Ignored == nil {
 		view.Ignored = []string{}

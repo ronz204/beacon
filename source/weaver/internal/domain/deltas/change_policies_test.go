@@ -1,6 +1,7 @@
 package deltas_test
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/ronz204/beacon/source/weaver/internal/domain/deltas"
@@ -213,5 +214,45 @@ func TestClassifyElementsQuotesWhatChangedInAPromise(t *testing.T) {
 	}
 	if got.After != "After 10 failed attempts" {
 		t.Fatalf("finding = %+v", got)
+	}
+}
+
+func TestAddedPromisesListsOnlyTheNewOnes(t *testing.T) {
+	active := promise("bc-c3d4", lockout, "active")
+	fresh := promise("bc-d5e6", "Locks for admins", "proposed")
+
+	cases := []struct {
+		name   string
+		change deltas.StateChange
+		want   []string
+	}{
+		{
+			"one new",
+			changeOf("modified", caps(active), caps(active, fresh)),
+			[]string{"bc-d5e6"},
+		},
+		{
+			"none new",
+			changeOf("modified", caps(active), caps(active)),
+			nil,
+		},
+		{
+			"new record",
+			changeOf("added", nil, caps(active, fresh)),
+			[]string{"bc-c3d4", "bc-d5e6"},
+		},
+		{
+			"deleted",
+			changeOf("deleted", caps(active), nil),
+			nil,
+		},
+	}
+
+	for _, c := range cases {
+		got := c.change.AddedPromises()
+
+		if !slices.Equal(got, c.want) {
+			t.Errorf("%s: got %v, want %v", c.name, got, c.want)
+		}
 	}
 }
