@@ -75,6 +75,17 @@ type RecordResult struct {
 	Unchanged bool
 	Changes   []ChangeReport
 	Ignored   []string
+	Guidance  []string
+}
+
+var promiseGuidance = []string{
+	"state one observable result, not an intention " +
+		"(after 5 failed sign-ins the account locks for 15 minutes)",
+	"use concrete inputs and outputs: numbers, states, messages, roles",
+	"one thing per promise: if the text needs \"and\", split it",
+	"edge cases and permissions are promises of their own when they matter",
+	"optional form: WHEN <condition> THE SYSTEM SHALL <behavior>",
+	"a proposed promise can be reworded freely until it is activated",
 }
 
 type PendingSource interface {
@@ -136,6 +147,9 @@ func (r Recorder) Record(
 	}
 
 	result.Saved = true
+	if len(prepared.Change.AddedPromises()) > 0 {
+		result.Guidance = promiseGuidance
+	}
 
 	return result, nil
 }

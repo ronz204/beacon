@@ -392,6 +392,28 @@ func (c StateChange) PromisesUsing(runners []string) []string {
 	return ids
 }
 
+func (c StateChange) AddedPromises() []string {
+	if c.after == nil {
+		return nil
+	}
+
+	var known []kernel.RecordID
+	if c.before != nil {
+		for _, promise := range c.before.promises {
+			known = append(known, promise.id)
+		}
+	}
+
+	var ids []string
+	for _, promise := range c.after.promises {
+		if !slices.Contains(known, promise.id) {
+			ids = append(ids, promise.id.String())
+		}
+	}
+
+	return ids
+}
+
 func (c StateChange) Runners() []string {
 	return slices.Clone(c.runners)
 }

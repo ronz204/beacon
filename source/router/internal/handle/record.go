@@ -81,7 +81,22 @@ func recordLines(view weaver.RecordView) []string {
 		lines = append(lines, "ignored field: "+ignored)
 	}
 
-	return append(lines, changeLines(view.Changes)...)
+	lines = append(lines, changeLines(view.Changes)...)
+
+	return append(lines, guidanceLines(view.Guidance)...)
+}
+
+func guidanceLines(guidance []string) []string {
+	if len(guidance) == 0 {
+		return nil
+	}
+
+	lines := []string{"writing a promise:"}
+	for _, line := range guidance {
+		lines = append(lines, "  - "+line)
+	}
+
+	return lines
 }
 
 func quotedChange(change weaver.ChangeView) []string {
