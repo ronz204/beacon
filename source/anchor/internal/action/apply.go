@@ -18,10 +18,18 @@ func (a Applier) Apply(ctx context.Context, plan Plan) error {
 	}
 
 	for _, change := range plan.Changes {
-		if err := a.Files.Write(ctx, change.Path, change.After); err != nil {
+		if err := a.put(ctx, change); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (a Applier) put(ctx context.Context, change Change) error {
+	if change.Deleted {
+		return a.Files.Remove(ctx, change.Path)
+	}
+
+	return a.Files.Write(ctx, change.Path, change.After)
 }

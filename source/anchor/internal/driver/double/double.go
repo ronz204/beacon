@@ -40,6 +40,17 @@ func (f *Files) Write(_ context.Context, name, content string) error {
 	return nil
 }
 
+func (f *Files) Remove(_ context.Context, name string) error {
+	if f.Err != nil {
+		return f.Err
+	}
+
+	delete(f.Texts, name)
+	f.Writes = append(f.Writes, "remove "+name)
+
+	return nil
+}
+
 func (f *Files) Backup(
 	_ context.Context,
 	stamp, name, content string,

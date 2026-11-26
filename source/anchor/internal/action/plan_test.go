@@ -68,7 +68,15 @@ func newPlanner(
 		t.Fatal(err)
 	}
 
-	return action.Planner{Files: files, Method: method, Agents: list}
+	shared := agents.Contribution{
+		Blocks: []agents.BlockFile{{
+			Path:  "AGENTS.md",
+			Part:  agents.PartGuide,
+			Block: method,
+		}},
+	}
+
+	return action.Planner{Files: files, Shared: shared, Agents: list}
 }
 
 func TestPlanOfAnEmptyRepoCreatesTheGuide(t *testing.T) {
@@ -193,5 +201,63 @@ func TestApplyWritesNothingWhenABackupFails(t *testing.T) {
 
 	if err == nil || len(files.Writes) != 0 {
 		t.Errorf("err = %v, writes = %v", err, files.Writes)
+	}
+}
+
+func TestWithdrawDeletesFilesThatOnlyHeldWhatWasInstalled(t *testing.T) {
+	ctx := context.Background()
+	files := double.NewFiles(map[string]string{})
+	planner := newPlanner(t, files, sampleAgent{})
+
+	plan, err := planner.Plan(ctx, agents.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	applier := action.Applier{Files: files, Stamp: "stamp"}
+	if err := applier.Apply(ctx, plan); err != nil {
+		t.Fatal(err)
+	}
+
+	removal, err := planner.Withdraw(ctx, agents.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := applier.Apply(ctx, removal); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(files.Texts) != 0 {
+		t.Errorf("files left behind: %v", files.Texts)
+	}
+}
+
+func TestWithdrawKeepsASettingsFileThatHasOtherContent(t *testing.T) {
+	ctx := context.Background()
+	original := "{\n  \"model\": \"sample\"\n}\n"
+	files := double.NewFiles(map[string]string{
+		".claude/settings.json": original,
+	})
+	planner := newPlanner(t, files, sampleAgent{})
+	applier := action.Applier{Files: files, Stamp: "stamp"}
+
+	plan, err := planner.Plan(ctx, agents.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := applier.Apply(ctx, plan); err != nil {
+		t.Fatal(err)
+	}
+
+	removal, err := planner.Withdraw(ctx, agents.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := applier.Apply(ctx, removal); err != nil {
+		t.Fatal(err)
+	}
+
+	if files.Texts[".claude/settings.json"] != original {
+		t.Errorf("settings = %q", files.Texts[".claude/settings.json"])
 	}
 }

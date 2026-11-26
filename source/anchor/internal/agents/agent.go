@@ -19,6 +19,7 @@ type Part string
 
 const (
 	PartGuide      Part = "guide"
+	PartAttributes Part = "attributes"
 	PartImport     Part = "import"
 	PartPermission Part = "permission"
 	PartActor      Part = "actor"

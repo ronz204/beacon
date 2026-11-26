@@ -20,8 +20,18 @@ type AgentView struct {
 	Missing []string `json:"missing"`
 }
 
+type KeptView struct {
+	Path string `json:"path"`
+	Part string `json:"part"`
+}
+
 type InstallView struct {
-	DryRun  bool         `json:"dryRun"`
-	Changes []ChangeView `json:"changes"`
-	Agents  []AgentView  `json:"agents"`
+	DryRun      bool         `json:"dryRun"`
+	Uninstall   bool         `json:"uninstall"`
+	Initialized bool         `json:"initialized"`
+	Changes     []ChangeView `json:"changes"`
+	Agents      []AgentView  `json:"agents"`
+	Skipped     []string     `json:"skipped"`
+	Kept        []KeptView   `json:"kept"`
+	Review      []string     `json:"review"`
 }

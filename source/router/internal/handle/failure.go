@@ -45,6 +45,18 @@ var errorHints = map[string]string{
 	"param_invalid":      "fix the check params of the promise, then rerun",
 	"runner_run_invalid": "fix the runner in .beacon/config.yaml, then rerun",
 	"state_invalid":      "fix the reported records, then run beacon doctor",
+	"history_failed":     "run beacon from inside a git repository",
+	"block_unclosed": "restore the END BEACON line or delete the block in " +
+		"the reported file, then rerun",
+	"entry_conflict": "the file already has a different value at {path}; " +
+		"resolve it by hand, then rerun",
+	"document_invalid": "fix the JSON of the file listed in details, " +
+		"then rerun",
+	"file_path_invalid":  "this is a bug: report it with the path in details",
+	"file_read_failed":   "check the permissions of {path}, then rerun",
+	"file_write_failed":  "check the permissions of {path}, then rerun",
+	"file_remove_failed": "check the permissions of {path}, then rerun",
+	"backup_failed":      "check free space and permissions, then rerun",
 	"text_invalid":       "pass a text that is not blank",
 	"approval_required": "ask the person to approve the changes in details; " +
 		"if they say yes, rerun the same command with --approve",

@@ -80,6 +80,20 @@ func (r Repo) Write(_ context.Context, path, content string) error {
 	return nil
 }
 
+func (r Repo) Remove(_ context.Context, path string) error {
+	target, err := r.resolve(r.root, path)
+	if err != nil {
+		return err
+	}
+
+	err = system.RemoveFile(target)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return action.FailInstall(action.FileRemoveFailed, path, err)
+	}
+
+	return nil
+}
+
 func (r Repo) Backup(
 	_ context.Context,
 	stamp, path, content string,
