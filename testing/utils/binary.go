@@ -12,7 +12,10 @@ import (
 	"testing"
 )
 
-var binaryPath string
+var (
+	binaryPath string
+	runnerPath string
+)
 
 type Result struct {
 	Code   int
@@ -29,7 +32,14 @@ func RunSuite(m *testing.M) int {
 	defer os.RemoveAll(directory)
 
 	binaryPath = filepath.Join(directory, binaryName())
-	if err := buildBinary(binaryPath); err != nil {
+	if err := buildBinary(binaryPath, "./cmd/beacon"); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+
+	runnerPath = filepath.Join(directory, "fakerunner"+executableSuffix())
+	err = buildBinary(runnerPath, "./testing/testdata/fakerunner")
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
@@ -38,15 +48,23 @@ func RunSuite(m *testing.M) int {
 }
 
 func binaryName() string {
-	if runtime.GOOS == "windows" {
-		return "beacon.exe"
-	}
-
-	return "beacon"
+	return "beacon" + executableSuffix()
 }
 
-func buildBinary(target string) error {
-	command := exec.Command("go", "build", "-o", target, "./cmd/beacon")
+func executableSuffix() string {
+	if runtime.GOOS == "windows" {
+		return ".exe"
+	}
+
+	return ""
+}
+
+func FakeRunner() string {
+	return filepath.ToSlash(runnerPath)
+}
+
+func buildBinary(target, source string) error {
+	command := exec.Command("go", "build", "-o", target, source)
 	command.Dir = filepath.Join("..", "..")
 
 	output, err := command.CombinedOutput()
