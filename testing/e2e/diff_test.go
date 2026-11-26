@@ -189,3 +189,32 @@ func TestBaselineCaptureNeedsAYesUntilARunnerPromiseIsApproved(t *testing.T) {
 		t.Fatalf("approved = %+v, resolved = %+v", approved, resolved)
 	}
 }
+
+func TestSecondApprovalOfTheSameDayStillResolvesThePending(t *testing.T) {
+	root := utils.NewRepository(t)
+	first := record(t, root, sampleAgent, weakenedLockout(t, root), "--approve")
+	utils.Git(t, root, "commit", "-q", "-am", "approve the first weakening")
+
+	payload := storedPayload(t, root, "bc-7f3a")
+	promise := promiseOf(payload, "bc-c3d4")
+	promise["text"] = "After 20 failed attempts the account locks."
+	second := record(t, root, sampleAgent, jsonOf(t, payload), "--approve")
+
+	data := decodeDiff(t, utils.Beacon(t, root, "diff", "--json").Stdout)
+	text := utils.ReadFile(t, filepath.Join(root, capabilityPath))
+
+	if first.Code != 0 || second.Code != 0 {
+		t.Fatalf("first = %+v, second = %+v", first, second)
+	}
+	if !strings.Contains(text, ", n: 2}") {
+		t.Fatalf("the repeated stamp must carry a count:\n%s", text)
+	}
+	if len(data.Pending) != 0 {
+		t.Fatalf("pending = %+v", data.Pending)
+	}
+
+	entry, found := entryFor(data, "bc-c3d4")
+	if !found || !entry.Approved {
+		t.Fatalf("entry = %+v, found = %v", entry, found)
+	}
+}
