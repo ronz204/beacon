@@ -2,6 +2,8 @@ package e2e_test
 
 import (
 	"encoding/json"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -174,5 +176,39 @@ func TestReadyWarnsOnADetachedHead(t *testing.T) {
 
 	if result.Code != 0 || !strings.Contains(result.Stdout, "detached") {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
+	}
+}
+
+func TestContextSurvivesAnAttestedCommitThatNoLongerExists(t *testing.T) {
+	root := utils.NewRepository(t)
+	path := filepath.Join(root, filepath.FromSlash(capabilityPath))
+	text := utils.ReadFile(t, path)
+	attested := regexp.MustCompile(`commit: [0-9a-f]{7}`)
+	utils.WriteFile(
+		t,
+		root,
+		capabilityPath,
+		attested.ReplaceAllString(text, "commit: 9f3c2ab"),
+	)
+
+	result := utils.Beacon(t, root, "context", "src/auth/login.go", "--json")
+
+	var data struct {
+		Capabilities []struct {
+			Promises []struct {
+				ID      string `json:"id"`
+				Drifted bool   `json:"drifted"`
+			} `json:"promises"`
+		} `json:"capabilities"`
+	}
+	decodeData(t, result.Stdout, &data)
+
+	if result.Code != 0 {
+		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
+	}
+	for _, promise := range data.Capabilities[0].Promises {
+		if promise.ID == "bc-c4a1" && !promise.Drifted {
+			t.Fatalf("the attestation must show drift: %s", result.Stdout)
+		}
 	}
 }

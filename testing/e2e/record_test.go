@@ -40,6 +40,20 @@ func promiseOf(payload map[string]any, id string) map[string]any {
 	return nil
 }
 
+func decodeError(t *testing.T, text string, target any) {
+	t.Helper()
+
+	var parsed struct {
+		Error json.RawMessage `json:"error"`
+	}
+	if err := json.Unmarshal([]byte(text), &parsed); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(parsed.Error, target); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func jsonOf(t *testing.T, value any) string {
 	t.Helper()
 
@@ -120,6 +134,26 @@ func TestRecordBlocksAWeakenedPromiseWithoutAYes(t *testing.T) {
 	}
 	if utils.ReadFile(t, path) != before {
 		t.Fatal("the file changed without a yes")
+	}
+
+	var asked struct {
+		Details struct {
+			Changes []struct {
+				ID     string `json:"id"`
+				Reason string `json:"reason"`
+				Before string `json:"before"`
+				After  string `json:"after"`
+			} `json:"changes"`
+		} `json:"details"`
+	}
+	decodeError(t, result.Stdout, &asked)
+
+	change := asked.Details.Changes[0]
+	if change.ID != "bc-c3d4" || change.Reason != "promise_text_changed" {
+		t.Fatalf("change = %+v", change)
+	}
+	if change.Before != lockoutText || !strings.Contains(change.After, "10") {
+		t.Fatalf("change = %+v", change)
 	}
 }
 
