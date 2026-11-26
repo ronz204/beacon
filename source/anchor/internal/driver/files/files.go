@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/ronz204/beacon/source/anchor/internal/action"
 	"github.com/ronz204/beacon/source/kernel"
@@ -17,6 +18,9 @@ const (
 	stateFolder   = "beacon"
 	backupsFolder = "backups"
 	directoryMode = 0o755
+
+	StampLayout     = "20060102T150405"
+	backupRetention = 30 * 24 * time.Hour
 )
 
 type Repo struct {
@@ -110,7 +114,27 @@ func (r Repo) Backup(
 		return action.FailInstall(action.BackupFailed, path, err)
 	}
 
+	r.pruneBackups(time.Now())
+
 	return nil
+}
+
+func (r Repo) pruneBackups(now time.Time) {
+	entries, err := os.ReadDir(r.backups)
+	if err != nil {
+		return
+	}
+
+	for _, entry := range entries {
+		taken, err := time.ParseInLocation(
+			StampLayout,
+			entry.Name(),
+			time.Local,
+		)
+		if err == nil && now.Sub(taken) > backupRetention {
+			_ = os.RemoveAll(filepath.Join(r.backups, entry.Name()))
+		}
+	}
 }
 
 func (r Repo) resolve(base, path string) (string, error) {

@@ -154,6 +154,10 @@ func (w *workspace) contribute(
 			return err
 		}
 
+		if blocks.Covers(current.after, file.Block) {
+			continue
+		}
+
 		after, err := blocks.Upsert(current.after, file.Block)
 		if err != nil {
 			return err
