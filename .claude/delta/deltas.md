@@ -14,7 +14,9 @@ No todo cambio merece pedir permiso, solo los que podrían **debilitar lo que ya
 | 2 | Agregar | Una promesa nueva (`proposed`), una decisión nueva | El agente lo hace y aparece en el resumen de la sesión |
 | 3 | Debilitar o cambiar lo verificado | Editar el texto de una promesa activa, borrarla, cambiar su check, cambiar la meta, cambiar los `runners` o el `schema` de `config.yaml`, **actualizar una captura base de un ejecutor visual** | Beacon lo detecta y pregunta "¿sí o no?" antes de guardarlo |
 
-Pasar una promesa de `proposed` a `active` también requiere un sí de la persona.
+Pasar una promesa de `proposed` a `active` también requiere un sí de la persona. Lo mismo vale para una promesa que nace ya `active`.
+
+Otros casos que la regla no nombra: borrar un goal pide sí; cerrar o editar una promesa `proposed` es nivel 1, porque aún no está prometida. Un cierre aprobado deja su sello en la línea del archivo (`layout`), y Weaver lo lee ahí para saber que el sí ya se dio.
 
 ## Regla mecánica del nivel 3
 

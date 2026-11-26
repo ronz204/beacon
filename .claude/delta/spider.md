@@ -27,7 +27,7 @@ Carga los registros (`layout`, `ledger`), arma el grafo de relaciones en memoria
 | `ready` | Trabajo y tareas sin bloqueos, por rama | Recorre `blocks` y `parent`; al cerrar un bloqueo se desbloquean los dependientes; aplica la jerarquía de tareas (`ledger`) y tiene en cuenta los claims locales (`method`) |
 | `drift` | Promesas que pasaron pero cuyo código cambió desde el último check | Compara el commit del último resultado (`pledge`) con los cambios de git bajo sus `paths` |
 | `stale` | Decisiones y guides que superaron su plazo de revisión o cuyo código recibió 10 o más commits desde la última revisión | `reviewed` más `review`, y cambio de código desde la última revisión (`guides`) |
-| `diff` | Qué cambió en el estado desde un commit, incluidas las capturas base, **sin clasificar** | Compara los registros actuales con los de git y los archivos de `baseline`; Weaver asigna el nivel (`deltas`, `weaver`) |
+| `diff` | Qué cambió en el estado desde un commit, incluidas las capturas base, **sin clasificar** | Compara los registros actuales con los de git y los archivos de `baseline` (con los ejecutores que los cubren), y lista los cierres nuevos del archivo con su `approved`; Weaver asigna el nivel (`deltas`, `weaver`) |
 
 **Revelado progresivo:** primero un resumen (`brief`), luego lo que aplica a lo que se toca (`context`), y solo si hace falta el detalle de un registro (`get`).
 

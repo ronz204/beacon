@@ -35,7 +35,7 @@ runners:
 check: {runner: test-node, pkg: api, target: auth/lockout}
 ```
 
-- Los parámetros se pasan como **argumentos separados, sin shell**, y no pueden empezar con `-`, para que nadie inyecte una opción.
+- Los parámetros se pasan como **argumentos separados, sin shell**, y no pueden empezar con `-`, para que nadie inyecte una opción. Solo `{nombre}` con letras, dígitos y `_` es un parámetro: otras llaves (un JSON literal) pasan tal cual. El programa, primer elemento de `run`, nunca lleva parámetros, para que un dato no elija qué se ejecuta.
 - Un monorepo de 40 paquetes usa el **mismo** ejecutor con otro `pkg`. Si los paquetes usan toolchains distintas, hay un ejecutor por ecosistema (`test-node`, `test-go`).
 - Cambiar un ejecutor es el único cambio peligroso: es de nivel 3 y en CI se usan los `runners` de la rama base (`deltas`, `snares`).
 
