@@ -95,9 +95,10 @@ type FindView struct {
 }
 
 type Closure struct {
-	Type     string `json:"type"`
-	ID       string `json:"id"`
-	Approved string `json:"approved,omitempty"`
+	Type     string   `json:"type"`
+	ID       string   `json:"id"`
+	Approved string   `json:"approved,omitempty"`
+	Promises []string `json:"promises,omitempty"`
 }
 
 type StateChange struct {

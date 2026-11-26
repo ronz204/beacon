@@ -16,6 +16,9 @@ type closedLine struct {
 	Record struct {
 		ID       string          `json:"id"`
 		Approved json.RawMessage `json:"approved"`
+		Promises []struct {
+			ID string `json:"id"`
+		} `json:"promises"`
 	} `json:"record"`
 }
 
@@ -33,11 +36,16 @@ func closuresOf(change commit.StateChange) ([]Closure, error) {
 			return nil, kernel.NewRecordFailure(change.Path, 0, err)
 		}
 
-		closures = append(closures, Closure{
+		closure := Closure{
 			Type:     line.Type,
 			ID:       line.Record.ID,
 			Approved: string(line.Record.Approved),
-		})
+		}
+		for _, promise := range line.Record.Promises {
+			closure.Promises = append(closure.Promises, promise.ID)
+		}
+
+		closures = append(closures, closure)
 	}
 
 	return closures, nil
