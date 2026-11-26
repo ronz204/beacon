@@ -66,7 +66,7 @@ When Beacon blocks something, its message says exactly what to do. Follow it.
 
 ## Agentes
 
-**Primera ola:** Claude Code, Codex, Cursor. **Segunda ola:** OpenCode, Gemini CLI, Copilot.
+**Primera ola (Fase 3):** Claude Code. **Segunda ola (Fase 6):** Codex, Cursor, OpenCode, Gemini CLI, Copilot. Las filas de la tabla de abajo son notas de investigación, a verificar al implementar cada adaptador.
 
 | Agente | Instrucciones | Notas |
 |---|---|---|

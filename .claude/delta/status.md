@@ -60,7 +60,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Guía del método | Bloque de unas 20 líneas en inglés, siete reglas, versión CLI | `anchor` |
 | Hooks y reinyección | Donde el agente tenga el evento: `beacon brief` al empezar y tras compactar, y `beacon context --hook` antes de editar (una vez por archivo y sesión, con tope `limits.hook`). Los eventos de cada agente se verifican al implementar | `anchor` |
 | Instalación | `beacon install` con `--dry-run`, copia de seguridad en `.git/beacon/backups/`, solo archivos del repo y resumen final | `anchor` |
-| Agentes | Ola 1: Claude Code, Codex, Cursor. Ola 2: OpenCode, Gemini CLI, Copilot | `anchor` |
+| Agentes | Ola 1: Claude Code (Fase 3). Ola 2: Codex, Cursor, OpenCode, Gemini CLI, Copilot (Fase 6); decidido el 2026-11-26 para probar un agente a fondo antes de sumar otros | `anchor` |
 | Hooks de Codex | Soportados (`SessionStart`, `Stop`, y `PreCompact` y `PostCompact` para la reinyección); el hook llama al CLI | `anchor` |
 | Idioma | Claves, guía del método y mensajes del binario en inglés; contenido de los registros en cualquier idioma | `design` |
 | Fricción | Medida solo en local | `weaver` |
@@ -131,7 +131,7 @@ Sin recorte de producto; el orden sigue las dependencias. El plan detallado de l
 | 0 | **Cerrada:** nombre, benchmarks de carga y de git, esquema, guía del método, decisiones de interfaz y las propuestas de la investigación |
 | 1 | **Cerrada el 2026-11-23. Spider:** esquema (con `nongoals`, `rejected` y `evidence`), parser YAML estricto, `fmt`, ids, grafo en memoria, validación, `doctor`, globs |
 | 2 | **Cerrada el 2026-11-26. Weaver (CLI):** `--json` con el sobre uniforme y códigos 0, 1 y 2; `brief`, `status`, `context` con `--hook`, `get`, `find`, `ready`, `record` con stdin y `--approve`, `close` con archivo, `claim` con claim local, `check` con ejecutores y `results.json`, y `diff` con niveles (incluidas las capturas base) y pendientes de sí; ramas largas probadas y tiempos medidos |
-| 3 | **Anchor sobre el CLI:** guía del método, hooks con reinyección, permisos y marca del actor para Claude Code, luego Codex y Cursor; `beacon install` con `--dry-run` y copias; guía de redacción de promesas; arnés del benchmark; uso del propio Beacon en su desarrollo |
+| 3 | **En curso desde el 2026-11-26. Anchor sobre el CLI, solo Claude Code:** guía del método, `beacon hook` con reinyección, permisos y marca del actor; `beacon install` con `--dry-run`, `--uninstall` y copias; guía de redacción de promesas; arnés del benchmark; prueba real en `src/projects/sandbox` (plan en `PLANNING.md`) |
 | 4 | **Snares:** pre-commit, `beacon snares ci` y plantilla de GitHub Actions (con `merge_group`); arranque, `attest` con `--evidence`, `verify`; ejecutores de ejemplo para UI |
 | 5 | Frescura de guides, `stale` |
-| 6 | Segunda ola de agentes, `stats`, correr el benchmark de fricción |
+| 6 | Segunda ola de agentes (Codex y Cursor entre ellos), `stats`, correr el benchmark de fricción; usar Beacon en su propio repo si el arranque ya existe |
