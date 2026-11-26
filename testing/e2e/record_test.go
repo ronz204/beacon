@@ -312,3 +312,18 @@ func TestRecordOfChangedRunnersAsksThenStampsTheConfig(t *testing.T) {
 		t.Fatalf("config:\n%s", text)
 	}
 }
+
+func TestRecordApproveOfAnUnchangedRecordWithNothingPendingTouchesNothing(
+	t *testing.T,
+) {
+	root := utils.NewRepository(t)
+	path := filepath.Join(root, filepath.FromSlash(capabilityPath))
+	before := utils.ReadFile(t, path)
+	payload := jsonOf(t, storedPayload(t, root, "bc-7f3a"))
+
+	result := record(t, root, sampleAgent, payload, "--approve")
+
+	if result.Code != 0 || utils.ReadFile(t, path) != before {
+		t.Fatalf("result = %+v", result)
+	}
+}

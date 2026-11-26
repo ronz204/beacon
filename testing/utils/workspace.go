@@ -98,5 +98,9 @@ func attestAtHead(t *testing.T, root string) {
 	)
 	WriteFile(t, root, file, text)
 
+	if formatted := Beacon(t, root, "fmt"); formatted.Code != 0 {
+		t.Fatalf("fmt failed: %s", formatted.Stderr)
+	}
+
 	Git(t, root, "commit", "-q", "-am", "attest at head")
 }
