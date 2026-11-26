@@ -27,7 +27,7 @@ No hay un tipo especial de capability para diseño de UI: una capability de UI e
 | `created` | Fecha `YYYY-MM-DD`. Es fija: nunca cambia, así que no mete ruido en los diffs. Se guarda porque sacarla de git es lento y falla con renombres y clones superficiales |
 | `author` | El actor que lo escribió (ver abajo) |
 | `closed` y `reason` | Fecha y motivo al cerrar; solo aparecen en `archive/` (`layout`) |
-| `approved` | `{by, at, via}` cuando un cambio de nivel 3 recibió un sí (`deltas`). `via` solo aparece si un agente transmitió el sí de la persona. `n` solo aparece cuando un sello sería idéntico al que el elemento ya tiene (mismo actor, mismo día, mismo `via`): cuenta el sí repetido (`n: 2`, `n: 3`...) para que se reconozca como nuevo (`deltas`) |
+| `approved` | `{by, at, via}` cuando un cambio de nivel 3 recibió un sí (`deltas`). `via` solo aparece si un agente transmitió el sí de la persona. `n` solo aparece cuando un sello sería idéntico al que el elemento ya tiene (mismo actor, mismo día, mismo `via`): cuenta el sí repetido (`n: 2`, `n: 3`...) para que se reconozca como nuevo (`deltas`). Es opcional y compatible hacia los dos lados: una versión sin contador lee el registro y conserva `n`, aunque no lo cuenta |
 
 - Las promesas dentro de una capability solo llevan `id`, `approved`, `closed` y `reason`; el resto lo hereda de la capability y git guarda el detalle.
 - **No se guarda `updated`**: sale de git, y guardarlo ensuciaría cada diff.
