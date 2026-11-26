@@ -66,6 +66,7 @@ func NewRepository(t *testing.T) string {
 	t.Helper()
 
 	root := NewWorkspace(t)
+	WriteFile(t, root, ".gitattributes", ".beacon/** text eol=lf\n")
 
 	Git(t, root, "init", "-q", "-b", "main")
 	Git(t, root, "config", "user.name", "jane")
@@ -103,4 +104,15 @@ func attestAtHead(t *testing.T, root string) {
 	}
 
 	Git(t, root, "commit", "-q", "-am", "attest at head")
+}
+
+func GitTry(t *testing.T, directory string, args ...string) (string, error) {
+	t.Helper()
+
+	command := exec.Command("git", args...)
+	command.Dir = directory
+
+	output, err := command.CombinedOutput()
+
+	return string(output), err
 }
