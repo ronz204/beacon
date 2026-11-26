@@ -453,6 +453,12 @@ func (p Project) stateChange(
 
 		return view, err
 	}
+	if change.Archive {
+		var err error
+		view.Closed, err = closuresOf(change)
+
+		return view, err
+	}
 
 	file := filepath.Join(p.root, filepath.FromSlash(change.Path))
 	var err error

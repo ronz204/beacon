@@ -200,3 +200,27 @@ func TestDoctorCompletesAnInterruptedPromiseClose(t *testing.T) {
 		t.Fatal("the interrupted close left the promise in its capability")
 	}
 }
+
+func TestStateChangesReportTheApprovalOfAClosure(t *testing.T) {
+	project, _ := newProject(t)
+	closeRecord(t, project, "bc-c4a1", map[string]spider.Approval{
+		"bc-c4a1": {By: "human:jane", At: "2026-11-25"},
+	})
+
+	changes, err := project.StateChanges(context.Background(), "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var closed []spider.Closure
+	for _, change := range changes {
+		closed = append(closed, change.Closed...)
+	}
+
+	if len(closed) != 1 || closed[0].ID != "bc-c4a1" {
+		t.Fatalf("closed = %+v", closed)
+	}
+	if !strings.Contains(closed[0].Approved, "human:jane") {
+		t.Fatalf("approved = %q", closed[0].Approved)
+	}
+}

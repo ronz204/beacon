@@ -94,13 +94,20 @@ type FindView struct {
 	Omitted int     `json:"omitted"`
 }
 
+type Closure struct {
+	Type     string `json:"type"`
+	ID       string `json:"id"`
+	Approved string `json:"approved,omitempty"`
+}
+
 type StateChange struct {
-	Path     string   `json:"path"`
-	Kind     string   `json:"kind"`
-	Baseline bool     `json:"baseline"`
-	Runners  []string `json:"runners,omitempty"`
-	Before   *Record  `json:"before"`
-	After    *Record  `json:"after"`
+	Path     string    `json:"path"`
+	Kind     string    `json:"kind"`
+	Baseline bool      `json:"baseline"`
+	Runners  []string  `json:"runners,omitempty"`
+	Closed   []Closure `json:"closed,omitempty"`
+	Before   *Record   `json:"before"`
+	After    *Record   `json:"after"`
 }
 
 func summaryOf(id, text fmt.Stringer) Summary {

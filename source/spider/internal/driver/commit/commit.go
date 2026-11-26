@@ -20,6 +20,7 @@ import (
 
 const (
 	recordsFolder = ".beacon/records/"
+	archiveFolder = ".beacon/archive/"
 	configPath    = ".beacon/config.yaml"
 	guidesFolder  = ".beacon/records/guides"
 	commitMark    = "\x00"
@@ -46,6 +47,7 @@ type StateChange struct {
 	Path     string
 	Kind     ChangeKind
 	Baseline bool
+	Archive  bool
 	Before   []byte
 	After    []byte
 }
@@ -197,6 +199,7 @@ func (r Repository) StateChanges(
 		}
 
 		entry.Baseline = baseline
+		entry.Archive = strings.HasPrefix(entry.Path, archiveFolder)
 		if err := r.fillContents(ctx, revision, &entry); err != nil {
 			return nil, err
 		}
@@ -383,5 +386,7 @@ func matchesAny(
 }
 
 func isStatePath(path string) bool {
-	return path == configPath || strings.HasPrefix(path, recordsFolder)
+	return path == configPath ||
+		strings.HasPrefix(path, recordsFolder) ||
+		strings.HasPrefix(path, archiveFolder)
 }
