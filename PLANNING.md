@@ -287,7 +287,7 @@ cmd/beacon → router → anchor.go → action → domain/blocks → kernel
   - **Archivos:** el contrato `FileStore` (`Read`, `Write`, `Backup`) vive en `action`; `driver/files` lo implementa sobre el repo, con escritura atómica y copias en `.git/beacon/backups/<fecha>/<ruta>` del directorio común de git, y rechaza rutas que salgan del repo (`file_path_invalid`). `driver/double` es la versión en memoria.
   - **Fachada:** `anchor.New(ctx, directorio)` y `Install(ctx, InstallOptions)`, que planifica y, sin `DryRun`, aplica. Con un solo método, `--dry-run` y la instalación comparten el cálculo. Todavía no hay adaptadores: el plan solo trae la guía en `AGENTS.md`.
 
-### Paso 3. `beacon install`
+### Paso 3. `beacon install` (hecho)
 
 - **Objetivo:** el comando completo sobre el núcleo común: `AGENTS.md` y `.gitattributes`.
 - **Construye:** `handle/install.go` y `action/uninstall.go`.
@@ -295,6 +295,15 @@ cmd/beacon → router → anchor.go → action → domain/blocks → kernel
 - **`.gitattributes`:** agrega `.beacon/** text eol=lf` (`layout`).
 - **Resumen** (`--json`: `data.files`, `data.skipped`, `data.review`): qué se creó o cambió, qué se omitió por no tener el agente el evento, y qué debe revisar la persona. Si `beacon` no está en el `PATH`, lo avisa, porque los hooks lo llaman por nombre. Sin `.beacon/`, el `hint` dice cuál es el siguiente paso (D10).
 - **Hecho cuando:** en un repo temporal, `--dry-run` no cambia ningún byte, `install` crea los dos archivos, repetirlo no cambia nada, y `--uninstall` deja el repo como estaba.
+- **Cómo quedó:**
+  - **Fachada:** `Install` y `Uninstall` comparten el cálculo (`Planner.Plan` y `Planner.Withdraw`) y la aplicación. La vista trae `dryRun`, `uninstall`, `initialized`, `changes` (con `create`, `update` o `delete`), `agents`, `skipped`, `kept` y `review`.
+  - **Desinstalar:** quita cada bloque o entrada que coincide byte a byte, y lo editado a mano queda en `kept` con su archivo y su parte. Un archivo que queda vacío (o un JSON sin claves) se borra, después de guardar su copia; uno que ya tenía otro contenido se restaura. `--skip` no aplica al desinstalar: se retira todo lo que Beacon pudo instalar.
+  - **`--skip`:** `hooks` omite también `reinject`, porque la reinyección es parte de los hooks; `reinject` omite solo esa parte (D7). Cualquier otro valor da `skip_invalid` con código 1. `data.skipped` lo informa.
+  - **`.gitattributes`:** el bloque va con marcadores `#`, y un repo que ya tenía la línea sin marcar queda con las dos, que no chocan.
+  - **Sin `.beacon/`:** el `hint` es `create .beacon/config.yaml with schema: 1` (D10); `install` solo lee `.beacon/config.yaml` para saberlo.
+  - **PATH:** si `beacon` no se resuelve por el `PATH`, `data.review` lo avisa; se prueba con una búsqueda inyectable, porque el resultado real depende de la máquina.
+  - **Texto:** una línea por archivo (`would create AGENTS.md (guide)`), y con `--dry-run` las líneas que se agregarían. Fuera de un repo git falla con `history_failed`.
+  - **Detección de agentes:** pasa al paso 7. Sin adaptadores, `install` solo instala lo común (`AGENTS.md` y `.gitattributes`).
 
 ## 5. Bloque 2: hooks y respuesta de `record`
 
