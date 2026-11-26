@@ -42,6 +42,21 @@ func EntriesOf(changes []deltas.StateChange) []Entry {
 	return entries
 }
 
+func LineOf(entry Entry) string {
+	report := ReportOf(entry.Finding)
+	text := report.After
+	if text == "" {
+		text = report.Before
+	}
+
+	line := report.Target + " " + report.ID + " " + report.Reason
+	if text == "" {
+		return line
+	}
+
+	return line + ": " + text
+}
+
 func PendingOf(entries []Entry) []Entry {
 	var pending []Entry
 

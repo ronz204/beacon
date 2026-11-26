@@ -111,6 +111,7 @@ type DiffView struct {
 }
 
 type Weaver struct {
+	project spider.Project
 	changes deltas.ChangeSource
 	records action.Recorder
 	closer  action.Closer
@@ -130,6 +131,7 @@ func New(project spider.Project) Weaver {
 	}
 
 	return Weaver{
+		project: project,
 		changes: facade.NewChanges(project),
 		records: action.Recorder{
 			Store:    records,
@@ -224,6 +226,38 @@ func pendingSignals(pending []action.Entry) []spider.Signal {
 	}
 
 	return signals
+}
+
+func (w Weaver) Brief(
+	ctx context.Context,
+) (spider.BriefView, []spider.Finding, error) {
+	return w.summary(ctx, w.project.Brief)
+}
+
+func (w Weaver) Status(
+	ctx context.Context,
+) (spider.BriefView, []spider.Finding, error) {
+	return w.summary(ctx, w.project.Status)
+}
+
+func (w Weaver) summary(
+	ctx context.Context,
+	build func(context.Context, []string) (spider.BriefView, []spider.Finding),
+) (spider.BriefView, []spider.Finding, error) {
+	pending, err := w.differ.Pending(ctx)
+	if err != nil {
+		return spider.BriefView{}, nil, err
+	}
+
+	lines := make([]string, 0, len(pending))
+	for _, entry := range pending {
+		lines = append(lines, action.LineOf(entry))
+	}
+
+	view, findings := build(ctx, lines)
+	view.Signals = append(view.Signals, pendingSignals(pending)...)
+
+	return view, findings, nil
 }
 
 func (w Weaver) Streaming(out io.Writer) Weaver {
