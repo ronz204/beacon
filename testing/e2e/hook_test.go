@@ -194,3 +194,32 @@ func TestHookCountsWhatItInjects(t *testing.T) {
 		t.Errorf("edit = %+v", edit)
 	}
 }
+
+func TestAnApprovalCarriesTheAgentThatHookedTheSession(t *testing.T) {
+	root := utils.NewRepository(t)
+	start := hookPayload(t, map[string]any{
+		"session_id": "sample-session",
+		"cwd":        root,
+	})
+	runHook(t, root, "start", start)
+
+	payload := weakenedLockout(t, root)
+	result := record(t, root, "", payload, "--approve")
+
+	text := utils.ReadFile(t, filepath.Join(root, capabilityPath))
+	if result.Code != 0 || !strings.Contains(text, `via: "agent:claude-code"`) {
+		t.Fatalf("code %d, text:\n%s", result.Code, text)
+	}
+}
+
+func TestAnApprovalWithoutAHookedSessionIsFromAnUnknownAgent(t *testing.T) {
+	root := utils.NewRepository(t)
+
+	payload := weakenedLockout(t, root)
+	result := record(t, root, "", payload, "--approve")
+
+	text := utils.ReadFile(t, filepath.Join(root, capabilityPath))
+	if result.Code != 0 || !strings.Contains(text, `via: "agent:unknown"`) {
+		t.Fatalf("code %d, text:\n%s", result.Code, text)
+	}
+}

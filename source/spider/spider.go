@@ -59,13 +59,18 @@ var projectErrors = kernel.ErrorCatalog[ProjectCode]{
 
 type InjectionCode string
 
-const InjectionInvalid InjectionCode = "injection_invalid"
+const (
+	InjectionInvalid InjectionCode = "injection_invalid"
+	AgentInvalid     InjectionCode = "agent_invalid"
+)
 
 type InjectionError = kernel.Error[InjectionCode]
 
 var injectionErrors = kernel.ErrorCatalog[InjectionCode]{
 	InjectionInvalid: "an injection needs a lowercase event name " +
 		"and zero or more lines",
+	AgentInvalid: "an agent name needs lowercase letters, " +
+		"digits and hyphens",
 }
 
 var injectionEvent = regexp.MustCompile(`^[a-z][a-z-]{0,31}$`)

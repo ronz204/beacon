@@ -2,6 +2,7 @@ package handle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -84,8 +85,10 @@ func runHook(
 	}
 
 	lines := injectedLines(text)
+	counted := project.RecordInjection(ctx, input.Session, event, lines)
+	noted := project.NoteAgent(ctx, agent, input.Session)
 
-	return project.RecordInjection(ctx, input.Session, event, lines)
+	return errors.Join(counted, noted)
 }
 
 func injectedLines(text string) int {
