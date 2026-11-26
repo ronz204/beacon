@@ -17,6 +17,9 @@ type ChangeView struct {
 	ID       string `json:"id"`
 	Level    int    `json:"level"`
 	NeedsYes bool   `json:"needsYes"`
+	Reason   string `json:"reason,omitempty"`
+	Before   string `json:"before,omitempty"`
+	After    string `json:"after,omitempty"`
 }
 
 type RecordView struct {

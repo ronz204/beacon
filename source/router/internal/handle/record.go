@@ -84,6 +84,19 @@ func recordLines(view weaver.RecordView) []string {
 	return append(lines, changeLines(view)...)
 }
 
+func quotedChange(change weaver.ChangeView) []string {
+	var lines []string
+
+	if change.Before != "" {
+		lines = append(lines, "  - "+change.Before)
+	}
+	if change.After != "" {
+		lines = append(lines, "  + "+change.After)
+	}
+
+	return lines
+}
+
 func recordVerb(view weaver.RecordView) string {
 	if view.Saved {
 		return "recorded"
@@ -103,10 +116,11 @@ func changeLines(view weaver.RecordView) []string {
 			change.ID,
 		)
 		if change.NeedsYes {
-			line += " needs a yes"
+			line += " needs a yes: " + change.Reason
 		}
 
 		lines = append(lines, line)
+		lines = append(lines, quotedChange(change)...)
 	}
 
 	return lines

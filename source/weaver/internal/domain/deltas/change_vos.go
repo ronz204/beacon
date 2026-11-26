@@ -74,6 +74,23 @@ func ParseRecordKind(raw string) (RecordKind, error) {
 	return kind, nil
 }
 
+type ChangeReason string
+
+const (
+	ReasonPromiseText      ChangeReason = "promise_text_changed"
+	ReasonPromiseCheck     ChangeReason = "promise_check_changed"
+	ReasonPromiseDemoted   ChangeReason = "promise_demoted"
+	ReasonPromiseActivated ChangeReason = "promise_activated"
+	ReasonPromiseNewActive ChangeReason = "promise_added_active"
+	ReasonPromiseClosed    ChangeReason = "promise_closed"
+	ReasonGoalAdded        ChangeReason = "goal_added"
+	ReasonGoalChanged      ChangeReason = "goal_changed"
+	ReasonGoalClosed       ChangeReason = "goal_closed"
+	ReasonRunnersChanged   ChangeReason = "runners_changed"
+	ReasonSchemaChanged    ChangeReason = "schema_changed"
+	ReasonBaselineChanged  ChangeReason = "baseline_changed"
+)
+
 type TargetKind string
 
 const (

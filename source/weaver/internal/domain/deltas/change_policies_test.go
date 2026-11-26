@@ -196,3 +196,22 @@ func TestClassifyElementsSkipsUntouchedPromises(t *testing.T) {
 		t.Fatalf("findings = %+v", findings)
 	}
 }
+
+func TestClassifyElementsQuotesWhatChangedInAPromise(t *testing.T) {
+	active := promise("bc-c3d4", lockout, "active")
+	tenTries := promise("bc-c3d4", "After 10 failed attempts", "active")
+
+	findings := deltas.ClassifyElements(changeOf(
+		"modified",
+		caps(active),
+		caps(tenTries),
+	))
+
+	got := findings[0]
+	if got.Reason != deltas.ReasonPromiseText || got.Before != lockout {
+		t.Fatalf("finding = %+v", got)
+	}
+	if got.After != "After 10 failed attempts" {
+		t.Fatalf("finding = %+v", got)
+	}
+}

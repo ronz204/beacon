@@ -61,6 +61,9 @@ type ChangeReport struct {
 	ID       string
 	Level    int
 	NeedsYes bool
+	Reason   string
+	Before   string
+	After    string
 }
 
 type RecordResult struct {
@@ -186,6 +189,9 @@ func reportsOf(findings []deltas.Finding) []ChangeReport {
 			ID:       stampKey(finding.Target),
 			Level:    int(finding.Level),
 			NeedsYes: finding.NeedsYes,
+			Reason:   string(finding.Reason),
+			Before:   finding.Before,
+			After:    finding.After,
 		})
 	}
 
