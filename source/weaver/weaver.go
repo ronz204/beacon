@@ -2,14 +2,17 @@ package weaver
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/ronz204/beacon/source/kernel"
 	"github.com/ronz204/beacon/source/spider"
 	"github.com/ronz204/beacon/source/weaver/internal/action"
 	"github.com/ronz204/beacon/source/weaver/internal/domain/deltas"
+	"github.com/ronz204/beacon/source/weaver/internal/driver/branch"
 	"github.com/ronz204/beacon/source/weaver/internal/driver/facade"
 	"github.com/ronz204/beacon/source/weaver/internal/driver/identity"
+	"github.com/ronz204/beacon/source/weaver/internal/driver/runner"
 )
 
 type ChangeView struct {
@@ -55,11 +58,40 @@ type ClaimView struct {
 	Replaced *HolderView `json:"replaced,omitempty"`
 }
 
+type PromiseResultView struct {
+	ID         string `json:"id"`
+	Capability string `json:"capability"`
+	Status     string `json:"status"`
+	Reason     string `json:"reason,omitempty"`
+	State      string `json:"state"`
+	Drifted    bool   `json:"drifted"`
+}
+
+type InvocationView struct {
+	Runner   string   `json:"runner"`
+	Argv     []string `json:"argv"`
+	Promises []string `json:"promises"`
+	Status   string   `json:"status"`
+	Reason   string   `json:"reason,omitempty"`
+	Output   string   `json:"output,omitempty"`
+}
+
+type CheckView struct {
+	Base         string              `json:"base,omitempty"`
+	Scope        string              `json:"scope"`
+	Capabilities []string            `json:"capabilities"`
+	Promises     []PromiseResultView `json:"promises"`
+	Invocations  []InvocationView    `json:"invocations"`
+	Manual       []string            `json:"manual"`
+	Failed       []PromiseResultView `json:"failed"`
+}
+
 type Weaver struct {
 	changes deltas.ChangeSource
 	records action.Recorder
 	closer  action.Closer
 	claimer action.Claimer
+	checker action.Checker
 }
 
 func New(project spider.Project) Weaver {
@@ -84,7 +116,79 @@ func New(project spider.Project) Weaver {
 			Store:    records,
 			Identity: who,
 		},
+		checker: action.Checker{
+			Source:   facade.NewChecks(project),
+			Base:     branch.Git{},
+			Executor: runner.New(nil),
+		},
 	}
+}
+
+func (w Weaver) Streaming(out io.Writer) Weaver {
+	w.checker.Executor = runner.New(out)
+
+	return w
+}
+
+func (w Weaver) Check(
+	ctx context.Context,
+	capability string,
+	all bool,
+	base string,
+) (CheckView, []spider.Signal, error) {
+	result, err := w.checker.Check(ctx, action.CheckInput{
+		Capability: capability,
+		All:        all,
+		Base:       base,
+	})
+
+	return checkView(result), signalViews(result.Signals), err
+}
+
+func checkView(result action.CheckResult) CheckView {
+	view := CheckView{
+		Base:         result.Base,
+		Scope:        result.Scope,
+		Capabilities: nonNil(result.Capabilities),
+		Promises:     promiseResults(result.Promises),
+		Invocations:  make([]InvocationView, 0, len(result.Invocations)),
+		Manual:       nonNil(result.Manual),
+		Failed:       promiseResults(result.Failed),
+	}
+
+	for _, invocation := range result.Invocations {
+		view.Invocations = append(view.Invocations, InvocationView(invocation))
+	}
+
+	return view
+}
+
+func promiseResults(reports []action.PromiseReport) []PromiseResultView {
+	views := make([]PromiseResultView, 0, len(reports))
+
+	for _, report := range reports {
+		views = append(views, PromiseResultView(report))
+	}
+
+	return views
+}
+
+func signalViews(signals []action.Signal) []spider.Signal {
+	views := make([]spider.Signal, 0, len(signals))
+
+	for _, signal := range signals {
+		views = append(views, spider.Signal(signal))
+	}
+
+	return views
+}
+
+func nonNil(values []string) []string {
+	if values == nil {
+		return []string{}
+	}
+
+	return values
 }
 
 func (w Weaver) Record(

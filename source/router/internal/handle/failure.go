@@ -35,7 +35,17 @@ var errorHints = map[string]string{
 	"claim_task_done":       "run beacon ready to pick another task",
 	"claim_task_archived":   "run beacon get {task} to see the closed task",
 	"claim_branch_detached": "check out a branch, then rerun",
-	"text_invalid":          "pass a text that is not blank",
+	"base_missing": "pass --base <ref> with the branch to compare " +
+		"against",
+	"runner_missing": "add runner {runner} to .beacon/config.yaml, or fix " +
+		"the check of promise {promise}",
+	"capability_missing": "run beacon find <text> to get the capability id",
+	"param_missing":      "fix the check params of the promise, then rerun",
+	"param_unused":       "fix the check params of the promise, then rerun",
+	"param_invalid":      "fix the check params of the promise, then rerun",
+	"runner_run_invalid": "fix the runner in .beacon/config.yaml, then rerun",
+	"state_invalid":      "fix the reported records, then run beacon doctor",
+	"text_invalid":       "pass a text that is not blank",
 	"approval_required": "ask the person to approve the changes in details; " +
 		"if they say yes, rerun the same command with --approve",
 }
