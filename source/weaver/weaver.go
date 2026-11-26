@@ -228,25 +228,28 @@ func pendingSignals(pending []action.Entry) []spider.Signal {
 	return signals
 }
 
-func (w Weaver) Brief(
-	ctx context.Context,
-) (spider.BriefView, []spider.Finding, error) {
+type Summary struct {
+	View           spider.BriefView
+	Findings       []spider.Finding
+	PendingChecked bool
+}
+
+func (w Weaver) Brief(ctx context.Context) (Summary, error) {
 	return w.summary(ctx, w.project.Brief)
 }
 
-func (w Weaver) Status(
-	ctx context.Context,
-) (spider.BriefView, []spider.Finding, error) {
+func (w Weaver) Status(ctx context.Context) (Summary, error) {
 	return w.summary(ctx, w.project.Status)
 }
 
 func (w Weaver) summary(
 	ctx context.Context,
 	build func(context.Context, []string) (spider.BriefView, []spider.Finding),
-) (spider.BriefView, []spider.Finding, error) {
+) (Summary, error) {
 	pending, err := w.differ.Pending(ctx)
-	if err != nil {
-		return spider.BriefView{}, nil, err
+	checked := !action.IsBaseMissing(err)
+	if err != nil && checked {
+		return Summary{}, err
 	}
 
 	lines := make([]string, 0, len(pending))
@@ -257,7 +260,7 @@ func (w Weaver) summary(
 	view, findings := build(ctx, lines)
 	view.Signals = append(view.Signals, pendingSignals(pending)...)
 
-	return view, findings, nil
+	return Summary{View: view, Findings: findings, PendingChecked: checked}, nil
 }
 
 func (w Weaver) Streaming(out io.Writer) Weaver {

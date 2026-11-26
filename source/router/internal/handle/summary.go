@@ -10,9 +10,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const uncheckedHint = "no base branch was found, so pending yeses were " +
+	"not checked; run beacon diff --base <branch> to check them"
+
 type summaryData struct {
 	Lines   []spider.BriefLine `json:"lines"`
 	Omitted int                `json:"omitted"`
+	Counts  map[string]int     `json:"counts,omitempty"`
 }
 
 func Brief(printer *output.Printer, exit *int) *cobra.Command {
@@ -39,10 +43,7 @@ func Status(printer *output.Printer, exit *int) *cobra.Command {
 	}
 }
 
-type summaryBuilder func(
-	weaver.Weaver,
-	context.Context,
-) (spider.BriefView, []spider.Finding, error)
+type summaryBuilder func(weaver.Weaver, context.Context) (weaver.Summary, error)
 
 func runSummary(
 	command *cobra.Command,
@@ -55,35 +56,48 @@ func runSummary(
 		return printer.Failure(*failure)
 	}
 
-	view, findings, err := build(weaver.New(project), command.Context())
+	summary, err := build(weaver.New(project), command.Context())
 	if err != nil {
 		return printer.Failure(errorFailure(err))
 	}
-	if failure := stateFailure(findings); failure != nil {
+	if failure := stateFailure(summary.Findings); failure != nil {
 		return printer.Failure(*failure)
 	}
 
+	view := summary.View
+	data := summaryData{Lines: view.Lines, Omitted: view.Omitted}
 	lines := make([]string, 0, len(view.Lines)+1)
 	if counted {
-		lines = append(lines, countLine(view.Signals))
+		data.Counts = countsOf(view.Signals)
+		lines = append(lines, countLine(data.Counts))
 	}
 	for _, line := range view.Lines {
 		lines = append(lines, line.Text)
 	}
 
-	return printer.Done(output.Result{
-		Data:    summaryData{Lines: view.Lines, Omitted: view.Omitted},
-		Signals: view.Signals,
-		Lines:   lines,
-	})
-}
-
-func countLine(signals []spider.Signal) string {
-	counts := map[string]int{}
-	for _, signal := range signals {
-		counts[signal.Kind]++
+	result := output.Result{Data: data, Signals: view.Signals, Lines: lines}
+	if !summary.PendingChecked {
+		result.Hint = uncheckedHint
 	}
 
+	return printer.Done(result)
+}
+
+func countsOf(signals []spider.Signal) map[string]int {
+	counts := map[string]int{
+		"red": 0, "drift": 0, "blocked": 0, "pending_yes": 0,
+	}
+
+	for _, signal := range signals {
+		if _, counted := counts[signal.Kind]; counted {
+			counts[signal.Kind]++
+		}
+	}
+
+	return counts
+}
+
+func countLine(counts map[string]int) string {
 	return fmt.Sprintf(
 		"status: %d red, %d drift, %d blocked, %d pending yes",
 		counts["red"],

@@ -150,6 +150,9 @@ func (r Recorder) approvalsOnDisk(
 	}
 
 	pending, err := r.Pending.Pending(ctx)
+	if IsBaseMissing(err) {
+		return nil, nil, nil
+	}
 	if err != nil {
 		return nil, nil, err
 	}

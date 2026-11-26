@@ -24,10 +24,6 @@ func (g Git) Base(ctx context.Context, forced string) (string, error) {
 	}
 
 	for _, candidate := range candidates {
-		if !g.exists(ctx, candidate) {
-			continue
-		}
-
 		output, err := system.Git(
 			ctx,
 			g.Directory,
@@ -39,14 +35,4 @@ func (g Git) Base(ctx context.Context, forced string) (string, error) {
 	}
 
 	return "", action.FailBaseMissing(forced)
-}
-
-func (g Git) exists(ctx context.Context, ref string) bool {
-	_, err := system.Git(
-		ctx,
-		g.Directory,
-		"rev-parse", "--verify", "--quiet", ref+"^{commit}",
-	)
-
-	return err == nil
 }

@@ -26,12 +26,13 @@ type Differ struct {
 func (d Differ) Pending(ctx context.Context) ([]Entry, error) {
 	result, err := d.Diff(ctx, DiffInput{})
 
-	var failure CheckError
-	if errors.As(err, &failure) && failure.Code == BaseMissing {
-		return nil, nil
-	}
-
 	return result.Pending, err
+}
+
+func IsBaseMissing(err error) bool {
+	var failure CheckError
+
+	return errors.As(err, &failure) && failure.Code == BaseMissing
 }
 
 func (d Differ) Diff(
