@@ -125,6 +125,9 @@ func TestStateChangesSeeConfigAndBaselines(t *testing.T) {
 			kind = change.After.Type
 		}
 		kinds[change.Path] = kind
+		if change.Baseline && len(change.Runners) != 1 {
+			t.Fatalf("runners = %v", change.Runners)
+		}
 	}
 	if kinds[configFile] != "config" ||
 		kinds["tests/auth/login-snapshots/home.png"] != "baseline" {

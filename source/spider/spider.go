@@ -427,7 +427,7 @@ func (p Project) StateChanges(
 
 	views := make([]StateChange, 0, len(changes))
 	for _, change := range changes {
-		view, err := p.stateChange(change)
+		view, err := p.stateChange(change, config)
 		if err != nil {
 			return nil, err
 		}
@@ -438,14 +438,20 @@ func (p Project) StateChanges(
 	return views, nil
 }
 
-func (p Project) stateChange(change commit.StateChange) (StateChange, error) {
+func (p Project) stateChange(
+	change commit.StateChange,
+	config record.Config,
+) (StateChange, error) {
 	view := StateChange{
 		Path:     change.Path,
 		Kind:     string(change.Kind),
 		Baseline: change.Baseline,
 	}
 	if change.Baseline {
-		return view, nil
+		runners, err := baselineRunners(config, change.Path)
+		view.Runners = runners
+
+		return view, err
 	}
 
 	file := filepath.Join(p.root, filepath.FromSlash(change.Path))
@@ -970,6 +976,26 @@ func parseVerdicts(verdicts []Verdict) ([]action.Verdict, error) {
 	}
 
 	return parsed, nil
+}
+
+func baselineRunners(config record.Config, path string) ([]string, error) {
+	matcher := match.NewMatcher()
+	var runners []string
+
+	for _, name := range slices.Sorted(maps.Keys(config.Runners)) {
+		for _, glob := range config.Runners[name].Baseline {
+			matched, err := matcher.MatchPath(glob, path)
+			if err != nil {
+				return nil, err
+			}
+			if matched {
+				runners = append(runners, name)
+				break
+			}
+		}
+	}
+
+	return runners, nil
 }
 
 func baselinesOf(config record.Config) []kernel.PathGlob {

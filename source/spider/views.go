@@ -95,11 +95,12 @@ type FindView struct {
 }
 
 type StateChange struct {
-	Path     string  `json:"path"`
-	Kind     string  `json:"kind"`
-	Baseline bool    `json:"baseline"`
-	Before   *Record `json:"before"`
-	After    *Record `json:"after"`
+	Path     string   `json:"path"`
+	Kind     string   `json:"kind"`
+	Baseline bool     `json:"baseline"`
+	Runners  []string `json:"runners,omitempty"`
+	Before   *Record  `json:"before"`
+	After    *Record  `json:"after"`
 }
 
 func summaryOf(id, text fmt.Stringer) Summary {
