@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -55,6 +56,19 @@ type ProjectError = kernel.Error[ProjectCode]
 var projectErrors = kernel.ErrorCatalog[ProjectCode]{
 	ProjectMissing: "no .beacon folder found here or in a parent folder",
 }
+
+type InjectionCode string
+
+const InjectionInvalid InjectionCode = "injection_invalid"
+
+type InjectionError = kernel.Error[InjectionCode]
+
+var injectionErrors = kernel.ErrorCatalog[InjectionCode]{
+	InjectionInvalid: "an injection needs a lowercase event name " +
+		"and zero or more lines",
+}
+
+var injectionEvent = regexp.MustCompile(`^[a-z][a-z-]{0,31}$`)
 
 type FormatResult struct {
 	Changed  []string
@@ -264,6 +278,28 @@ func (p Project) brief(
 	result, briefFailures := action.Brief(ctx, sources, limit, pending)
 
 	return briefView(result), p.findings(failures, briefFailures)
+}
+
+func (p Project) RecordInjection(
+	ctx context.Context,
+	session, event string,
+	lines int,
+) error {
+	id, err := kernel.ParseSessionID(session)
+	if err != nil {
+		return err
+	}
+	if !injectionEvent.MatchString(event) || lines < 0 {
+		details := map[string]any{"event": event, "lines": lines}
+		return injectionErrors.Fail(InjectionInvalid, details)
+	}
+
+	log, err := states.Open(ctx, p.root)
+	if err != nil {
+		return err
+	}
+
+	return log.RecordInjection(ctx, id, event, lines)
 }
 
 func (p Project) Context(

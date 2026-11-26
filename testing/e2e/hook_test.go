@@ -164,3 +164,33 @@ func TestHookNeverFailsTheSession(t *testing.T) {
 		}
 	}
 }
+
+func TestHookCountsWhatItInjects(t *testing.T) {
+	root := utils.NewRepository(t)
+	file := filepath.Join(root, "src", "auth", "login.go")
+	stdin := editPayload(t, root, "Edit", file)
+
+	runHook(t, root, "edit", stdin)
+	runHook(t, root, "edit", stdin)
+
+	data := utils.ReadFile(
+		t, filepath.Join(root, ".git", "beacon", "metrics.json"),
+	)
+
+	var metrics struct {
+		Sessions map[string]struct {
+			Events map[string]struct {
+				Calls    int `json:"calls"`
+				Injected int `json:"injected"`
+			} `json:"events"`
+		} `json:"sessions"`
+	}
+	if err := json.Unmarshal([]byte(data), &metrics); err != nil {
+		t.Fatal(err)
+	}
+
+	edit := metrics.Sessions["sample-session"].Events["edit"]
+	if edit.Calls != 2 || edit.Injected != 1 {
+		t.Errorf("edit = %+v", edit)
+	}
+}

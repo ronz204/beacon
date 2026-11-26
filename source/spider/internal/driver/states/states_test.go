@@ -236,3 +236,110 @@ func TestOpenUsesTheCommonGitFolder(t *testing.T) {
 		t.Fatalf("claims file not in .git/beacon: %v", err)
 	}
 }
+
+type metricsFixture struct {
+	Version  int `json:"version"`
+	Sessions map[string]struct {
+		Day    string `json:"day"`
+		Events map[string]struct {
+			Calls    int `json:"calls"`
+			Injected int `json:"injected"`
+			Lines    int `json:"lines"`
+		} `json:"events"`
+	} `json:"sessions"`
+}
+
+func readMetrics(t *testing.T, directory string) metricsFixture {
+	t.Helper()
+
+	data, err := os.ReadFile(filepath.Join(directory, "metrics.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var metrics metricsFixture
+	if err := json.Unmarshal(data, &metrics); err != nil {
+		t.Fatal(err)
+	}
+
+	return metrics
+}
+
+func TestInjectionsAreCountedPerSessionAndEvent(t *testing.T) {
+	store, directory := newStore(t)
+	ctx := context.Background()
+	first := session(t, "session-a")
+
+	for _, lines := range []int{4, 0, 6} {
+		if err := store.RecordInjection(ctx, first, "edit", lines); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := store.RecordInjection(ctx, first, "start", 9); err != nil {
+		t.Fatal(err)
+	}
+	other := session(t, "b")
+	if err := store.RecordInjection(ctx, other, "edit", 1); err != nil {
+		t.Fatal(err)
+	}
+
+	metrics := readMetrics(t, directory)
+	edit := metrics.Sessions["session-a"].Events["edit"]
+
+	if edit.Calls != 3 || edit.Injected != 2 || edit.Lines != 10 {
+		t.Errorf("edit = %+v", edit)
+	}
+	if metrics.Sessions["session-a"].Events["start"].Lines != 9 {
+		t.Errorf("start = %+v", metrics.Sessions["session-a"].Events["start"])
+	}
+	if metrics.Sessions["b"].Events["edit"].Calls != 1 || metrics.Version != 1 {
+		t.Errorf("metrics = %+v", metrics)
+	}
+}
+
+func TestConcurrentInjectionsLoseNoCount(t *testing.T) {
+	store, directory := newStore(t)
+	ctx := context.Background()
+	id := session(t, "session-a")
+
+	var group sync.WaitGroup
+	for range 20 {
+		group.Add(1)
+		go func() {
+			defer group.Done()
+
+			if err := store.RecordInjection(ctx, id, "edit", 2); err != nil {
+				t.Error(err)
+			}
+		}()
+	}
+	group.Wait()
+
+	edit := readMetrics(t, directory).Sessions["session-a"].Events["edit"]
+	if edit.Calls != 20 || edit.Lines != 40 {
+		t.Errorf("edit = %+v", edit)
+	}
+}
+
+func TestOldMetricsSessionsArePruned(t *testing.T) {
+	store, directory := newStore(t)
+	old := `{"version":1,"sessions":{"old":{"day":"2020-01-01",` +
+		`"events":{"edit":{"calls":1,"injected":1,"lines":3}}}}}`
+
+	path := filepath.Join(directory, "metrics.json")
+	if err := os.WriteFile(path, []byte(old), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := store.RecordInjection(
+		context.Background(), session(t, "new"), "start", 1,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	metrics := readMetrics(t, directory)
+	if _, kept := metrics.Sessions["old"]; kept || len(metrics.Sessions) != 1 {
+		t.Errorf("sessions = %+v", metrics.Sessions)
+	}
+}

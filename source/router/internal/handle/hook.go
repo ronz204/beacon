@@ -67,7 +67,9 @@ func runHook(
 		return nil
 	}
 
-	text, err := hookText(command.Context(), project, input, event)
+	ctx := command.Context()
+
+	text, err := hookText(ctx, project, input, event)
 	if err != nil {
 		return err
 	}
@@ -77,9 +79,21 @@ func runHook(
 		return err
 	}
 
-	_, err = printer.Stdout.Write(rendered)
+	if _, err = printer.Stdout.Write(rendered); err != nil {
+		return err
+	}
 
-	return err
+	lines := injectedLines(text)
+
+	return project.RecordInjection(ctx, input.Session, event, lines)
+}
+
+func injectedLines(text string) int {
+	if text == "" {
+		return 0
+	}
+
+	return strings.Count(text, "\n") + 1
 }
 
 func workingDirectory(input anchor.HookInput) string {
