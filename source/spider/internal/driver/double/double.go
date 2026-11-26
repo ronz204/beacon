@@ -2,7 +2,6 @@ package double
 
 import (
 	"context"
-	"errors"
 	"maps"
 	"slices"
 	"strings"
@@ -12,8 +11,6 @@ import (
 	"github.com/ronz204/beacon/source/spider/internal/domain/ledger"
 	"github.com/ronz204/beacon/source/spider/internal/domain/memory"
 )
-
-var errUnknownCommit = errors.New("unknown commit")
 
 type Proofs map[ledger.PromiseID]ledger.ProofResult
 
@@ -36,7 +33,7 @@ func (c Changes) FilesChangedSince(
 ) ([]string, error) {
 	files, found := c[commit]
 	if !found {
-		return nil, kernel.FailHistory(errUnknownCommit)
+		return nil, ledger.ErrCommitUnknown
 	}
 
 	return slices.Clone(files), nil
