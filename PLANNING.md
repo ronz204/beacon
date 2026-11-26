@@ -4,7 +4,7 @@ Este plan cubre solo la fase en curso: en qué orden se construye y qué archivo
 
 La numeración de pasos y decisiones sigue la del plan de la Fase 1 (Spider), ya cerrada, para que las referencias de la KB y de los commits sigan valiendo: por eso los pasos empiezan en el 23 y las decisiones en D5. Ese plan está en el historial de git (`git show 967f5aa:PLANNING.md`).
 
-> **Estado: en curso.** Bloques 4 y 5 cerrados y pasos 29 a 32 hechos; sigue el paso 33, con la rama `feat/weaver-cli`. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
+> **Estado: en curso.** Bloques 4 y 5 cerrados y pasos 29 a 34 hechos; sigue el paso 35, con la rama `feat/weaver-cli`. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
 
 ## 1. Panorama
 
@@ -517,7 +517,7 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
   - `--force` reemplaza al titular y lo informa en `replaced`. Reclamar de nuevo en la misma rama no cambia nada.
   - Errores nuevos, todos con código 1 salvo `claim_taken`: `claim_not_task`, `claim_task_done`, `claim_task_archived` (su `hint` manda a `beacon get <id>`) y `claim_branch_detached`.
 
-### Paso 33. `check`
+### Paso 33. `check` (hecho)
 
 - **Construye:** `driver/runner`, `driver/branch` y `action/check.go`.
 - **Selección:**
@@ -529,13 +529,26 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
 - **Salida:** código 0 sin rojos y código 2 con alguno (D14), con `hint: fix the code until beacon check <capability> passes; do not edit the promise`.
 - **Errores:** `runner_missing` (el check nombra un ejecutor que no está en `config.yaml`), `runner_unavailable` (el programa no está instalado; la promesa queda `Unverified` con esa razón, no `Violated`) y `base_missing` (D10).
 - **Hecho cuando:** en un repo con un ejecutor de prueba (un binario Go pequeño en `testdata`), una promesa pasa, otra falla con código 2, otra agota un tope reducido en el test y queda con `timeout`, y no aparece deriva justo después.
+- **Cómo quedó:**
+  - Spider expone `CheckTargets` (cada capability con sus promesas y su `check`) y `TouchedCapabilities(revision)` (las que tocan los archivos cambiados, incluidos los no commiteados).
+  - `action.Checker` elige las capabilities (sin argumentos por la base de D10, con un id, o `--all`), valida **todos** los ejecutores y parámetros antes de correr nada, agrupa las invocaciones (D20), las corre en serie y entrega los veredictos a `RecordResults`. Después hace un `Analyze` para las señales y el estado de cada promesa. Las promesas manuales se saltan y se listan en `manual`.
+  - `driver/runner` usa `os/exec` sin shell, directorio en la raíz del repo y el entorno del proceso, y guarda solo los últimos 64 KB de salida. En texto, la salida pasa en vivo a stderr; con `--json`, `invocations[].output` trae las últimas 40 líneas de cada invocación que falló. Al agotarse los 10 minutos mata el árbol de procesos (en Windows, `taskkill /T`; en Unix, el grupo de procesos), y `WaitDelay` evita que un hijo huérfano retenga la salida.
+  - `driver/branch` resuelve la base con `git merge-base HEAD <base>` (`--base` la fuerza; un valor que empieza con `-` se rechaza).
+  - Un programa que no arranca no es una promesa en rojo: la invocación queda `unavailable`, no se guarda ningún veredicto (la promesa sigue `Unverified`) y el comando falla con `runner_unavailable` (código 1), cuyo `hint` nombra el programa. Si además hay rojos, gana el código 2 y la invocación solo se lista.
+  - Errores: `base_missing`, `runner_missing` (antes de correr nada), `capability_missing`, `param_missing`/`param_unused`/`param_invalid` y `state_invalid`.
+  - **El tope de 10 minutos se prueba en el ejecutor** (con un tope reducido, un proceso colgado y otro que lanza un hijo) y en la acción (un `timeout` se guarda como `failed`), no en el e2e: D11 dice que el tope no se configura, así que el binario no tiene una perilla para reducirlo.
 
-### Paso 34. `diff` y pendientes de sí
+### Paso 34. `diff` y pendientes de sí (hecho)
 
 - **Construye:** `action/pending.go` y `action/diff.go`.
 - **`diff`:** toma `StateChanges` desde la base (o desde `--since <rev>`), clasifica cada cambio con `ClassifyChange`, agrupa por nivel y marca cuáles piden sí y cuáles ya tienen el sí fresco (D19).
 - **`pending`:** los cambios que piden sí y todavía no tienen el sí fresco. Lo usan `diff`, `brief` y `status`, y alimenta la señal "Pendiente de sí".
 - **Hecho cuando:** una edición a mano del texto de una promesa `active` aparece como pendiente, y deja de aparecer después de `record --approve`.
+- **Cómo quedó:**
+  - `diff` toma `StateChanges` desde la base (o `--since <rev>`), clasifica cada cambio con `ClassifyElements` y marca cuáles piden sí y cuáles ya tienen el sí fresco. Sale agrupado por nivel, de mayor a menor, con `pending` aparte y una señal `pending_yes` por pendiente. Sale con código 0: informa.
+  - `pending` (`PendingOf`) son los hallazgos que piden sí y no están aprobados. Una captura base se aprueba cuando cambió el `approved` de alguna promesa que usa su ejecutor; un cierre, cuando su línea archivada trae `approved`.
+  - **Hueco que cerré:** una edición a mano ya está en disco, así que `record --approve` con el mismo payload veía "sin cambios" y no estampaba nada. Ahora, si el registro no cambia y hay `--approve`, `record` estampa los pendientes de ese archivo; para una captura base, las promesas de ese registro que usan el ejecutor. Sin `--approve` no hace nada.
+  - **Límite conocido:** el sí fresco se reconoce porque el `approved` cambió. Si la misma persona aprueba otro cambio de la misma promesa el mismo día, y por el mismo agente, el sello sale idéntico y el cambio sigue como pendiente. Es un falso positivo (pide un sí de más), nunca un hueco; si molesta, el sello puede llevar un contador.
 
 ### Paso 35. `brief` y `status`
 

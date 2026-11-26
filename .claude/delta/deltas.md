@@ -53,6 +53,12 @@ No hay un sistema propio de aprobaciones; se reutiliza lo que git ya hace.
 - **En equipo:** Snares exige en el PR dos cosas (`snares`): que cada cambio de nivel 3 traiga un `approved.by` humano, y que el PR tenga una review aprobada de una persona con permiso sobre `.beacon/records/capabilities/**` (CODEOWNERS o review obligatoria del hosting). Las capturas base se protegen igual: la review de la persona sobre esos archivos es la garantía.
 - **Qué garantiza y qué no:** el campo `approved` es un **marcado, no una prueba**, porque el agente corre con el mismo usuario del sistema y podría escribir un sí que la persona no dio. Lo que sí es una garantía en equipo es la revisión del PR por una persona: ahí se ve el diff clasificado por nivel. En uso personal la protección es la confianza y que todo queda a la vista.
 
+### Ediciones a mano
+
+Una edición a mano ya está en disco, así que no hay nada que "guardar": `beacon diff` y `beacon status` la muestran como pendiente de sí, y el agente la resuelve con `beacon record --approve -` y el mismo registro. Si el registro no cambia, el binario sella `approved` en cada elemento pendiente de ese archivo. Una captura base queda aprobada cuando se sella una promesa que usa su ejecutor.
+
+El sí se reconoce porque el `approved` cambió desde la base. Si el mismo actor aprueba otro cambio de la misma promesa el mismo día, el sello sale igual y el cambio sigue como pendiente: pide un sí de más, nunca de menos.
+
 ## Riesgo y revisión independiente
 
 - **El riesgo lo calcula el código.** Es **alto** si hay un cambio de nivel 3 (incluye los ejecutores, el esquema y las capturas base) o se toca una zona con promesas en rojo o con deriva. Si no, es **bajo**.
