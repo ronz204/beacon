@@ -513,6 +513,7 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
 - **Cómo quedó:**
   - Spider expone `Claims`, `SaveClaim`, `RemoveClaim` y `Worktree`. `action.Claimer` toma el actor, la rama y el worktree actuales, y rechaza con `claim_taken` (código 2) si el claim local es de otra rama u otro worktree, **o** si el registro ya dice `claimed` en otra rama (ese caso viene de un merge o de otra máquina). El `hint` nombra la rama que la tiene.
   - Escribe el claim local y después `status: claimed`, `owner` y `branch` en la tarea con el mismo `Prepare` y `Save` de `record` (nivel 1, sin sí). Si el registro no se puede escribir, devuelve el claim local a como estaba, incluido el titular anterior si era un `--force`.
+  - `doctor` libera el claim local de un worktree o una rama borrados (probado con un claim real y `git worktree remove`); el claim del registro no se libera solo (`method`).
   - `--force` reemplaza al titular y lo informa en `replaced`. Reclamar de nuevo en la misma rama no cambia nada.
   - Errores nuevos, todos con código 1 salvo `claim_taken`: `claim_not_task`, `claim_task_done`, `claim_task_archived` (su `hint` manda a `beacon get <id>`) y `claim_branch_detached`.
 

@@ -37,6 +37,7 @@ La práctica común con varios agentes es una tarea, una rama, un worktree y una
 
 - `claim` es **consultivo** y escribe en **dos sitios**: un claim local en `.git/beacon/` (`layout`) y `owner` y `branch` en el registro de la tarea.
 - **El registro también cuenta:** si la tarea ya dice `claimed` en otra rama (porque llegó por un merge), `beacon claim` también sale con código 2.
+- **Un claim del registro no se libera solo:** si la rama que dice `branch` no existe en esta máquina, puede existir en otra, así que `beacon claim` no la da por muerta y sale con código 2. La persona decide si la toma con `--force`. Lo que `doctor` limpia es el claim local de una rama o un worktree que ya no existen.
 - **El claim local avisa al instante** a las demás sesiones de la misma máquina, aunque estén en otro worktree: si la tarea ya está reclamada, `beacon claim` sale con código 2 y el `hint` dice quién la tiene.
 - **`owner` y `branch` en el registro avisan al equipo** cuando la rama sube. Si dos ramas reclaman la misma tarea en máquinas distintas, git lo muestra como **conflicto en ese archivo**; el conflicto es visible, que es lo que se quiere.
 - `ready` se calcula **por rama** y tiene en cuenta los claims locales.
