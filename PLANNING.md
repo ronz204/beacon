@@ -325,7 +325,7 @@ cmd/beacon → router → anchor.go → action → domain/blocks → kernel
 ### Paso 7. Adaptador de Claude Code
 
 - **Objetivo:** que los cuatro momentos de `anchor` queden cubiertos en Claude Code.
-- **Antes de escribir código:** verificar contra la documentación de hooks de Claude Code (a confirmar, `anchor`): el evento de inicio y sus tipos (arranque, reanudación, compactación), el evento previo a editar y qué herramientas cubre, la forma del JSON de entrada, la forma de la salida que se agrega al contexto, y la clave `env` de `settings.json`. Anotar la fecha y lo verificado en `anchor`.
+- **Verificación (hecha el 2026-11-26, en `anchor`):** `SessionStart` con matcher `startup|resume|compact`, `PreToolUse` con `Edit|Write` (sin `MultiEdit`), salida por `hookSpecificOutput.additionalContext` sin `permissionDecision`, ruta absoluta con barras invertidas en Windows, permiso `Bash(beacon *)`. Viene de resúmenes de la documentación, así que el paso 8 lo confirma en vivo. **Quedan por probar:** si `env` llega a los hooks, qué hace el stdout de `Stop`, y si `beacon` se resuelve por el `PATH` bajo Git Bash. El hook de `edit` normaliza la ruta con `\` a la raíz del repo (paso 4).
 - **Construye** (`agents/claude`):
   - `CLAUDE.md` con una línea `@AGENTS.md` en un bloque gestionado (D6); el bloque de guía va en `AGENTS.md`.
   - `.claude/settings.json`: permiso `Bash(beacon *)`, `BEACON_ACTOR=agent:claude-code` en `env`, y los hooks `start`, `edit` y `stop` (D6, D11). Respeta lo que el archivo ya tiene.
