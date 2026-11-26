@@ -4,7 +4,7 @@ Este plan cubre solo la fase en curso: en qué orden se construye y qué archivo
 
 La numeración de pasos y decisiones sigue la del plan de la Fase 1 (Spider), ya cerrada, para que las referencias de la KB y de los commits sigan valiendo: por eso los pasos empiezan en el 23 y las decisiones en D5. Ese plan está en el historial de git (`git show 967f5aa:PLANNING.md`).
 
-> **Estado: en curso.** Bloques 4 y 5 cerrados y pasos 29 y 30 hechos; sigue el paso 31, con la rama `feat/weaver-cli`. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
+> **Estado: en curso.** Bloques 4 y 5 cerrados y pasos 29 a 32 hechos; sigue el paso 33, con la rama `feat/weaver-cli`. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
 
 ## 1. Panorama
 
@@ -495,17 +495,26 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
   - Un commit que ya no existe (por ejemplo una atestación tras un rebase) ya no es un fallo del estado: la promesa se marca con deriva y el comando sigue (`ledger.ErrCommitUnknown`). Un fallo real de git sí se reporta.
   - `errorFailure` mapea cada código de Spider y de Weaver a su `hint`; los códigos de la tabla de arriba coinciden con los del plan.
 
-### Paso 31. `close`
+### Paso 31. `close` (hecho)
 
 - **Construye:** el handler y el `action/close.go` de Weaver, que clasifica antes de archivar.
 - **Hecho cuando:** cerrar una promesa `active` pide sí, cerrar una pregunta no lo pide, y cerrar una guide da `guide_not_archivable` con su `hint`.
+- **Cómo quedó:**
+  - `action.Closer` sigue el mismo flujo que `record`: `PrepareClose`, `ClassifyElements` sobre el antes y el después, `approval_required` (código 2, con motivo y texto) y, con `--approve`, un solo sello sobre el elemento que se cierra. Cerrar una capability con promesas `active` estampa la capability, y ese sello cubre sus promesas en `IsFreshlyApproved` (`closed` trae ahora los ids de las promesas de la línea archivada).
+  - `--reason` vacío falla en el router con `reason_required`. `guide_not_archivable` y `task_has_open_children` llegan con su `hint` (borrar el archivo; terminar o cerrar las subtareas de `details.subtasks`).
+  - Los `hint` aceptan marcadores `{clave}` que se rellenan con el `details` del error (por ejemplo `{task}` y `{branch}`).
 
-### Paso 32. `claim`
+### Paso 32. `claim` (hecho)
 
 - **Flujo:** leer el claim local → si otra rama o worktree tiene la tarea, salir con código 2 (`claim_taken`) y un `hint` que diga cuál → si no, escribir el claim local y después `owner` y `branch` en la tarea con `Save` (nivel 1).
 - **`--force`:** la persona puede tomar una tarea reclamada (`method`: un claim no es un candado). El agente solo lo usa si la persona lo pidió, y la guía de Anchor lo dirá (Fase 3).
 - **Cuidado:** si el registro no se puede escribir, se deshace el claim local, para que los dos sitios no queden desalineados.
 - **Hecho cuando:** si dos worktrees reclaman la misma tarea, el segundo recibe código 2, y `ready` en el segundo ya no la ofrece.
+- **Cómo quedó:**
+  - Spider expone `Claims`, `SaveClaim`, `RemoveClaim` y `Worktree`. `action.Claimer` toma el actor, la rama y el worktree actuales, y rechaza con `claim_taken` (código 2) si el claim local es de otra rama u otro worktree, **o** si el registro ya dice `claimed` en otra rama (ese caso viene de un merge o de otra máquina). El `hint` nombra la rama que la tiene.
+  - Escribe el claim local y después `status: claimed`, `owner` y `branch` en la tarea con el mismo `Prepare` y `Save` de `record` (nivel 1, sin sí). Si el registro no se puede escribir, devuelve el claim local a como estaba, incluido el titular anterior si era un `--force`.
+  - `--force` reemplaza al titular y lo informa en `replaced`. Reclamar de nuevo en la misma rama no cambia nada.
+  - Errores nuevos, todos con código 1 salvo `claim_taken`: `claim_not_task`, `claim_task_done`, `claim_task_archived` (su `hint` manda a `beacon get <id>`) y `claim_branch_detached`.
 
 ### Paso 33. `check`
 
@@ -542,7 +551,7 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
   1. Una rama cambia una promesa mientras `main` cambia otra: `diff` en la rama muestra solo la suya.
   2. `main` debilita una promesa con `approved` y la rama se rebasa: el cambio de `main` no aparece como pendiente en la rama.
   3. Las dos ramas cambian la misma promesa: git da conflicto en ese archivo y `doctor` lo reporta.
-  4. Una rama vieja reclama una tarea que `main` ya cerró: `claim` falla con `record_missing` y el `hint` sugiere `beacon get <id>`, que la muestra archivada.
+  4. Una rama vieja reclama una tarea que `main` ya cerró: `claim` falla con `claim_task_archived` y el `hint` sugiere `beacon get <id>`, que la muestra archivada.
 - **Hecho cuando:** los cuatro casos pasan, o su comportamiento queda escrito en `method` y ese archivo deja de decir "no está resuelto".
 
 ### Paso 37. Medición y KB

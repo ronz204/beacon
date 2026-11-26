@@ -37,7 +37,7 @@ Sin `--json`, la salida es texto breve para personas. Con `--json`, **todos los 
 | `beacon brief` | Meta activa, bloqueos y rojos, trabajo en curso, índice de guides, con tope de líneas (`spider`) |
 | `beacon context <paths>` | Todo lo que aplica a esos archivos, con señales. Con `--hook`: lo mismo pero solo lo que esta sesión todavía no recibió, con tope de `limits.hook` líneas, y sin salida si no hay nada nuevo (`anchor`) |
 | `beacon record -` | Crea o reemplaza un registro con validación y niveles (`deltas`). Lee de stdin el registro **completo**, con la misma forma que devuelve `get --json`; no hay parches. Si un cambio pide un sí, sale con código 2 sin guardar, y el agente transmite el sí reenviando el mismo payload con `--approve`. Al proponer una promesa, responde con la guía de redacción (`pledge`) |
-| `beacon close <id>` | Cierra un registro con motivo y lo archiva (`layout`) |
+| `beacon close <id> --reason <texto>` | Cierra un registro con motivo y lo archiva (`layout`). Cerrar una promesa `active` o un goal pide un sí, como `record`; `--approve` lo transmite |
 | `beacon get <id>` | Detalle de un registro |
 | `beacon find <texto>` | Búsqueda de registros |
 | `beacon check [capability]` | Ejecuta los checks (`pledge`). **Sin argumentos, solo los de las capabilities relacionadas con lo que cambió** contra la rama base o sin commitear (por sus `paths`); con un id, esa capability; con `--all`, todo. Cada invocación de un ejecutor tiene un tope fijo de 10 minutos; al agotarse, la promesa queda `Violated` con razón `timeout`. Con alguna promesa en rojo sale con código 2 |
