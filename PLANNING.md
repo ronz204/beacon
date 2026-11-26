@@ -323,15 +323,24 @@ cmd/beacon → router → anchor.go → action → domain/blocks → kernel
   - **Handler:** `beacon hook <evento> --agent <nombre>` lee stdin (tope de 1 MB), localiza el proyecto desde el `cwd` del JSON y escribe la respuesta cruda en stdout, **no** el sobre `--json`. Sale **siempre con código 0**: cualquier falla va a stderr como `beacon hook: ...` y no inyecta nada (D5). Sin `.beacon/` no imprime ni siquiera stderr. Una ruta fuera del repo no inyecta nada.
   - **Reutilización:** `context --hook` y `hook edit` comparten `hookLines`, así que dicen lo mismo, con el aviso `N more`.
 
-### Paso 5. Contadores de inyección
+### Paso 5. Contadores de inyección (hecho)
 
 - **Construye:** `metrics.json` en Spider (D9) y `RecordInjection(ctx, session, event, lines)` en `spider.go`. `hook` lo llama después de imprimir.
 - **Hecho cuando:** dos hooks concurrentes no pierden una cuenta, y una sesión sin actividad en 7 días se descarta.
+- **Cómo quedó:**
+  - `metrics.json` guarda, por sesión y por evento, `calls` (veces que corrió el hook), `injected` (las que inyectaron algo) y `lines`. Separar `calls` de `injected` deja medir cuántas veces el hook corrió sin tener nada nuevo que decir, que es la señal de ruido que el benchmark compara.
+  - `Project.RecordInjection(ctx, sesión, evento, líneas)` valida la sesión y que el evento sea una palabra en minúsculas (`injection_invalid`). `beacon hook` lo llama después de imprimir, aunque no haya inyectado nada, y si falla solo avisa por stderr.
+  - La escritura usa el mismo candado, escritura atómica y descarte de 7 días que `injected.json`. Un test lanza 20 escritores a la vez y no pierde ninguna cuenta.
+  - `hook` abre dos veces el estado local (una en `HookContext` y otra aquí), cada una con una consulta a git. Se mide en el paso 11; si pesa, se comparte la apertura.
 
-### Paso 6. Guía de redacción en `record`
+### Paso 6. Guía de redacción en `record` (hecho)
 
 - **Construye:** en `weaver/internal/action/record.go`, detectar las promesas que el payload crea y devolver `guidance` (D8); el handler la imprime en texto.
 - **Hecho cuando:** un `record` que crea una promesa trae la guía, uno que solo edita una promesa existente no la trae, y el texto de la guía coincide con `pledge`.
+- **Cómo quedó:**
+  - `StateChange.AddedPromises()` (dominio `deltas`) da los ids que están después y no estaban antes, así que una capability nueva con promesas también cuenta. La guía aparece solo cuando el `record` **se guardó**; un `record` que pide sí (código 2) no la lleva.
+  - `data.guidance` trae seis líneas en inglés tomadas de `pledge`: resultado observable, entradas y salidas concretas, una cosa por promesa, bordes y permisos como promesas propias, la forma EARS opcional, y que una promesa `proposed` se puede reescribir sin pedir sí hasta que se active. Sin promesa nueva, la clave no aparece. En texto sale como `writing a promise:` y una línea `-` por regla.
+  - La coincidencia con `pledge` se revisó a mano: ningún test compara los textos, porque `pledge` está en español y la guía en inglés (P7).
 
 ## 6. Bloque 3: Claude Code
 
