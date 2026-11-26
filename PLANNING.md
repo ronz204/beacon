@@ -4,7 +4,7 @@ Este plan cubre solo la fase en curso: en quÃ© orden se construye y quÃ© archivo
 
 La numeraciÃ³n de pasos y decisiones sigue la del plan de la Fase 1 (Spider), ya cerrada, para que las referencias de la KB y de los commits sigan valiendo: por eso los pasos empiezan en el 23 y las decisiones en D5. Ese plan estÃ¡ en el historial de git (`git show 967f5aa:PLANNING.md`).
 
-> **Estado: en curso.** Bloque 4 cerrado (pasos 23 a 26); sigue el paso 27, con la rama `feat/weaver-cli`. Las decisiones D5 a D20 estÃ¡n cerradas con la persona y registradas en la KB.
+> **Estado: en curso.** Bloque 4 y Bloque 5 cerrados (pasos 23 a 28); sigue el paso 29, con la rama `feat/weaver-cli`. Las decisiones D5 a D20 estÃ¡n cerradas con la persona y registradas en la KB.
 
 ## 1. Panorama
 
@@ -418,7 +418,7 @@ cmd/beacon â†’ router â†’ weaver.go â†’ action â†’ domain â†’ kernel
 
 **Rama:** `feat/weaver-cli`, desde `main` con el Bloque 4 fusionado.
 
-### Paso 27. Pieza Weaver y contexto `deltas`
+### Paso 27. Pieza Weaver y contexto `deltas` (hecho)
 
 - **Objetivo:** que el nivel de un cambio sea una funciÃ³n pura y probada.
 - **Construye:** `weaver.go` (solo el constructor), `driver/facade`, `driver/double` y el contexto `deltas`.
@@ -428,8 +428,16 @@ cmd/beacon â†’ router â†’ weaver.go â†’ action â†’ domain â†’ kernel
 - **`IsFreshlyApproved`:** la regla del sÃ­ fresco (D19).
 - **Cuidado:** el dominio recibe el `user.name` y la fecha como datos; no lee git ni el reloj (`code-domain-layer`).
 - **Hecho cuando:** cada fila de D17 tiene un caso, y el ejemplo de `deltas` (de "5 intentos" a "10 intentos") da nivel 3.
+- **Cómo quedó:**
+  - Los datos entran por `ParseStateChange`, que valida con los parsers del dominio. `facade` decodifica el JSON de Spider a campos planos (cada valor como texto canónico) y a promesas con su `check`, su ejecutor y su `approved`.
+  - `ClassifyElements` devuelve un hallazgo por elemento afectado (promesa, registro, `config` o captura base) con su nivel y si pide sí; `ClassifyChange` es su máximo. Los pasos 30 y 34 usan los hallazgos para sellar `approved` y para preguntar `IsFreshlyApproved` por elemento.
+  - Casos que D17 no nombra: una promesa nueva ya `active` es nivel 2 y pide sí, como pasar de `proposed` a `active`; cerrar una promesa `proposed` y editarla sin activarla son nivel 1; borrar un goal pide sí.
+  - `NormalizeText` cambia la puntuación por un espacio y no quita símbolos (`+`, `%` sí es puntuación): `1.5` y `15` siguen siendo distintos, porque la regla nunca debe dejar pasar un debilitamiento. El atajo vale para el texto de promesas y para `statement` y `success`; un `check` se compara exacto.
+  - `StateChange` de Spider trae ahora `runners`: los ejecutores cuyo `baseline` cubre una captura base. Sin eso, `IsFreshlyApproved` no podía saber qué `approved` autoriza una captura.
+  - `weaver.New(project)` solo arma la fachada; `driver/double` trae `Changes` y `Executor` en memoria.
+  - **Límite conocido:** cerrar un elemento lo manda al archivo, y `StateChanges` no lee `archive/`; el sello de un cierre aprobado no se ve como "sí fresco". El paso 34 lo resuelve o lo anota.
 
-### Paso 28. Contexto `checks`
+### Paso 28. Contexto `checks` (hecho)
 
 - **Objetivo:** que armar una invocaciÃ³n sea seguro antes de ejecutar nada.
 - **Construye:** el contexto `checks` y el contrato `Executor`, con `Run(ctx, argv, dir) (ExecutionResult, error)`.
