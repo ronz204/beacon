@@ -47,7 +47,7 @@ La práctica común con varios agentes es una tarea, una rama, un worktree y una
   - Si `main` debilita una promesa con un sí y la rama se rebasa, el cambio de `main` no aparece en la rama: ya forma parte de su base.
   - Si las dos cambian **la misma** promesa, git da conflicto en ese archivo y `beacon doctor` lo reporta como `record_conflict`, con el archivo y la línea del primer marcador y un `hint` para resolverlo. Al resolverlo y hacer `git add`, `doctor` vuelve a pasar.
   - Una rama vieja todavía ve abierta una tarea que `main` ya cerró, así que puede reclamarla; al fusionar `main`, git marca el conflicto (modificada contra borrada) y la persona decide. Si la rama ya fusionó `main`, `beacon claim` falla con `claim_task_archived` y su `hint` manda a `beacon get <id>`, que la muestra archivada.
-  - **Límite:** un cambio que debilita una promesa y se **commitea sin sí** en `main` tampoco aparece en `diff` de una rama que lo hereda, porque ya es parte de su base. Lo detecta el CI (`snares`), que compara cada PR contra su base y exige el sello; es la garantía en equipo (`deltas`).
+  - **Límite:** un cambio que debilita una promesa y se **commitea sin sí** en `main` tampoco aparece en `diff` de una rama que lo hereda, porque ya es parte de su base. Lo detecta el CI (`snares`), que compara cada PR contra su base y exige el sello; es la garantía en equipo (`deltas`). Para auditarlo a mano, `beacon diff --since <commit de origen de la rama>` muestra lo que la base oculta, con lo que pide sí.
 
 ## Estado visible y preguntas
 

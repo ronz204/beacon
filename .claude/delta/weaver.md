@@ -49,7 +49,7 @@ Sin `--json`, la salida es texto breve para personas. Con `--json`, **todos los 
 | `beacon attest [--evidence <ruta o enlace>]` | Atestaciones manuales al cerrar la sesión; `--evidence` guarda la referencia a lo revisado (`pledge`) |
 | `beacon stale` | Guides y decisiones desactualizadas |
 | `beacon fmt` | Formato canónico de los registros |
-| `beacon doctor` | Valida el estado, ayuda con conflictos, avisa de guides largas y limpia claims de ramas que ya no existen |
+| `beacon doctor` | Valida el estado, ayuda con conflictos, avisa de guides largas y limpia claims de ramas que ya no existen. Un conflicto de git sin resolver sale como `record_conflict` (archivo y línea del primer marcador); un registro con saltos de línea CRLF, como `record_line_endings`, con el `hint` de agregar `.beacon/** text eol=lf` a `.gitattributes` y correr `beacon fmt` |
 | `beacon migrate` | Migra el esquema |
 | `beacon stats` | Métricas locales de fricción |
 | `beacon snares ci` | Todo lo que corre el CI en una llamada (`snares`) |

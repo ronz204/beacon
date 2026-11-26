@@ -579,7 +579,9 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
 - **Cómo quedó:** los cuatro casos pasan en `branch_test.go` y `method` quedó actualizado.
   - **Caso 3 con un cambio:** `doctor` reportaba el conflicto como "YAML inválido" en una línea al azar. Ahora Spider reconoce los tres marcadores de git (`<<<<<<<`, `=======` y `>>>>>>>`, juntos y en ese orden) en un registro o una guide, falla con `record_conflict` en la línea del primero, y el `hint` de `doctor` dice cómo resolverlo. Un solo marcador suelto no cuenta.
   - **Caso 4 distinto del plan:** una rama vieja todavía ve la tarea abierta, así que puede reclamarla; el conflicto aparece al fusionar `main` (modificada contra borrada). El fallo `claim_task_archived` ocurre cuando la rama ya fusionó `main`. Los dos caminos tienen test.
-  - **Límite anotado:** un debilitamiento commiteado sin sí en `main` no aparece en `diff` de una rama que lo hereda; lo cubre el CI (`snares`, Fase 4).
+  - **Límite anotado:** un debilitamiento commiteado sin sí en `main` no aparece en `diff` de una rama que lo hereda; lo cubre el CI (`snares`, Fase 4). Se puede auditar a mano con `beacon diff --since <commit de origen>`, y hay un test que lo prueba.
+  - Una guide que documente un conflicto con los tres marcadores en el margen izquierdo se lee como conflicto; el mensaje de `record_conflict` ya dice que se sangren.
+  - `doctor` distingue los registros con CRLF (`record_line_endings`) de los demás no canónicos, y su `hint` manda a `.gitattributes` y a `beacon fmt`.
   - El repo de prueba de e2e lleva ahora `.gitattributes` con `.beacon/** text eol=lf`, como lo hará `install` (Fase 3): sin eso, en Windows `git checkout` dejaba los registros con CRLF y `doctor` los marcaba como no canónicos.
 
 ### Paso 37. Medición y KB
