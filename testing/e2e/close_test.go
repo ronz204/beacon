@@ -153,3 +153,30 @@ func TestCloseOfAnUnknownRecordHintsAtFind(t *testing.T) {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
 }
+
+func TestCloseOfACapabilityStampsOneLineThatCoversItsPromises(t *testing.T) {
+	root := utils.NewRepository(t)
+
+	blocked := closeWithReason(t, root, "bc-7f3a")
+	approved := closeWithReason(t, root, "bc-7f3a", "--approve")
+	doctor := utils.Beacon(t, root, "doctor", "--json")
+
+	var asked struct {
+		Details struct {
+			Changes []struct {
+				ID string `json:"id"`
+			} `json:"changes"`
+		} `json:"details"`
+	}
+	decodeError(t, blocked.Stdout, &asked)
+
+	if blocked.Code != 2 || len(asked.Details.Changes) != 2 {
+		t.Fatalf("blocked = %+v", blocked)
+	}
+	if approved.Code != 0 {
+		t.Fatalf("approved = %+v", approved)
+	}
+	if doctor.Code != 0 {
+		t.Fatalf("the graph broke after the close: %s", doctor.Stdout)
+	}
+}

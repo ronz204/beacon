@@ -224,3 +224,26 @@ func TestStateChangesReportTheApprovalOfAClosure(t *testing.T) {
 		t.Fatalf("approved = %q", closed[0].Approved)
 	}
 }
+
+func TestStateChangesListThePromisesOfAClosedCapability(t *testing.T) {
+	project, _ := newProject(t)
+	closeRecord(t, project, "bc-7f3a", map[string]spider.Approval{
+		"bc-7f3a": {By: "human:jane", At: "2026-11-25"},
+	})
+
+	changes, err := project.StateChanges(context.Background(), "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var promises []string
+	for _, change := range changes {
+		for _, closed := range change.Closed {
+			promises = append(promises, closed.Promises...)
+		}
+	}
+
+	if len(promises) != 2 || promises[0] != "bc-c3d4" {
+		t.Fatalf("promises = %v", promises)
+	}
+}

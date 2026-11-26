@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"encoding/json"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/ronz204/beacon/testing/utils"
@@ -194,5 +195,28 @@ func TestClaimNeedsABranch(t *testing.T) {
 	envelope := parseRead(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "claim_branch_detached" {
 		t.Fatalf("result = %+v", result)
+	}
+}
+
+func TestDoctorFreesTheClaimOfARemovedWorktree(t *testing.T) {
+	root := repositoryWithReadyTask(t)
+	other := addWorktree(t, root, "feat/other-work")
+	if taken := claim(t, other); taken.Code != 0 {
+		t.Fatalf("claim = %+v", taken)
+	}
+	if blocked := claim(t, root); blocked.Code != 2 {
+		t.Fatalf("blocked = %+v", blocked)
+	}
+
+	utils.Git(t, root, "worktree", "remove", "--force", other)
+	utils.Git(t, root, "branch", "-D", "feat/other-work")
+	doctor := utils.Beacon(t, root, "doctor", "--json")
+	retry := claim(t, root)
+
+	if doctor.Code != 0 || !strings.Contains(doctor.Stdout, "claim_removed") {
+		t.Fatalf("doctor = %+v", doctor)
+	}
+	if retry.Code != 0 {
+		t.Fatalf("retry = %+v", retry)
 	}
 }
