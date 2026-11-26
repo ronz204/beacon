@@ -57,7 +57,7 @@ No hay un sistema propio de aprobaciones; se reutiliza lo que git ya hace.
 
 Una edición a mano ya está en disco, así que no hay nada que "guardar": `beacon diff` y `beacon status` la muestran como pendiente de sí, y el agente la resuelve con `beacon record --approve -` y el mismo registro. Si el registro no cambia, el binario sella `approved` en cada elemento pendiente de ese archivo. Una captura base queda aprobada cuando se sella una promesa que usa su ejecutor.
 
-El sí se reconoce porque el `approved` cambió desde la base. Si el mismo actor aprueba otro cambio de la misma promesa el mismo día, el sello sale igual y el cambio sigue como pendiente: pide un sí de más, nunca de menos.
+El sí se reconoce porque el `approved` cambió desde la base. Si el mismo actor aprueba otro cambio del mismo elemento el mismo día, el sello saldría idéntico; por eso el binario le añade un contador (`n: 2`, `n: 3`...) solo en ese caso, y así el cambio se reconoce como aprobado.
 
 ## Riesgo y revisión independiente
 
