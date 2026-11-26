@@ -307,3 +307,29 @@ func TestParseGuideReportsFileLines(t *testing.T) {
 		t.Fatalf("title line = %d", got)
 	}
 }
+
+func TestParseRecordReportsGitConflictMarkers(t *testing.T) {
+	data := []byte("id: bc-7f3a\n<<<<<<< HEAD\nname: A\n=======\nname: B\n" +
+		">>>>>>> feat/other\n")
+
+	_, err := record.ParseRecord("record.yaml", data)
+
+	requireFailure(t, err, record.RecordConflict, 2)
+}
+
+func TestParseGuideReportsConflictMarkersInTheBody(t *testing.T) {
+	data := []byte("---\nid: bc-0a9b\n---\n<<<<<<< HEAD\nOne\n=======\nTwo\n" +
+		">>>>>>> feat/other\n")
+
+	_, err := record.ParseGuide("guide.md", data)
+
+	requireFailure(t, err, record.RecordConflict, 4)
+}
+
+func TestParseRecordIgnoresAnUnclosedMarker(t *testing.T) {
+	data := []byte("id: bc-7f3a\nname: \"<<<<<<< not a conflict\"\n")
+
+	if _, err := record.ParseRecord("record.yaml", data); err != nil {
+		t.Fatal(err)
+	}
+}

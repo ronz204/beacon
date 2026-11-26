@@ -21,11 +21,21 @@ type ParsedGuide struct {
 }
 
 func ParseRecord(file string, data []byte) (*yaml.Node, error) {
-	return parseMapping(file, normalizeText(data), 0)
+	text := normalizeText(data)
+	if line := conflictLine(text); line > 0 {
+		return nil, failAt(RecordConflict, file, line)
+	}
+
+	return parseMapping(file, text, 0)
 }
 
 func ParseGuide(file string, data []byte) (ParsedGuide, error) {
-	front, body, found := splitFrontmatter(normalizeText(data))
+	text := normalizeText(data)
+	if line := conflictLine(text); line > 0 {
+		return ParsedGuide{}, failAt(RecordConflict, file, line)
+	}
+
+	front, body, found := splitFrontmatter(text)
 	if !found {
 		return ParsedGuide{}, failAt(RecordFrontmatterMissing, file, 1)
 	}
@@ -36,6 +46,23 @@ func ParseGuide(file string, data []byte) (ParsedGuide, error) {
 	}
 
 	return ParsedGuide{Root: root, Body: body}, nil
+}
+
+func conflictLine(text string) int {
+	opened, middle := 0, 0
+
+	for number, line := range strings.Split(text, "\n") {
+		switch {
+		case opened == 0 && strings.HasPrefix(line, "<<<<<<<"):
+			opened = number + 1
+		case opened > 0 && strings.HasPrefix(line, "======="):
+			middle = number + 1
+		case middle > 0 && strings.HasPrefix(line, ">>>>>>>"):
+			return opened
+		}
+	}
+
+	return 0
 }
 
 func normalizeText(data []byte) string {
