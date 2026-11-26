@@ -13,6 +13,7 @@ import (
 
 const (
 	CodeNotCanonical   = "record_not_canonical"
+	CodeLineEndings    = "record_line_endings"
 	CodeGuideTooLong   = "guide_too_long"
 	CodeClaimRemoved   = "claim_removed"
 	CodeCloseCompleted = "close_completed"

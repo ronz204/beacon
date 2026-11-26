@@ -15,8 +15,10 @@ const (
 	fixRecordsHint     = "fix the reported records, then run beacon doctor"
 	formatHint         = "run beacon fmt"
 	failureFallback    = "command_failed"
-	conflictCode       = "record_conflict"
-	conflictHint       = "resolve the git conflict in the reported files: " +
+	lineEndingsHint    = "add .beacon/** text eol=lf to .gitattributes, " +
+		"then run beacon fmt"
+	conflictCode = "record_conflict"
+	conflictHint = "resolve the git conflict in the reported files: " +
 		"keep one version, delete the <<<<<<<, ======= and >>>>>>> " +
 		"lines, run git add, then run beacon doctor"
 )
@@ -69,6 +71,12 @@ func findingsHint(findings []spider.Finding) string {
 	for _, finding := range errorFindings(findings) {
 		if finding.Code == conflictCode {
 			return conflictHint
+		}
+	}
+
+	for _, finding := range errorFindings(findings) {
+		if finding.Code == spider.CodeLineEndings {
+			return lineEndingsHint
 		}
 	}
 

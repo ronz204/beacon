@@ -1,6 +1,7 @@
 package spider
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"maps"
@@ -42,6 +43,7 @@ type Finding = action.Finding
 const (
 	FindingError     = action.FindingError
 	CodeNotCanonical = action.CodeNotCanonical
+	CodeLineEndings  = action.CodeLineEndings
 )
 
 type ProjectCode string
@@ -136,7 +138,25 @@ func (p Project) Doctor(ctx context.Context) []Finding {
 
 	findings := append(action.Doctor(ctx, input), repairs...)
 
-	return p.relativeFindings(findings)
+	return p.relativeFindings(refineLineEndings(findings))
+}
+
+const lineEndingsMessage = "the file uses CRLF line endings"
+
+func refineLineEndings(findings []Finding) []Finding {
+	for index, finding := range findings {
+		if finding.Code != CodeNotCanonical {
+			continue
+		}
+
+		data, err := os.ReadFile(finding.File)
+		if err == nil && bytes.Contains(data, []byte("\r\n")) {
+			findings[index].Code = CodeLineEndings
+			findings[index].Message = lineEndingsMessage
+		}
+	}
+
+	return findings
 }
 
 func (p Project) completeCloses(ctx context.Context, lock string) []Finding {

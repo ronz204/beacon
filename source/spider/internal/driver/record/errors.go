@@ -35,8 +35,9 @@ const (
 type RecordError = kernel.Error[RecordCode]
 
 var recordErrors = kernel.ErrorCatalog[RecordCode]{
-	RecordSyntaxInvalid:      "fix the YAML syntax at the reported line",
-	RecordConflict:           "resolve the git conflict in this file",
+	RecordSyntaxInvalid: "fix the YAML syntax at the reported line",
+	RecordConflict: "resolve the git conflict in this file; if the " +
+		"markers are documentation, indent them",
 	RecordAnchorForbidden:    "replace anchors and aliases with full values",
 	RecordMergeForbidden:     "replace << with the explicit keys",
 	RecordTagForbidden:       "remove the explicit YAML tag",
