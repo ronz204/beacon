@@ -77,7 +77,7 @@ Beacon **no trae un navegador**: usa los que el proyecto ya tenga a través de e
 
 ## Deriva
 
-Una promesa en `Holds` o `Attested` cuyo código (`paths`) cambió desde su última comprobación, incluidos los cambios sin commitear, se muestra como **deriva**: no deja de cumplirse, pero ya no está demostrada. Se resuelve volviendo a comprobar o a atestiguar. Sin `paths` no hay detección de deriva (`ledger`, `spider`).
+Una promesa en `Holds` o `Attested` cuyo código (`paths`) cambió desde su última comprobación, incluidos los cambios sin commitear, se muestra como **deriva**: no deja de cumplirse, pero ya no está demostrada. Se resuelve volviendo a comprobar o a atestiguar. Sin `paths` no hay detección de deriva (`ledger`, `spider`). Si el commit de la última comprobación o de la atestación ya no existe en este clon (por ejemplo tras un rebase), la promesa también se muestra con deriva, sin error.
 
 Un check corrido con cambios sin commitear no produce deriva por sí mismo: el resultado guarda la **huella** de esos cambios (`layout`), y solo hay deriva si lo cambiado desde el commit del check deja de coincidir con ella. Commitear exactamente lo comprobado tampoco produce deriva.
 

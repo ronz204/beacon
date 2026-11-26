@@ -491,7 +491,8 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
   - `action.Recorder` hace el flujo: identidad, `Prepare`, `ClassifyElements`, y si algún hallazgo pide sí y no hay `--approve`, `approval_required` (código 2, con los cambios en `details.changes`) sin escribir. Con `--approve`, sella cada elemento que pide sí (la promesa, el registro o `config`) y llama a `Save`. Un registro sin cambios no se escribe.
   - `driver/identity` resuelve el actor: `BEACON_ACTOR` si existe, y si no `human:<user.name>`; sin nombre, `identity_missing`. Un agente necesita además el nombre solo al sellar.
   - `ClassifyElements` solo informa lo que cambió: una promesa intacta o una capability sin cambios propios no salen en `changes`.
-  - La respuesta es `{type, id, file, saved, unchanged, changes: [{target, id, level, needsYes}], ignored}`. La guía de redacción de promesas sigue en la Fase 3.
+  - La respuesta es `{type, id, file, saved, unchanged, changes: [{target, id, level, needsYes, reason, before, after}], ignored}`. Cada cambio que pide sí trae su motivo (`promise_text_changed`, `goal_changed`, `runners_changed`...) y el texto antes y después, para que el agente pueda mostrarle a la persona qué aprueba; en texto salen como líneas `-` y `+`. La guía de redacción de promesas sigue en la Fase 3.
+  - Un commit que ya no existe (por ejemplo una atestación tras un rebase) ya no es un fallo del estado: la promesa se marca con deriva y el comando sigue (`ledger.ErrCommitUnknown`). Un fallo real de git sí se reporta.
   - `errorFailure` mapea cada código de Spider y de Weaver a su `hint`; los códigos de la tabla de arriba coinciden con los del plan.
 
 ### Paso 31. `close`
