@@ -93,7 +93,7 @@ Todas aprobadas por la persona. D1 a D4 el 2026-11-26 (con el ajuste de alcance 
 
 - **Decisión:** los hooks de cada agente llaman a `beacon hook <evento> --agent <nombre>`. El binario lee el JSON de stdin (id de sesión, ruta, motivo del arranque), decide qué imprimir y lo devuelve en el formato que ese agente espera. El hook instalado es solo configuración, sin lógica ni scripts.
 - **Por qué:** un script shell con `jq` es frágil en Windows y duplica lógica por agente. Así Anchor sigue siendo transporte opaco y se prueba en Go.
-- **Eventos de Beacon:** `start` (arranque, reanudación y tras compactar), `edit` (antes de editar un archivo) y `stop` (cierre).
+- **Eventos de Beacon:** `start` (arranque, reanudación y tras compactar) y `edit` (antes de editar un archivo). `stop` (cierre) queda fuera hasta el paso 8 (ver el paso 4).
 - **Consecuencia:** `context --hook --session <id>` sigue existiendo para quien lo llame a mano; `hook edit` usa el mismo `HookContext` de Spider. Cierra el punto abierto de `status` sobre cómo identificar la sesión.
 - **Afecta a:** pasos 4 y 7.
 
@@ -309,13 +309,19 @@ cmd/beacon → router → anchor.go → action → domain/blocks → kernel
 
 **Rama:** `feat/anchor-hooks`, desde `main` con el Bloque 1 fusionado.
 
-### Paso 4. `beacon hook`
+### Paso 4. `beacon hook` (hecho)
 
 - **Objetivo:** que el binario sea quien entiende a cada agente (D2) y que ningún fallo llegue a la sesión (D5).
 - **Construye:** `action/hook.go` y `handle/hook.go`. La interfaz `Agent` suma `ParseHook(event, stdin)` y `RenderHook(event, text)`; en este paso se escriben con lo mínimo de Claude Code para probar el flujo.
-- **Flujo:** leer el JSON → obtener sesión y ruta → `start` llama a `Spider.Brief`, `edit` a `Spider.HookContext` (una vez por archivo y sesión, con el tope `limits.hook`), `stop` imprime el recordatorio de `check` y `attest` → dar formato al texto para el agente.
+- **Flujo:** leer el JSON → obtener sesión y ruta → `start` llama al `brief` de Weaver (con los pendientes de sí), `edit` a `Spider.HookContext` (una vez por archivo y sesión, con el tope `limits.hook`) → dar formato al texto para el agente.
 - **Cuidado:** `edit` no consulta git (`anchor`). Una ruta fuera del repo, un JSON ilegible o un estado inválido no inyectan nada (D5). Las rutas de Windows y las absolutas se convierten a la raíz del repo (`Project.RepoPath`).
 - **Hecho cuando:** con un JSON de Claude Code, `hook start` imprime el `brief`, `hook edit` imprime lo nuevo la primera vez y nada la segunda, y con estado inválido o sin `.beacon/` sale con código 0 y sin salida.
+- **Cómo quedó:**
+  - **Sin `stop`:** no se construye en este paso. En Claude Code `Stop` dispara al terminar **cada respuesta**, no solo al cerrar la sesión, así que un recordatorio fijo sería ruido; además `attest` no existe hasta la Fase 4 y no se verificó qué hace su stdout. El paso 8 prueba su comportamiento y decide si entra. `anchor` sigue listando el cierre de sesión como momento previsto.
+  - **Contrato:** `agents.Hooker` (`Name`, `ParseHook`, `RenderHook`) es una interfaz aparte de `Agent`, para que el adaptador de Claude Code pueda leer hooks antes de saber instalarse (paso 7). `anchor.ParseHook` y `anchor.RenderHook` son funciones del paquete, sin abrir el repo. Errores: `hook_agent_unknown`, `hook_event_unknown` y `hook_input_invalid`.
+  - **Claude Code:** `ParseHook` lee `session_id`, `cwd` y `tool_input.file_path`, y marca `Skip` cuando la herramienta no es `Edit` ni `Write` o no hay ruta. `RenderHook` entrega `hookSpecificOutput` con `SessionStart` o `PreToolUse` y `additionalContext`, sin `permissionDecision` y sin escapar HTML.
+  - **Handler:** `beacon hook <evento> --agent <nombre>` lee stdin (tope de 1 MB), localiza el proyecto desde el `cwd` del JSON y escribe la respuesta cruda en stdout, **no** el sobre `--json`. Sale **siempre con código 0**: cualquier falla va a stderr como `beacon hook: ...` y no inyecta nada (D5). Sin `.beacon/` no imprime ni siquiera stderr. Una ruta fuera del repo no inyecta nada.
+  - **Reutilización:** `context --hook` y `hook edit` comparten `hookLines`, así que dicen lo mismo, con el aviso `N more`.
 
 ### Paso 5. Contadores de inyección
 
@@ -337,7 +343,7 @@ cmd/beacon → router → anchor.go → action → domain/blocks → kernel
 - **Verificación (hecha el 2026-11-26, en `anchor`):** `SessionStart` con matcher `startup|resume|compact`, `PreToolUse` con `Edit|Write` (sin `MultiEdit`), salida por `hookSpecificOutput.additionalContext` sin `permissionDecision`, ruta absoluta con barras invertidas en Windows, permiso `Bash(beacon *)`. Viene de resúmenes de la documentación, así que el paso 8 lo confirma en vivo. **Quedan por probar:** si `env` llega a los hooks, qué hace el stdout de `Stop`, y si `beacon` se resuelve por el `PATH` bajo Git Bash. El hook de `edit` normaliza la ruta con `\` a la raíz del repo (paso 4).
 - **Construye** (`agents/claude`):
   - `CLAUDE.md` con una línea `@AGENTS.md` en un bloque gestionado (D6); el bloque de guía va en `AGENTS.md`.
-  - `.claude/settings.json`: permiso `Bash(beacon *)`, `BEACON_ACTOR=agent:claude-code` en `env`, y los hooks `start`, `edit` y `stop` (D6, D11). Respeta lo que el archivo ya tiene.
+  - `.claude/settings.json`: permiso `Bash(beacon *)`, `BEACON_ACTOR=agent:claude-code` en `env`, y los hooks `start` y `edit` (D6, D11); `stop` solo si el paso 8 lo confirma. Respeta lo que el archivo ya tiene.
   - `ParseHook` y `RenderHook` completos.
 - **Hecho cuando:** sobre un repo temporal con un `settings.json` existente, `install` conserva sus permisos, agrega los de Beacon y `--uninstall` deja el archivo como estaba; `hook` responde en el formato que Claude Code espera; y un comando de Beacon corrido con `BEACON_ACTOR` pone `agent:claude-code` en `approved.by` y `human:<user.name>` en `via`.
 
