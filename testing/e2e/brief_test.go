@@ -169,3 +169,57 @@ func TestStatusOfAnInvalidProjectFailsWithAHint(t *testing.T) {
 		t.Fatalf("result = %+v", result)
 	}
 }
+
+func TestBriefWithoutABaseSaysThatPendingYesesWereNotChecked(t *testing.T) {
+	root := utils.NewRepository(t)
+	utils.Git(t, root, "branch", "-m", "trunk")
+	editByHand(t, root, "After 5 failed", "After 10 failed")
+
+	result := utils.Beacon(t, root, "brief", "--json")
+	text := utils.Beacon(t, root, "brief")
+
+	envelope := parseRead(t, result.Stdout)
+	if result.Code != 0 || !hintContains(envelope.Hint, "--base") {
+		t.Fatalf("result = %+v", result)
+	}
+	if strings.Contains(result.Stdout, "Needs approval") {
+		t.Fatalf("nothing can be pending without a base: %s", result.Stdout)
+	}
+	if !strings.Contains(text.Stdout, "hint: no base branch") {
+		t.Fatalf("the text brief must carry the hint: %s", text.Stdout)
+	}
+
+	checked := utils.Beacon(t, root, "diff", "--base", "trunk", "--json")
+	if len(decodeDiff(t, checked.Stdout).Pending) != 1 {
+		t.Fatalf("the hint must work: %s", checked.Stdout)
+	}
+}
+
+func TestStatusReportsItsCountsInTheData(t *testing.T) {
+	root := utils.NewRepository(t)
+	editByHand(t, root, "After 5 failed", "After 10 failed")
+
+	result := utils.Beacon(t, root, "status", "--json")
+
+	var data struct {
+		Counts map[string]int `json:"counts"`
+	}
+	decodeData(t, result.Stdout, &data)
+
+	if data.Counts["pending_yes"] != 1 || data.Counts["red"] != 0 {
+		t.Fatalf("counts = %v", data.Counts)
+	}
+	if _, found := data.Counts["blocked"]; !found {
+		t.Fatalf("every count must be present: %v", data.Counts)
+	}
+}
+
+func TestBriefStaysQuietAboutTheBaseWhenItExists(t *testing.T) {
+	root := utils.NewRepository(t)
+
+	result := utils.Beacon(t, root, "brief", "--json")
+
+	if envelope := parseRead(t, result.Stdout); envelope.Hint != nil {
+		t.Fatalf("hint = %v", *envelope.Hint)
+	}
+}
