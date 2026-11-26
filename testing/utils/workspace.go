@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -59,4 +60,43 @@ func Git(t *testing.T, directory string, args ...string) {
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("git %v: %v\n%s", args, err, output)
 	}
+}
+
+func NewRepository(t *testing.T) string {
+	t.Helper()
+
+	root := NewWorkspace(t)
+
+	Git(t, root, "init", "-q", "-b", "main")
+	Git(t, root, "config", "user.name", "jane")
+	Git(t, root, "config", "user.email", "jane@example.com")
+	Git(t, root, "add", ".")
+	Git(t, root, "commit", "-q", "-m", "fixtures")
+	attestAtHead(t, root)
+
+	return root
+}
+
+func attestAtHead(t *testing.T, root string) {
+	t.Helper()
+
+	command := exec.Command("git", "rev-parse", "--short", "HEAD")
+	command.Dir = root
+
+	head, err := command.Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	file := ".beacon/records/capabilities/bc-7f3a-auth-login.yaml"
+	path := filepath.Join(root, filepath.FromSlash(file))
+	text := strings.Replace(
+		ReadFile(t, path),
+		"9f3c2ab",
+		strings.TrimSpace(string(head)),
+		1,
+	)
+	WriteFile(t, root, file, text)
+
+	Git(t, root, "commit", "-q", "-am", "attest at head")
 }

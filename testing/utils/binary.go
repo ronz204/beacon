@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -56,13 +57,31 @@ func buildBinary(target string) error {
 	return nil
 }
 
+type Options struct {
+	Stdin string
+	Actor string
+}
+
 func Beacon(t *testing.T, directory string, args ...string) Result {
+	t.Helper()
+
+	return BeaconWith(t, directory, Options{}, args...)
+}
+
+func BeaconWith(
+	t *testing.T,
+	directory string,
+	options Options,
+	args ...string,
+) Result {
 	t.Helper()
 
 	var stdout, stderr bytes.Buffer
 
 	command := exec.Command(binaryPath, args...)
 	command.Dir = directory
+	command.Env = environmentWith(options.Actor)
+	command.Stdin = strings.NewReader(options.Stdin)
 	command.Stdout = &stdout
 	command.Stderr = &stderr
 
@@ -81,4 +100,20 @@ func Beacon(t *testing.T, directory string, args ...string) Result {
 		Stdout: stdout.String(),
 		Stderr: stderr.String(),
 	}
+}
+
+func environmentWith(actor string) []string {
+	var environment []string
+
+	for _, entry := range os.Environ() {
+		if !strings.HasPrefix(entry, "BEACON_ACTOR=") {
+			environment = append(environment, entry)
+		}
+	}
+
+	if actor == "" {
+		return environment
+	}
+
+	return append(environment, "BEACON_ACTOR="+actor)
 }
