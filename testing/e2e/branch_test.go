@@ -204,3 +204,57 @@ func TestOldBranchThatClaimedBeforeMergingGetsAVisibleConflict(t *testing.T) {
 		t.Fatal("the merge must be left open for a person to resolve")
 	}
 }
+
+func TestSinceAuditsAnUnapprovedChangeTheBranchInherited(t *testing.T) {
+	root := utils.NewRepository(t)
+	origin, err := utils.GitTry(t, root, "rev-parse", "HEAD")
+	if err != nil {
+		t.Fatal(origin)
+	}
+
+	utils.Git(t, root, "switch", "-q", "-c", "feat/audit")
+	utils.Git(t, root, "switch", "-q", "main")
+	editByHand(t, root, lockoutFrom, "After 10 failed")
+	commitAll(t, root, "main weakens the lockout without a yes")
+	utils.Git(t, root, "switch", "-q", "feat/audit")
+	utils.Git(t, root, "rebase", "-q", "main")
+
+	inherited := pendingIDs(t, root)
+	audited := decodeDiff(t, utils.Beacon(
+		t,
+		root,
+		"diff", "--since", strings.TrimSpace(origin), "--json",
+	).Stdout)
+
+	if len(inherited) != 0 {
+		t.Fatalf("the inherited change is part of the base: %v", inherited)
+	}
+	if len(audited.Pending) != 1 || audited.Pending[0].ID != "bc-c3d4" {
+		t.Fatalf("--since must show what the base hides: %+v", audited)
+	}
+}
+
+func TestDoctorHintsAtGitattributesForCRLFRecords(t *testing.T) {
+	root := utils.NewRepository(t)
+	path := filepath.Join(root, filepath.FromSlash(capabilityPath))
+	text := strings.ReplaceAll(utils.ReadFile(t, path), "\n", "\r\n")
+	if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	result := utils.Beacon(t, root, "doctor", "--json")
+	fixed := utils.Beacon(t, root, "fmt")
+	again := utils.Beacon(t, root, "doctor")
+
+	envelope := parseRead(t, result.Stdout)
+	finding := envelope.Error.Details.Findings[0]
+	if result.Code != 1 || finding.Code != "record_line_endings" {
+		t.Fatalf("doctor = %+v", result)
+	}
+	if !hintContains(envelope.Hint, ".gitattributes") {
+		t.Fatalf("hint = %v", envelope.Hint)
+	}
+	if fixed.Code != 0 || again.Code != 0 {
+		t.Fatalf("fmt = %+v, doctor = %+v", fixed, again)
+	}
+}
