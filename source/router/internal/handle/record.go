@@ -52,7 +52,7 @@ func Record(printer *output.Printer, exit *int) *cobra.Command {
 			)
 			if err != nil {
 				failure := errorFailure(err)
-				failure.Lines = changeLines(view)
+				failure.Lines = changeLines(view.Changes)
 				*exit = printer.Failure(failure)
 
 				return nil
@@ -81,7 +81,7 @@ func recordLines(view weaver.RecordView) []string {
 		lines = append(lines, "ignored field: "+ignored)
 	}
 
-	return append(lines, changeLines(view)...)
+	return append(lines, changeLines(view.Changes)...)
 }
 
 func quotedChange(change weaver.ChangeView) []string {
@@ -105,10 +105,10 @@ func recordVerb(view weaver.RecordView) string {
 	return "unchanged"
 }
 
-func changeLines(view weaver.RecordView) []string {
-	lines := make([]string, 0, len(view.Changes))
+func changeLines(changes []weaver.ChangeView) []string {
+	lines := make([]string, 0, len(changes))
 
-	for _, change := range view.Changes {
+	for _, change := range changes {
 		line := fmt.Sprintf(
 			"level %d %s %s",
 			change.Level,

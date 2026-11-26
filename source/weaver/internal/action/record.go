@@ -109,9 +109,7 @@ func (r Recorder) Record(
 
 	asking := askingFindings(findings)
 	if len(asking) > 0 && !input.Approve {
-		return result, recordErrors.Fail(ApprovalRequired, map[string]any{
-			"changes": reportsOf(asking),
-		})
+		return result, approvalRequired(asking)
 	}
 
 	stamps, err := r.stamps(person, asking)
@@ -144,6 +142,12 @@ func (r Recorder) stamps(
 	}
 
 	return stamps, nil
+}
+
+func approvalRequired(asking []deltas.Finding) RecordError {
+	return recordErrors.Fail(ApprovalRequired, map[string]any{
+		"changes": reportsOf(asking),
+	})
 }
 
 func stampKey(target deltas.ChangeTarget) string {

@@ -251,6 +251,7 @@ func (r ChangedRecord) promiseByID(id kernel.RecordID) (ChangedPromise, bool) {
 type ClosureInput struct {
 	ID       string
 	Approved string
+	Promises []string
 }
 
 type StateChangeInput struct {
@@ -315,6 +316,7 @@ func ParseStateChange(input StateChangeInput) (StateChange, error) {
 type closure struct {
 	id       kernel.RecordID
 	approved string
+	promises []kernel.RecordID
 }
 
 func parseClosures(inputs []ClosureInput) ([]closure, error) {
@@ -326,7 +328,21 @@ func parseClosures(inputs []ClosureInput) ([]closure, error) {
 			return nil, err
 		}
 
-		closures = append(closures, closure{id: id, approved: input.Approved})
+		promises := make([]kernel.RecordID, 0, len(input.Promises))
+		for _, raw := range input.Promises {
+			promise, err := kernel.ParseRecordID(raw)
+			if err != nil {
+				return nil, err
+			}
+
+			promises = append(promises, promise)
+		}
+
+		closures = append(closures, closure{
+			id:       id,
+			approved: input.Approved,
+			promises: promises,
+		})
 	}
 
 	return closures, nil

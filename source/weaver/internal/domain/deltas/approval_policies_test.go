@@ -229,3 +229,27 @@ func TestClassifyChangeIgnoresAnArchiveSegment(t *testing.T) {
 		t.Fatalf("got %d/%v", level, needsYes)
 	}
 }
+
+func TestFreshApprovalSeesAClosedCapabilityStampOnItsPromises(t *testing.T) {
+	change, err := deltas.ParseStateChange(deltas.StateChangeInput{
+		Path: ".beacon/archive/2026-11.jsonl",
+		Kind: "modified",
+		Closed: []deltas.ClosureInput{{
+			ID:       "bc-7f3a",
+			Approved: `{"by":"human:jane","at":"2026-11-26"}`,
+			Promises: []string{"bc-c3d4"},
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fresh := deltas.IsFreshlyApproved(
+		promiseTarget(t),
+		[]deltas.StateChange{change},
+	)
+
+	if !fresh {
+		t.Fatal("the capability stamp must cover its promises")
+	}
+}

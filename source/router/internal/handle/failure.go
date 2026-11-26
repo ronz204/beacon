@@ -1,6 +1,8 @@
 package handle
 
 import (
+	"strings"
+
 	"github.com/ronz204/beacon/source/kernel"
 	"github.com/ronz204/beacon/source/router/internal/output"
 	"github.com/ronz204/beacon/source/spider"
@@ -17,18 +19,30 @@ var errorHints = map[string]string{
 	"payload_invalid": "fix the fields listed in details and rerun",
 	"promise_omitted": "keep the promise, or run " +
 		"beacon close <promise-id> --reason <text>",
-	"promise_unknown":  "use only promise ids the record already has",
-	"graph_invalid":    "fix the references listed in details and rerun",
-	"identity_missing": "set git config user.name, then rerun",
-	"actor_invalid":    "set BEACON_ACTOR to agent:<name> or human:<name>",
-	"session_invalid":  "pass --session with letters, digits, . _ -",
-	"record_changed":   "run the same command again",
+	"promise_unknown":      "use only promise ids the record already has",
+	"graph_invalid":        "fix the references listed in details and rerun",
+	"identity_missing":     "set git config user.name, then rerun",
+	"actor_invalid":        "set BEACON_ACTOR to agent:<name> or human:<name>",
+	"session_invalid":      "pass --session with letters, digits, . _ -",
+	"record_changed":       "run the same command again",
+	"guide_not_archivable": "delete the guide file; git keeps its history",
+	"task_has_open_children": "finish or close the subtasks listed " +
+		"in details, then rerun",
+	"claim_taken": "task {task} is held by branch {branch}; run " +
+		"beacon ready to pick another, or rerun with --force only if " +
+		"the person asks to take it",
+	"claim_not_task":        "pass a task id; run beacon ready to list them",
+	"claim_task_done":       "run beacon ready to pick another task",
+	"claim_task_archived":   "run beacon get {task} to see the closed task",
+	"claim_branch_detached": "check out a branch, then rerun",
+	"text_invalid":          "pass a text that is not blank",
 	"approval_required": "ask the person to approve the changes in details; " +
 		"if they say yes, rerun the same command with --approve",
 }
 
 var blockedCodes = map[string]bool{
 	"approval_required": true,
+	"claim_taken":       true,
 }
 
 func errorFailure(err error) output.Failure {
@@ -43,6 +57,7 @@ func errorFailure(err error) output.Failure {
 	if !known {
 		hint = commandFailedHint
 	}
+	hint = fillHint(hint, view.Details)
 
 	message := view.Message
 	if message == "" {
@@ -61,6 +76,18 @@ func errorFailure(err error) output.Failure {
 	}
 
 	return failure
+}
+
+func fillHint(hint string, details map[string]any) string {
+	var pairs []string
+
+	for key, value := range details {
+		if text, isText := value.(string); isText {
+			pairs = append(pairs, "{"+key+"}", text)
+		}
+	}
+
+	return strings.NewReplacer(pairs...).Replace(hint)
 }
 
 func failureLines(view kernel.FailureView) []string {

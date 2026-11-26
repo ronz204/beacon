@@ -61,6 +61,7 @@ func convertChange(change spider.StateChange) (deltas.StateChange, error) {
 		closed = append(closed, deltas.ClosureInput{
 			ID:       entry.ID,
 			Approved: entry.Approved,
+			Promises: entry.Promises,
 		})
 	}
 

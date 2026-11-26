@@ -56,14 +56,23 @@ func IsFreshlyApproved(target ChangeTarget, changes []StateChange) bool {
 func isApprovedClosure(target ChangeTarget, changes []StateChange) bool {
 	for _, change := range changes {
 		for _, closed := range change.closed {
-			sameID := closed.id.String() == target.value
-			if sameID && closed.approved != "" {
+			if closed.approved != "" && closed.covers(target.value) {
 				return true
 			}
 		}
 	}
 
 	return false
+}
+
+func (c closure) covers(id string) bool {
+	if c.id.String() == id {
+		return true
+	}
+
+	return slices.ContainsFunc(c.promises, func(p kernel.RecordID) bool {
+		return p.String() == id
+	})
 }
 
 func freshRecordApproval(
