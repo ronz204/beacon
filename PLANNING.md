@@ -4,7 +4,7 @@ Este plan cubre solo la fase en curso: en qué orden se construye y qué archivo
 
 La numeración de pasos y decisiones sigue la del plan de la Fase 1 (Spider), ya cerrada, para que las referencias de la KB y de los commits sigan valiendo: por eso los pasos empiezan en el 23 y las decisiones en D5. Ese plan está en el historial de git (`git show 967f5aa:PLANNING.md`).
 
-> **Estado: en curso.** Bloques 4 y 5 cerrados y pasos 29 a 34 hechos; sigue el paso 35, con la rama `feat/weaver-cli`. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
+> **Estado: en curso.** Bloques 4, 5 y 6 cerrados (pasos 23 a 35); sigue el paso 36, con la rama `feat/weaver-cli`. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
 
 ## 1. Panorama
 
@@ -551,11 +551,16 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
   - **Sello repetido:** el sí fresco se reconoce porque el `approved` cambió. Si el mismo actor aprueba otro cambio del mismo elemento el mismo día, por el mismo agente, el sello saldría idéntico y el cambio seguiría pendiente. Por eso `approved` admite una clave `n` (`n: 2`, `n: 3`...) que el binario añade solo cuando el sello nuevo sería igual al guardado. Un `approved` normal no cambia de forma. Lo escribe `Draft.Stamp` y lo leen el mapper y `fmt`.
   - **Árbol de procesos en Unix:** el test del ejecutor se corrió también en Linux (WSL), compilado con `GOOS=linux`; el grupo de procesos (`Setpgid` y `kill -pgid`) mata al hijo que retiene la salida.
 
-### Paso 35. `brief` y `status`
+### Paso 35. `brief` y `status` (hecho)
 
 - **`brief`:** el `brief` de Spider con los pendientes en su prioridad (paso 23). El aviso `N more, run beacon status` ya cumple P7.
 - **`status`:** rojos, deriva, bloqueos y pendientes de sí, sin tope de líneas. Sale siempre con código 0: informa, no bloquea.
 - **Hecho cuando:** un `brief` recortado nombra `beacon status`, y `status` muestra todo lo que el `brief` recortó.
+- **Cómo quedó:**
+  - Weaver arma una línea por pendiente de sí (`action.LineOf`: `promise bc-c3d4 promise_text_changed: <texto nuevo>`) y se la entrega a Spider, que la pone en su prioridad como `Needs approval: ...`. Sin base (`base_missing`) no hay pendientes y el comando sigue.
+  - `status` es el mismo `brief` **sin tope** (`Project.Status`), así que muestra todo lo que el `brief` recortó por construcción: bloqueos, rojos, trabajo en curso, pendientes de sí, deriva, promesas sin comprobar en esta máquina y el índice de guides. En texto, una primera línea cuenta rojos, deriva, bloqueos y pendientes de sí. Sale siempre con código 0.
+  - El resultado del `brief` de Spider trae ahora las señales con las que se armó, y el sobre las entrega junto con una señal `pending_yes` por pendiente. `data` lleva solo `lines` y `omitted`.
+  - Un estado inválido falla con `state_invalid` (código 1) y el `hint` de siempre, igual que las demás lecturas.
 
 ## 7. Bloque 7: cierre
 

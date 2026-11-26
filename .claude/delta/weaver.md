@@ -41,7 +41,7 @@ Sin `--json`, la salida es texto breve para personas. Con `--json`, **todos los 
 | `beacon get <id>` | Detalle de un registro |
 | `beacon find <texto>` | Búsqueda de registros |
 | `beacon check [capability]` | Ejecuta los checks (`pledge`). **Sin argumentos, solo los de las capabilities relacionadas con lo que cambió** contra la rama base o sin commitear (por sus `paths`); con un id, esa capability; con `--all`, todo. Cada invocación de un ejecutor tiene un tope fijo de 10 minutos; al agotarse, la promesa queda `Violated` con razón `timeout`. Con alguna promesa en rojo sale con código 2 |
-| `beacon status` | Estado general: rojos, deriva, bloqueos, pendientes de sí |
+| `beacon status` | Estado general sin tope de líneas: lo mismo que el `brief` completo (bloqueos, rojos, trabajo en curso, pendientes de sí, deriva, promesas sin comprobar, guides), con una línea de conteos. Sale siempre con código 0: informa, no bloquea |
 | `beacon ready` | Trabajo y tareas sin bloqueos, por rama |
 | `beacon claim <task>` | Reclama una tarea (consultivo): escribe el claim local en `.git/beacon/` y `owner` y `branch` en el registro. Si otro worktree o rama ya la reclamó, sale con código 2 y dice cuál (`method`, `layout`) |
 | `beacon diff` | Cambios de estado desde la rama base (o desde `--since <rev>`), incluidas las capturas base: Spider los detecta y Weaver los clasifica por nivel (`spider`, `deltas`). Sale agrupado por nivel, con cuáles piden sí y cuáles ya lo tienen, y una señal `pending_yes` por pendiente |
