@@ -42,7 +42,12 @@ La práctica común con varios agentes es una tarea, una rama, un worktree y una
 - **`owner` y `branch` en el registro avisan al equipo** cuando la rama sube. Si dos ramas reclaman la misma tarea en máquinas distintas, git lo muestra como **conflicto en ese archivo**; el conflicto es visible, que es lo que se quiere.
 - `ready` se calcula **por rama** y tiene en cuenta los claims locales.
 - Un claim no es un candado: la persona puede tomar una tarea reclamada. Lo que evita es que ocurra sin enterarse.
-- **Ramas largas** (qué pasa con una promesa cambiada en la rama principal mientras una rama vive) no está resuelto del todo: la hipótesis es que `beacon diff` compare contra el punto de origen de la rama (`git merge-base`, `weaver`), y se prueba con casos reales en la Fase 2 (`status`).
+- **Ramas largas.** `beacon diff` y `beacon check` comparan contra el punto de origen de la rama (`git merge-base HEAD <base>`, `weaver`), y eso resuelve los casos reales que se probaron:
+  - Si la rama cambia una promesa y `main` cambia otra, `diff` en la rama muestra solo la suya.
+  - Si `main` debilita una promesa con un sí y la rama se rebasa, el cambio de `main` no aparece en la rama: ya forma parte de su base.
+  - Si las dos cambian **la misma** promesa, git da conflicto en ese archivo y `beacon doctor` lo reporta como `record_conflict`, con el archivo y la línea del primer marcador y un `hint` para resolverlo. Al resolverlo y hacer `git add`, `doctor` vuelve a pasar.
+  - Una rama vieja todavía ve abierta una tarea que `main` ya cerró, así que puede reclamarla; al fusionar `main`, git marca el conflicto (modificada contra borrada) y la persona decide. Si la rama ya fusionó `main`, `beacon claim` falla con `claim_task_archived` y su `hint` manda a `beacon get <id>`, que la muestra archivada.
+  - **Límite:** un cambio que debilita una promesa y se **commitea sin sí** en `main` tampoco aparece en `diff` de una rama que lo hereda, porque ya es parte de su base. Lo detecta el CI (`snares`), que compara cada PR contra su base y exige el sello; es la garantía en equipo (`deltas`).
 
 ## Estado visible y preguntas
 

@@ -4,7 +4,7 @@ Este plan cubre solo la fase en curso: en qué orden se construye y qué archivo
 
 La numeración de pasos y decisiones sigue la del plan de la Fase 1 (Spider), ya cerrada, para que las referencias de la KB y de los commits sigan valiendo: por eso los pasos empiezan en el 23 y las decisiones en D5. Ese plan está en el historial de git (`git show 967f5aa:PLANNING.md`).
 
-> **Estado: en curso.** Bloques 4, 5 y 6 cerrados (pasos 23 a 35); sigue el paso 36, con la rama `feat/weaver-cli`. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
+> **Estado: en curso.** Bloques 4, 5 y 6 cerrados y paso 36 hecho; sigue el paso 37, con la rama `feat/weaver-cli`. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
 
 ## 1. Panorama
 
@@ -567,7 +567,7 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
 
 ## 7. Bloque 7: cierre
 
-### Paso 36. Ramas largas
+### Paso 36. Ramas largas (hecho)
 
 - **Objetivo:** probar con casos reales la hipótesis de `method`.
 - **Casos (e2e en `branch_test.go`):**
@@ -576,6 +576,11 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
   3. Las dos ramas cambian la misma promesa: git da conflicto en ese archivo y `doctor` lo reporta.
   4. Una rama vieja reclama una tarea que `main` ya cerró: `claim` falla con `claim_task_archived` y el `hint` sugiere `beacon get <id>`, que la muestra archivada.
 - **Hecho cuando:** los cuatro casos pasan, o su comportamiento queda escrito en `method` y ese archivo deja de decir "no está resuelto".
+- **Cómo quedó:** los cuatro casos pasan en `branch_test.go` y `method` quedó actualizado.
+  - **Caso 3 con un cambio:** `doctor` reportaba el conflicto como "YAML inválido" en una línea al azar. Ahora Spider reconoce los tres marcadores de git (`<<<<<<<`, `=======` y `>>>>>>>`, juntos y en ese orden) en un registro o una guide, falla con `record_conflict` en la línea del primero, y el `hint` de `doctor` dice cómo resolverlo. Un solo marcador suelto no cuenta.
+  - **Caso 4 distinto del plan:** una rama vieja todavía ve la tarea abierta, así que puede reclamarla; el conflicto aparece al fusionar `main` (modificada contra borrada). El fallo `claim_task_archived` ocurre cuando la rama ya fusionó `main`. Los dos caminos tienen test.
+  - **Límite anotado:** un debilitamiento commiteado sin sí en `main` no aparece en `diff` de una rama que lo hereda; lo cubre el CI (`snares`, Fase 4).
+  - El repo de prueba de e2e lleva ahora `.gitattributes` con `.beacon/** text eol=lf`, como lo hará `install` (Fase 3): sin eso, en Windows `git checkout` dejaba los registros con CRLF y `doctor` los marcaba como no canónicos.
 
 ### Paso 37. Medición y KB
 
