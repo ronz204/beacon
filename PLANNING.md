@@ -561,6 +561,9 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
   - `status` es el mismo `brief` **sin tope** (`Project.Status`), así que muestra todo lo que el `brief` recortó por construcción: bloqueos, rojos, trabajo en curso, pendientes de sí, deriva, promesas sin comprobar en esta máquina y el índice de guides. En texto, una primera línea cuenta rojos, deriva, bloqueos y pendientes de sí. Sale siempre con código 0.
   - El resultado del `brief` de Spider trae ahora las señales con las que se armó, y el sobre las entrega junto con una señal `pending_yes` por pendiente. `data` lleva solo `lines` y `omitted`.
   - Un estado inválido falla con `state_invalid` (código 1) y el `hint` de siempre, igual que las demás lecturas.
+  - **Sin base, se avisa:** si no hay rama base (`base_missing`) o no hay git, los pendientes no se pueden calcular. El `brief` y `status` siguen, pero el sobre lleva un `hint` ("no base branch was found, so pending yeses were not checked; run beacon diff --base <branch>") que en texto sale como una línea final. Con base, `hint` es `null`.
+  - `status` suma a `data` un `counts` (`red`, `drift`, `blocked`, `pending_yes`, siempre las cuatro claves). Las secciones ya viajan en cada línea (`lines[].section`), así que no hace falta una estructura aparte.
+  - **Costo:** con 500 capabilities, `brief` tarda 210 ms (la mitad es calcular los pendientes con git). Se quitó una consulta de más al resolver la base (`rev-parse` antes de `merge-base`). `context --hook` no usa git y sigue en unos 75 ms. Los números están en `layout`.
 
 ## 7. Bloque 7: cierre
 
