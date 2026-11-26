@@ -557,7 +557,7 @@ func (d Draft) Stamp(stamps map[string]kernel.Approval) (Draft, []error) {
 			return Draft{}, []error{failure}
 		}
 
-		setApproval(target, stamps[id])
+		setApproval(target, recounted(target, stamps[id]))
 	}
 
 	d.root = root
@@ -578,6 +578,35 @@ func stampTargets(id string, root *yaml.Node) map[string]*yaml.Node {
 	return targets
 }
 
+func scalarText(node *yaml.Node) string {
+	if node == nil {
+		return ""
+	}
+
+	return node.Value
+}
+
+func recounted(target *yaml.Node, approval kernel.Approval) kernel.Approval {
+	section, found := mappingValues(target)[approvedKey]
+	if !found || section.Kind != yaml.MappingNode {
+		return approval
+	}
+
+	values := mappingValues(section)
+	count, _ := strconv.Atoi(scalarText(values["n"]))
+	previous, err := kernel.ParseApproval(kernel.ApprovalInput{
+		By:    scalarText(values["by"]),
+		At:    scalarText(values["at"]),
+		Via:   scalarText(values["via"]),
+		Count: count,
+	})
+	if err != nil || !previous.SameStamp(approval) {
+		return approval
+	}
+
+	return approval.Recounted(previous.Count() + 1)
+}
+
 func setApproval(target *yaml.Node, approval kernel.Approval) {
 	section := &yaml.Node{Kind: yaml.MappingNode}
 	add := func(key, value string) {
@@ -592,6 +621,9 @@ func setApproval(target *yaml.Node, approval kernel.Approval) {
 	add("at", approval.At().String())
 	if via, found := approval.Via(); found {
 		add("via", via.String())
+	}
+	if approval.Count() > 1 {
+		add("n", strconv.Itoa(approval.Count()))
 	}
 
 	takeKey(target, approvedKey)
