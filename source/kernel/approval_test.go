@@ -87,3 +87,34 @@ func TestParseApprovalRejectsInvalid(t *testing.T) {
 		})
 	}
 }
+
+func TestApprovalCountDefaultsToOneAndRejectsNegatives(t *testing.T) {
+	plain, err := kernel.ParseApproval(kernel.ApprovalInput{
+		By: "human:jane",
+		At: "2026-11-22",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, negative := kernel.ParseApproval(kernel.ApprovalInput{
+		By:    "human:jane",
+		At:    "2026-11-22",
+		Count: -1,
+	})
+
+	if plain.Count() != 1 || negative == nil {
+		t.Fatalf("count = %d, err = %v", plain.Count(), negative)
+	}
+}
+
+func TestSameStampIgnoresTheCount(t *testing.T) {
+	input := kernel.ApprovalInput{By: "human:jane", At: "2026-11-22"}
+	first, _ := kernel.ParseApproval(input)
+	input.Count = 3
+	third, _ := kernel.ParseApproval(input)
+
+	if !first.SameStamp(third) || third.Count() != 3 {
+		t.Fatalf("first = %+v, third = %+v", first, third)
+	}
+}

@@ -24,6 +24,8 @@ Sin `--json`, la salida es texto breve para personas. Con `--json`, **todos los 
 - `hint`: el siguiente paso exacto cuando algo bloquea, o `null` (P7).
 - Si `ok` es `false`, `data` es `null` y aparece `error: {code, message, details}`. `details` es opcional y lleva lo que explica el fallo, por ejemplo los hallazgos de `doctor` con archivo y línea.
 
+**Bloqueo por un sí:** `record` y `close` responden `ok: false`, `error.code: approval_required`, los cambios que piden sí en `error.details.changes` (cada uno con su motivo y el texto antes y después, para que el agente se lo muestre a la persona) y el `hint` con el comando exacto, con código 2.
+
 **Códigos de salida:** `0` ok, `1` error de uso (argumentos o registro inválido), `2` bloqueado, a la espera de un sí o de una respuesta de la persona, con un recurso ocupado (por ejemplo una tarea ya reclamada) o con una promesa en rojo tras `beacon check`.
 
 **Idioma:** los mensajes, los `hint` y los errores van **en inglés**, igual que las claves y la guía del método (`design`).
@@ -35,19 +37,19 @@ Sin `--json`, la salida es texto breve para personas. Con `--json`, **todos los 
 | `beacon brief` | Meta activa, bloqueos y rojos, trabajo en curso, índice de guides, con tope de líneas (`spider`) |
 | `beacon context <paths>` | Todo lo que aplica a esos archivos, con señales. Con `--hook`: lo mismo pero solo lo que esta sesión todavía no recibió, con tope de `limits.hook` líneas, y sin salida si no hay nada nuevo (`anchor`) |
 | `beacon record -` | Crea o reemplaza un registro con validación y niveles (`deltas`). Lee de stdin el registro **completo**, con la misma forma que devuelve `get --json`; no hay parches. Si un cambio pide un sí, sale con código 2 sin guardar, y el agente transmite el sí reenviando el mismo payload con `--approve`. Al proponer una promesa, responde con la guía de redacción (`pledge`) |
-| `beacon close <id>` | Cierra un registro con motivo y lo archiva (`layout`) |
+| `beacon close <id> --reason <texto>` | Cierra un registro con motivo y lo archiva (`layout`). Cerrar una promesa `active` o un goal pide un sí, como `record`; `--approve` lo transmite |
 | `beacon get <id>` | Detalle de un registro |
 | `beacon find <texto>` | Búsqueda de registros |
 | `beacon check [capability]` | Ejecuta los checks (`pledge`). **Sin argumentos, solo los de las capabilities relacionadas con lo que cambió** contra la rama base o sin commitear (por sus `paths`); con un id, esa capability; con `--all`, todo. Cada invocación de un ejecutor tiene un tope fijo de 10 minutos; al agotarse, la promesa queda `Violated` con razón `timeout`. Con alguna promesa en rojo sale con código 2 |
-| `beacon status` | Estado general: rojos, deriva, bloqueos, pendientes de sí |
+| `beacon status` | Estado general sin tope de líneas: lo mismo que el `brief` completo (bloqueos, rojos, trabajo en curso, pendientes de sí, deriva, promesas sin comprobar, guides), con una línea de conteos. Sale siempre con código 0: informa, no bloquea |
 | `beacon ready` | Trabajo y tareas sin bloqueos, por rama |
 | `beacon claim <task>` | Reclama una tarea (consultivo): escribe el claim local en `.git/beacon/` y `owner` y `branch` en el registro. Si otro worktree o rama ya la reclamó, sale con código 2 y dice cuál (`method`, `layout`) |
-| `beacon diff` | Cambios de estado desde la rama base (o desde `--since <rev>`), incluidas las capturas base: Spider los detecta y Weaver los clasifica por nivel (`spider`, `deltas`) |
+| `beacon diff` | Cambios de estado desde la rama base (o desde `--since <rev>`), incluidas las capturas base: Spider los detecta y Weaver los clasifica por nivel (`spider`, `deltas`). Sale agrupado por nivel, con cuáles piden sí y cuáles ya lo tienen, y una señal `pending_yes` por pendiente |
 | `beacon verify` | Checks relacionados más revisión independiente (riesgo alto) |
 | `beacon attest [--evidence <ruta o enlace>]` | Atestaciones manuales al cerrar la sesión; `--evidence` guarda la referencia a lo revisado (`pledge`) |
 | `beacon stale` | Guides y decisiones desactualizadas |
 | `beacon fmt` | Formato canónico de los registros |
-| `beacon doctor` | Valida el estado, ayuda con conflictos, avisa de guides largas y limpia claims de ramas que ya no existen |
+| `beacon doctor` | Valida el estado, ayuda con conflictos, avisa de guides largas y limpia claims de ramas que ya no existen. Un conflicto de git sin resolver sale como `record_conflict` (archivo y línea del primer marcador); un registro con saltos de línea CRLF, como `record_line_endings`, con el `hint` de agregar `.beacon/** text eol=lf` a `.gitattributes` y correr `beacon fmt` |
 | `beacon migrate` | Migra el esquema |
 | `beacon stats` | Métricas locales de fricción |
 | `beacon snares ci` | Todo lo que corre el CI en una llamada (`snares`) |

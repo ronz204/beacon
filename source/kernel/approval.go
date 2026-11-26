@@ -3,18 +3,24 @@ package kernel
 import "strings"
 
 type ApprovalInput struct {
-	By  string
-	At  string
-	Via string
+	By    string
+	At    string
+	Via   string
+	Count int
 }
 
 type Approval struct {
-	by  Actor
-	at  CalendarDate
-	via Actor
+	by    Actor
+	at    CalendarDate
+	via   Actor
+	count int
 }
 
 func ParseApproval(input ApprovalInput) (Approval, error) {
+	if input.Count < 0 {
+		return Approval{}, invalidValue(KernelApprovalInvalid, "count")
+	}
+
 	by, err := ParseActor(input.By)
 	if err != nil {
 		return Approval{}, err
@@ -26,7 +32,7 @@ func ParseApproval(input ApprovalInput) (Approval, error) {
 	}
 
 	if strings.TrimSpace(input.Via) == "" {
-		return Approval{by: by, at: at}, nil
+		return Approval{by: by, at: at, count: input.Count}, nil
 	}
 
 	via, err := ParseActor(input.Via)
@@ -38,9 +44,10 @@ func ParseApproval(input ApprovalInput) (Approval, error) {
 	}
 
 	return Approval{
-		by:  by,
-		at:  at,
-		via: via,
+		by:    by,
+		at:    at,
+		via:   via,
+		count: input.Count,
 	}, nil
 }
 
@@ -50,6 +57,20 @@ func (a Approval) By() Actor {
 
 func (a Approval) At() CalendarDate {
 	return a.at
+}
+
+func (a Approval) Count() int {
+	return max(a.count, 1)
+}
+
+func (a Approval) SameStamp(other Approval) bool {
+	return a.by == other.by && a.at == other.at && a.via == other.via
+}
+
+func (a Approval) Recounted(count int) Approval {
+	a.count = count
+
+	return a
 }
 
 func (a Approval) Via() (Actor, bool) {

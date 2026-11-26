@@ -2,6 +2,7 @@ package action
 
 import (
 	"context"
+	"errors"
 	"iter"
 	"maps"
 	"slices"
@@ -28,7 +29,7 @@ func markDrift(
 
 	for _, commit := range slices.Sorted(maps.Keys(groups)) {
 		files, err := changes[commit].files, changes[commit].err
-		if err != nil {
+		if err != nil && !errors.Is(err, ledger.ErrCommitUnknown) {
 			failures = append(failures, err)
 		}
 

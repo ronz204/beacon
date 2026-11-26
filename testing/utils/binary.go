@@ -8,10 +8,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
-var binaryPath string
+var (
+	binaryPath string
+	runnerPath string
+)
 
 type Result struct {
 	Code   int
@@ -28,7 +32,14 @@ func RunSuite(m *testing.M) int {
 	defer os.RemoveAll(directory)
 
 	binaryPath = filepath.Join(directory, binaryName())
-	if err := buildBinary(binaryPath); err != nil {
+	if err := buildBinary(binaryPath, "./cmd/beacon"); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+
+	runnerPath = filepath.Join(directory, "fakerunner"+executableSuffix())
+	err = buildBinary(runnerPath, "./testing/testdata/fakerunner")
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
@@ -37,15 +48,23 @@ func RunSuite(m *testing.M) int {
 }
 
 func binaryName() string {
-	if runtime.GOOS == "windows" {
-		return "beacon.exe"
-	}
-
-	return "beacon"
+	return "beacon" + executableSuffix()
 }
 
-func buildBinary(target string) error {
-	command := exec.Command("go", "build", "-o", target, "./cmd/beacon")
+func executableSuffix() string {
+	if runtime.GOOS == "windows" {
+		return ".exe"
+	}
+
+	return ""
+}
+
+func FakeRunner() string {
+	return filepath.ToSlash(runnerPath)
+}
+
+func buildBinary(target, source string) error {
+	command := exec.Command("go", "build", "-o", target, source)
 	command.Dir = filepath.Join("..", "..")
 
 	output, err := command.CombinedOutput()
@@ -56,13 +75,31 @@ func buildBinary(target string) error {
 	return nil
 }
 
+type Options struct {
+	Stdin string
+	Actor string
+}
+
 func Beacon(t *testing.T, directory string, args ...string) Result {
+	t.Helper()
+
+	return BeaconWith(t, directory, Options{}, args...)
+}
+
+func BeaconWith(
+	t *testing.T,
+	directory string,
+	options Options,
+	args ...string,
+) Result {
 	t.Helper()
 
 	var stdout, stderr bytes.Buffer
 
 	command := exec.Command(binaryPath, args...)
 	command.Dir = directory
+	command.Env = environmentWith(options.Actor)
+	command.Stdin = strings.NewReader(options.Stdin)
 	command.Stdout = &stdout
 	command.Stderr = &stderr
 
@@ -81,4 +118,20 @@ func Beacon(t *testing.T, directory string, args ...string) Result {
 		Stdout: stdout.String(),
 		Stderr: stderr.String(),
 	}
+}
+
+func environmentWith(actor string) []string {
+	var environment []string
+
+	for _, entry := range os.Environ() {
+		if !strings.HasPrefix(entry, "BEACON_ACTOR=") {
+			environment = append(environment, entry)
+		}
+	}
+
+	if actor == "" {
+		return environment
+	}
+
+	return append(environment, "BEACON_ACTOR="+actor)
 }

@@ -91,7 +91,7 @@ var (
 	}
 	limitKeys    = []string{"guide", "brief", "hook"}
 	runnerKeys   = []string{"run", "baseline"}
-	approvedKeys = []string{"by", "at", "via"}
+	approvedKeys = []string{"by", "at", "via", "n"}
 	attestedKeys = []string{"by", "at", "commit", "evidence"}
 	checkKeys    = []string{"runner", "manual"}
 	flowLists    = []string{
@@ -102,7 +102,7 @@ var (
 	blockLists  = []string{"nongoals", "rejected", "log"}
 	typedFields = []string{
 		"created", "reviewed", "at", "always", "schema", "guide", "brief",
-		"hook",
+		"hook", "n",
 	}
 )
 

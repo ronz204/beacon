@@ -14,7 +14,9 @@ No todo cambio merece pedir permiso, solo los que podrían **debilitar lo que ya
 | 2 | Agregar | Una promesa nueva (`proposed`), una decisión nueva | El agente lo hace y aparece en el resumen de la sesión |
 | 3 | Debilitar o cambiar lo verificado | Editar el texto de una promesa activa, borrarla, cambiar su check, cambiar la meta, cambiar los `runners` o el `schema` de `config.yaml`, **actualizar una captura base de un ejecutor visual** | Beacon lo detecta y pregunta "¿sí o no?" antes de guardarlo |
 
-Pasar una promesa de `proposed` a `active` también requiere un sí de la persona.
+Pasar una promesa de `proposed` a `active` también requiere un sí de la persona. Lo mismo vale para una promesa que nace ya `active`.
+
+Otros casos que la regla no nombra: borrar un goal pide sí; cerrar o editar una promesa `proposed` es nivel 1, porque aún no está prometida. Un cierre aprobado deja su sello en la línea del archivo (`layout`), y Weaver lo lee ahí para saber que el sí ya se dio.
 
 ## Regla mecánica del nivel 3
 
@@ -50,6 +52,12 @@ No hay un sistema propio de aprobaciones; se reutiliza lo que git ya hace.
 - **En solo:** la persona dice sí en el chat y el agente lo transmite con `beacon record --approve`. El binario guarda `approved: {by, at, via}` en el registro afectado: `by` es la persona (`human:<user.name de git>`) y `via` es el agente que transmitió el sí (`ledger`, sección Actor). Si un cambio pide un sí, `beacon record` sale con código 2 sin guardar nada, y el agente reenvía el mismo payload con `--approve` cuando la persona dice sí; no hay estado pendiente (`weaver`). Para una captura base, que no es un registro, el sí queda en el registro de la capability o promesa afectada. Para `runners` o `schema`, queda en la clave `approved` de `config.yaml` (`ledger`).
 - **En equipo:** Snares exige en el PR dos cosas (`snares`): que cada cambio de nivel 3 traiga un `approved.by` humano, y que el PR tenga una review aprobada de una persona con permiso sobre `.beacon/records/capabilities/**` (CODEOWNERS o review obligatoria del hosting). Las capturas base se protegen igual: la review de la persona sobre esos archivos es la garantía.
 - **Qué garantiza y qué no:** el campo `approved` es un **marcado, no una prueba**, porque el agente corre con el mismo usuario del sistema y podría escribir un sí que la persona no dio. Lo que sí es una garantía en equipo es la revisión del PR por una persona: ahí se ve el diff clasificado por nivel. En uso personal la protección es la confianza y que todo queda a la vista.
+
+### Ediciones a mano
+
+Una edición a mano ya está en disco, así que no hay nada que "guardar": `beacon diff` y `beacon status` la muestran como pendiente de sí, y el agente la resuelve con `beacon record --approve -` y el mismo registro. Si el registro no cambia, el binario sella `approved` en cada elemento pendiente de ese archivo. Una captura base queda aprobada cuando se sella una promesa que usa su ejecutor.
+
+El sí se reconoce porque el `approved` cambió desde la base. Si el mismo actor aprueba otro cambio del mismo elemento el mismo día, el sello saldría idéntico; por eso el binario le añade un contador (`n: 2`, `n: 3`...) solo en ese caso, y así el cambio se reconoce como aprobado.
 
 ## Riesgo y revisión independiente
 

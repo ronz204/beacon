@@ -110,9 +110,7 @@ func TestDriftIsAssumedWhenTheCommitIsUnknown(t *testing.T) {
 
 	analysis, failures := analyzeWith(t, sources)
 
-	if len(failures) != 1 {
-		t.Fatalf("failures = %v", failures)
-	}
+	requireClean(t, failures)
 	if got := driftedPromises(analysis); len(got) != 2 {
 		t.Fatalf("drifted = %v", got)
 	}

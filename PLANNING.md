@@ -4,7 +4,7 @@ Este plan cubre solo la fase en curso: en qué orden se construye y qué archivo
 
 La numeración de pasos y decisiones sigue la del plan de la Fase 1 (Spider), ya cerrada, para que las referencias de la KB y de los commits sigan valiendo: por eso los pasos empiezan en el 23 y las decisiones en D5. Ese plan está en el historial de git (`git show 967f5aa:PLANNING.md`).
 
-> **Estado: en curso.** Bloque 4 cerrado (pasos 23 a 26); sigue el paso 27, con la rama `feat/weaver-cli`. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
+> **Estado: cerrada el 2026-11-26.** Los pasos 23 a 37 están hechos en las ramas `feat/spider-writes` y `feat/weaver-cli`. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB, y las mediciones están en `layout`. Sigue la Fase 3 (Anchor).
 
 ## 1. Panorama
 
@@ -418,7 +418,7 @@ cmd/beacon → router → weaver.go → action → domain → kernel
 
 **Rama:** `feat/weaver-cli`, desde `main` con el Bloque 4 fusionado.
 
-### Paso 27. Pieza Weaver y contexto `deltas`
+### Paso 27. Pieza Weaver y contexto `deltas` (hecho)
 
 - **Objetivo:** que el nivel de un cambio sea una función pura y probada.
 - **Construye:** `weaver.go` (solo el constructor), `driver/facade`, `driver/double` y el contexto `deltas`.
@@ -428,8 +428,15 @@ cmd/beacon → router → weaver.go → action → domain → kernel
 - **`IsFreshlyApproved`:** la regla del sí fresco (D19).
 - **Cuidado:** el dominio recibe el `user.name` y la fecha como datos; no lee git ni el reloj (`code-domain-layer`).
 - **Hecho cuando:** cada fila de D17 tiene un caso, y el ejemplo de `deltas` (de "5 intentos" a "10 intentos") da nivel 3.
+- **Cómo quedó:**
+  - Los datos entran por `ParseStateChange`, que valida con los parsers del dominio. `facade` decodifica el JSON de Spider a campos planos (cada valor como texto canónico) y a promesas con su `check`, su ejecutor y su `approved`.
+  - `ClassifyElements` devuelve un hallazgo por elemento afectado (promesa, registro, `config` o captura base) con su nivel y si pide sí; `ClassifyChange` es su máximo. Los pasos 30 y 34 usan los hallazgos para sellar `approved` y para preguntar `IsFreshlyApproved` por elemento.
+  - Casos que D17 no nombra: una promesa nueva ya `active` es nivel 2 y pide sí, como pasar de `proposed` a `active`; cerrar una promesa `proposed` y editarla sin activarla son nivel 1; borrar un goal pide sí.
+  - `NormalizeText` cambia la puntuación por un espacio y no quita símbolos: `1.5` y `15` siguen siendo distintos, porque la regla nunca debe dejar pasar un debilitamiento. El atajo vale para el texto de promesas y para `statement` y `success`; un `check` se compara exacto.
+  - `StateChange` de Spider trae ahora `runners` (los ejecutores cuyo `baseline` cubre una captura base) y `closed` (id y `approved` de cada línea nueva de `archive/`). Sin lo primero, `IsFreshlyApproved` no sabía qué `approved` autoriza una captura; sin lo segundo, un cierre aprobado con `close --approve` aparecía como pendiente.
+  - `weaver.New(project)` solo arma la fachada; `driver/double` trae `Changes` y `Executor` en memoria.
 
-### Paso 28. Contexto `checks`
+### Paso 28. Contexto `checks` (hecho)
 
 - **Objetivo:** que armar una invocación sea seguro antes de ejecutar nada.
 - **Construye:** el contexto `checks` y el contrato `Executor`, con `Run(ctx, argv, dir) (ExecutionResult, error)`.
@@ -439,12 +446,17 @@ cmd/beacon → router → weaver.go → action → domain → kernel
 - **`GroupInvocations`:** agrupa las promesas por invocación idéntica (D20).
 - **`CheckOutcome`:** `passed` o `failed`, con razón `exit_code` o `timeout` (D11).
 - **Hecho cuando:** no se puede construir ningún argv con un parámetro inyectado como opción, y dos promesas con el mismo check comparten invocación.
+- **Cómo quedó:**
+  - `ParseRunnerSpec` rechaza un `run` vacío, con elementos en blanco o con un `{param}` en el programa (primer elemento), para que un dato no elija qué se ejecuta.
+  - `BuildInvocation` y `ParsePromiseCheck` comparten la regla del valor plano: no vacío, sin control y sin `-` inicial (también tras recortar espacios). Los fallos son `param_missing`, `param_unused` y `param_invalid`. Solo `{nombre}` válido es un parámetro; otras llaves pasan tal cual.
+  - `GroupInvocations` ordena por id de promesa y agrupa por ejecutor más parámetros; el grupo sale en el orden de su primera promesa.
+  - `OutcomeOf(ExecutionResult)` da `passed`, o `failed` con `timeout` o `exit_code`. Un programa que no arranca es `runner_unavailable`, error del contrato `Executor` para el paso 33.
 
 ## 6. Bloque 6: comandos
 
 Cada comando tiene un test e2e que corre el binario real sobre un repo temporal (`testing/utils`).
 
-### Paso 29. Salida, señales y lecturas
+### Paso 29. Salida, señales y lecturas (hecho)
 
 - **Objetivo:** completar el sobre `--json` y poner en marcha las lecturas puras.
 - **Construye:** el código 2 (`ExitBlocked`) en `output`, `signals.go` y los handlers de `get`, `find`, `context` (con `--hook`) y `ready`.
@@ -452,8 +464,14 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
 - **`ready`** toma la rama actual de git. Con HEAD separado, usa el commit y lo avisa.
 - **`context --hook`** necesita un id de sesión, que recibe con `--session <id>`. De dónde lo saca cada agente se decide en la Fase 3 (abierto en `status`).
 - **Hecho cuando:** los cuatro comandos devuelven el sobre con `signals` llenas, y un archivo sin dueño recibe en `context` solo la meta y las guides `always`.
+- **Cómo quedó:**
+  - `output.Printer` tiene `Done(Result)` (datos, señales, `hint` y código de salida) y `Failure` acepta un código de salida; `ExitBlocked` es 2. En texto, una línea `signal: <kind> <registro> [<relación> <relacionado>]` por señal.
+  - `get`, `find` y `ready` van directo a Spider. `context` convierte las rutas a la raíz del repo (`Project.RepoPath`) y con `--hook --session <id>` imprime solo lo nuevo, sin salida si no hay nada. Sin `--session` falla con `session_required`.
+  - `ready` toma la rama con `Project.Branch` (`git symbolic-ref`); con HEAD separado usa el commit y avisa en una línea y en el `hint`.
+  - Solo `context` entrega `signals` en el sobre: `get`, `find` y `ready` no tienen señales que dar, y sus `signals` van vacías.
+  - Un error de Spider se traduce a `code`, `message`, `details` y un `hint` por código (`handle/failure.go`); un código sin `hint` propio manda a `beacon doctor`.
 
-### Paso 30. `record`
+### Paso 30. `record` (hecho)
 
 - **Flujo:** leer stdin → `Prepare` → `ClassifyChange` en cada cambio → si alguno pide sí y no hay `--approve`, salir con código 2 sin escribir → con `--approve`, sellar `approved` en cada elemento afectado → `Save`.
 - **Respuesta:** `data` con el id, el archivo, los cambios con su nivel y los campos del payload que se ignoraron (D16).
@@ -469,20 +487,37 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
 | `identity_missing` | 1 | `set git config user.name, then rerun` |
 
 - **Hecho cuando:** el ejemplo de `deltas` se bloquea con código 2, el mismo payload con `--approve` se guarda con `approved: {by, at, via}`, y un payload de config con `runners` cambiados sigue el mismo camino (D13).
+- **Cómo quedó:**
+  - `action.Recorder` hace el flujo: identidad, `Prepare`, `ClassifyElements`, y si algún hallazgo pide sí y no hay `--approve`, `approval_required` (código 2, con los cambios en `details.changes`) sin escribir. Con `--approve`, sella cada elemento que pide sí (la promesa, el registro o `config`) y llama a `Save`. Un registro sin cambios no se escribe.
+  - `driver/identity` resuelve el actor: `BEACON_ACTOR` si existe, y si no `human:<user.name>`; sin nombre, `identity_missing`. Un agente necesita además el nombre solo al sellar.
+  - `ClassifyElements` solo informa lo que cambió: una promesa intacta o una capability sin cambios propios no salen en `changes`.
+  - La respuesta es `{type, id, file, saved, unchanged, changes: [{target, id, level, needsYes, reason, before, after}], ignored}`. Cada cambio que pide sí trae su motivo (`promise_text_changed`, `goal_changed`, `runners_changed`...) y el texto antes y después, para que el agente pueda mostrarle a la persona qué aprueba; en texto salen como líneas `-` y `+`. La guía de redacción de promesas sigue en la Fase 3.
+  - Un commit que ya no existe (por ejemplo una atestación tras un rebase) ya no es un fallo del estado: la promesa se marca con deriva y el comando sigue (`ledger.ErrCommitUnknown`). Un fallo real de git sí se reporta.
+  - `errorFailure` mapea cada código de Spider y de Weaver a su `hint`; los códigos de la tabla de arriba coinciden con los del plan.
 
-### Paso 31. `close`
+### Paso 31. `close` (hecho)
 
 - **Construye:** el handler y el `action/close.go` de Weaver, que clasifica antes de archivar.
 - **Hecho cuando:** cerrar una promesa `active` pide sí, cerrar una pregunta no lo pide, y cerrar una guide da `guide_not_archivable` con su `hint`.
+- **Cómo quedó:**
+  - `action.Closer` sigue el mismo flujo que `record`: `PrepareClose`, `ClassifyElements` sobre el antes y el después, `approval_required` (código 2, con motivo y texto) y, con `--approve`, un solo sello sobre el elemento que se cierra. Cerrar una capability con promesas `active` estampa la capability, y ese sello cubre sus promesas en `IsFreshlyApproved` (`closed` trae ahora los ids de las promesas de la línea archivada).
+  - `--reason` vacío falla en el router con `reason_required`. `guide_not_archivable` y `task_has_open_children` llegan con su `hint` (borrar el archivo; terminar o cerrar las subtareas de `details.subtasks`).
+  - Los `hint` aceptan marcadores `{clave}` que se rellenan con el `details` del error (por ejemplo `{task}` y `{branch}`).
 
-### Paso 32. `claim`
+### Paso 32. `claim` (hecho)
 
 - **Flujo:** leer el claim local → si otra rama o worktree tiene la tarea, salir con código 2 (`claim_taken`) y un `hint` que diga cuál → si no, escribir el claim local y después `owner` y `branch` en la tarea con `Save` (nivel 1).
 - **`--force`:** la persona puede tomar una tarea reclamada (`method`: un claim no es un candado). El agente solo lo usa si la persona lo pidió, y la guía de Anchor lo dirá (Fase 3).
 - **Cuidado:** si el registro no se puede escribir, se deshace el claim local, para que los dos sitios no queden desalineados.
 - **Hecho cuando:** si dos worktrees reclaman la misma tarea, el segundo recibe código 2, y `ready` en el segundo ya no la ofrece.
+- **Cómo quedó:**
+  - Spider expone `Claims`, `SaveClaim`, `RemoveClaim` y `Worktree`. `action.Claimer` toma el actor, la rama y el worktree actuales, y rechaza con `claim_taken` (código 2) si el claim local es de otra rama u otro worktree, **o** si el registro ya dice `claimed` en otra rama (ese caso viene de un merge o de otra máquina). El `hint` nombra la rama que la tiene.
+  - Escribe el claim local y después `status: claimed`, `owner` y `branch` en la tarea con el mismo `Prepare` y `Save` de `record` (nivel 1, sin sí). Si el registro no se puede escribir, devuelve el claim local a como estaba, incluido el titular anterior si era un `--force`.
+  - `doctor` libera el claim local de un worktree o una rama borrados (probado con un claim real y `git worktree remove`); el claim del registro no se libera solo (`method`).
+  - `--force` reemplaza al titular y lo informa en `replaced`. Reclamar de nuevo en la misma rama no cambia nada.
+  - Errores nuevos, todos con código 1 salvo `claim_taken`: `claim_not_task`, `claim_task_done`, `claim_task_archived` (su `hint` manda a `beacon get <id>`) y `claim_branch_detached`.
 
-### Paso 33. `check`
+### Paso 33. `check` (hecho)
 
 - **Construye:** `driver/runner`, `driver/branch` y `action/check.go`.
 - **Selección:**
@@ -494,54 +529,88 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
 - **Salida:** código 0 sin rojos y código 2 con alguno (D14), con `hint: fix the code until beacon check <capability> passes; do not edit the promise`.
 - **Errores:** `runner_missing` (el check nombra un ejecutor que no está en `config.yaml`), `runner_unavailable` (el programa no está instalado; la promesa queda `Unverified` con esa razón, no `Violated`) y `base_missing` (D10).
 - **Hecho cuando:** en un repo con un ejecutor de prueba (un binario Go pequeño en `testdata`), una promesa pasa, otra falla con código 2, otra agota un tope reducido en el test y queda con `timeout`, y no aparece deriva justo después.
+- **Cómo quedó:**
+  - Spider expone `CheckTargets` (cada capability con sus promesas y su `check`) y `TouchedCapabilities(revision)` (las que tocan los archivos cambiados, incluidos los no commiteados).
+  - `action.Checker` elige las capabilities (sin argumentos por la base de D10, con un id, o `--all`), valida **todos** los ejecutores y parámetros antes de correr nada, agrupa las invocaciones (D20), las corre en serie y entrega los veredictos a `RecordResults`. Después hace un `Analyze` para las señales y el estado de cada promesa. Las promesas manuales se saltan y se listan en `manual`.
+  - `driver/runner` usa `os/exec` sin shell, directorio en la raíz del repo y el entorno del proceso, y guarda solo los últimos 64 KB de salida. En texto, la salida pasa en vivo a stderr; con `--json`, `invocations[].output` trae las últimas 40 líneas de cada invocación que falló. Al agotarse los 10 minutos mata el árbol de procesos (en Windows, `taskkill /T`; en Unix, el grupo de procesos), y `WaitDelay` evita que un hijo huérfano retenga la salida.
+  - `driver/branch` resuelve la base con `git merge-base HEAD <base>` (`--base` la fuerza; un valor que empieza con `-` se rechaza).
+  - Un programa que no arranca no es una promesa en rojo: la invocación queda `unavailable`, no se guarda ningún veredicto (la promesa sigue `Unverified`) y el comando falla con `runner_unavailable` (código 1), cuyo `hint` nombra el programa. Si además hay rojos, gana el código 2 y la invocación solo se lista.
+  - Errores: `base_missing`, `runner_missing` (antes de correr nada), `capability_missing`, `param_missing`/`param_unused`/`param_invalid` y `state_invalid`.
+  - **El tope de 10 minutos se prueba en el ejecutor** (con un tope reducido, un proceso colgado y otro que lanza un hijo) y en la acción (un `timeout` se guarda como `failed`), no en el e2e: D11 dice que el tope no se configura, así que el binario no tiene una perilla para reducirlo.
 
-### Paso 34. `diff` y pendientes de sí
+### Paso 34. `diff` y pendientes de sí (hecho)
 
 - **Construye:** `action/pending.go` y `action/diff.go`.
 - **`diff`:** toma `StateChanges` desde la base (o desde `--since <rev>`), clasifica cada cambio con `ClassifyChange`, agrupa por nivel y marca cuáles piden sí y cuáles ya tienen el sí fresco (D19).
 - **`pending`:** los cambios que piden sí y todavía no tienen el sí fresco. Lo usan `diff`, `brief` y `status`, y alimenta la señal "Pendiente de sí".
 - **Hecho cuando:** una edición a mano del texto de una promesa `active` aparece como pendiente, y deja de aparecer después de `record --approve`.
+- **Cómo quedó:**
+  - `diff` toma `StateChanges` desde la base (o `--since <rev>`), clasifica cada cambio con `ClassifyElements` y marca cuáles piden sí y cuáles ya tienen el sí fresco. Sale agrupado por nivel, de mayor a menor, con `pending` aparte y una señal `pending_yes` por pendiente. Sale con código 0: informa.
+  - `pending` (`PendingOf`) son los hallazgos que piden sí y no están aprobados. Una captura base se aprueba cuando cambió el `approved` de alguna promesa que usa su ejecutor; un cierre, cuando su línea archivada trae `approved`.
+  - **Hueco que cerré:** una edición a mano ya está en disco, así que `record --approve` con el mismo payload veía "sin cambios" y no estampaba nada. Ahora, si el registro no cambia y hay `--approve`, `record` estampa los pendientes de ese archivo; para una captura base, las promesas de ese registro que usan el ejecutor. Sin `--approve` no hace nada.
+  - **Sello repetido:** el sí fresco se reconoce porque el `approved` cambió. Si el mismo actor aprueba otro cambio del mismo elemento el mismo día, por el mismo agente, el sello saldría idéntico y el cambio seguiría pendiente. Por eso `approved` admite una clave `n` (`n: 2`, `n: 3`...) que el binario añade solo cuando el sello nuevo sería igual al guardado. Un `approved` normal no cambia de forma. Lo escribe `Draft.Stamp` y lo leen el mapper y `fmt`.
+  - **Árbol de procesos en Unix:** el test del ejecutor se corrió también en Linux (WSL), compilado con `GOOS=linux`; el grupo de procesos (`Setpgid` y `kill -pgid`) mata al hijo que retiene la salida.
 
-### Paso 35. `brief` y `status`
+### Paso 35. `brief` y `status` (hecho)
 
 - **`brief`:** el `brief` de Spider con los pendientes en su prioridad (paso 23). El aviso `N more, run beacon status` ya cumple P7.
 - **`status`:** rojos, deriva, bloqueos y pendientes de sí, sin tope de líneas. Sale siempre con código 0: informa, no bloquea.
 - **Hecho cuando:** un `brief` recortado nombra `beacon status`, y `status` muestra todo lo que el `brief` recortó.
+- **Cómo quedó:**
+  - Weaver arma una línea por pendiente de sí (`action.LineOf`: `promise bc-c3d4 promise_text_changed: <texto nuevo>`) y se la entrega a Spider, que la pone en su prioridad como `Needs approval: ...`. Sin base (`base_missing`) no hay pendientes y el comando sigue.
+  - `status` es el mismo `brief` **sin tope** (`Project.Status`), así que muestra todo lo que el `brief` recortó por construcción: bloqueos, rojos, trabajo en curso, pendientes de sí, deriva, promesas sin comprobar en esta máquina y el índice de guides. En texto, una primera línea cuenta rojos, deriva, bloqueos y pendientes de sí. Sale siempre con código 0.
+  - El resultado del `brief` de Spider trae ahora las señales con las que se armó, y el sobre las entrega junto con una señal `pending_yes` por pendiente. `data` lleva solo `lines` y `omitted`.
+  - Un estado inválido falla con `state_invalid` (código 1) y el `hint` de siempre, igual que las demás lecturas.
+  - **Sin base, se avisa:** si no hay rama base (`base_missing`) o no hay git, los pendientes no se pueden calcular. El `brief` y `status` siguen, pero el sobre lleva un `hint` ("no base branch was found, so pending yeses were not checked; run beacon diff --base <branch>") que en texto sale como una línea final. Con base, `hint` es `null`.
+  - `status` suma a `data` un `counts` (`red`, `drift`, `blocked`, `pending_yes`, siempre las cuatro claves). Las secciones ya viajan en cada línea (`lines[].section`), así que no hace falta una estructura aparte.
+  - **Costo:** con 500 capabilities, `brief` tarda 210 ms (la mitad es calcular los pendientes con git). Se quitó una consulta de más al resolver la base (`rev-parse` antes de `merge-base`). `context --hook` no usa git y sigue en unos 75 ms. Los números están en `layout`.
 
 ## 7. Bloque 7: cierre
 
-### Paso 36. Ramas largas
+### Paso 36. Ramas largas (hecho)
 
 - **Objetivo:** probar con casos reales la hipótesis de `method`.
 - **Casos (e2e en `branch_test.go`):**
   1. Una rama cambia una promesa mientras `main` cambia otra: `diff` en la rama muestra solo la suya.
   2. `main` debilita una promesa con `approved` y la rama se rebasa: el cambio de `main` no aparece como pendiente en la rama.
   3. Las dos ramas cambian la misma promesa: git da conflicto en ese archivo y `doctor` lo reporta.
-  4. Una rama vieja reclama una tarea que `main` ya cerró: `claim` falla con `record_missing` y el `hint` sugiere `beacon get <id>`, que la muestra archivada.
+  4. Una rama vieja reclama una tarea que `main` ya cerró: `claim` falla con `claim_task_archived` y el `hint` sugiere `beacon get <id>`, que la muestra archivada.
 - **Hecho cuando:** los cuatro casos pasan, o su comportamiento queda escrito en `method` y ese archivo deja de decir "no está resuelto".
+- **Cómo quedó:** los cuatro casos pasan en `branch_test.go` y `method` quedó actualizado.
+  - **Caso 3 con un cambio:** `doctor` reportaba el conflicto como "YAML inválido" en una línea al azar. Ahora Spider reconoce los tres marcadores de git (`<<<<<<<`, `=======` y `>>>>>>>`, juntos y en ese orden) en un registro o una guide, falla con `record_conflict` en la línea del primero, y el `hint` de `doctor` dice cómo resolverlo. Un solo marcador suelto no cuenta.
+  - **Caso 4 distinto del plan:** una rama vieja todavía ve la tarea abierta, así que puede reclamarla; el conflicto aparece al fusionar `main` (modificada contra borrada). El fallo `claim_task_archived` ocurre cuando la rama ya fusionó `main`. Los dos caminos tienen test.
+  - **Límite anotado:** un debilitamiento commiteado sin sí en `main` no aparece en `diff` de una rama que lo hereda; lo cubre el CI (`snares`, Fase 4). Se puede auditar a mano con `beacon diff --since <commit de origen>`, y hay un test que lo prueba.
+  - Una guide que documente un conflicto con los tres marcadores en el margen izquierdo se lee como conflicto; el mensaje de `record_conflict` ya dice que se sangren.
+  - `doctor` distingue los registros con CRLF (`record_line_endings`) de los demás no canónicos, y su `hint` manda a `.gitattributes` y a `beacon fmt`.
+  - El repo de prueba de e2e lleva ahora `.gitattributes` con `.beacon/** text eol=lf`, como lo hará `install` (Fase 3): sin eso, en Windows `git checkout` dejaba los registros con CRLF y `doctor` los marcaba como no canónicos.
 
-### Paso 37. Medición y KB
+### Paso 37. Medición y KB (hecho)
 
 - **Medir:** con 500 capabilities, cuánto tardan `record` (incluida la validación del grafo completo), `status` y el costo propio de `check` sin contar el ejecutor. Se anota en `layout`, junto a las mediciones anteriores.
 - **Sincronizar:** `status` marca la Fase 2 como cerrada, y la KB recoge lo que cambie al implementar.
 - **Hecho cuando:** los números están en `layout` y la KB no contradice el código.
+- **Cómo quedó:**
+  - Se midió el binario completo, un proceso por llamada, con 500 capabilities de 10 promesas (5.000), el repo empaquetado con `git gc` y un ejecutor de prueba que sale al instante. Los números, con su método, están en `layout`, en "Medición de la Fase 2". En resumen: `record` 117 ms (con el grafo completo), `context` 105 ms, `brief` y `status` 230 ms, `doctor` 424 ms y el costo propio de `check` entre 357 y 480 ms.
+  - **Sobre D20:** el costo propio de `check` no justifica paralelizar; lo que tarda es el ejecutor. Sigue en serie, y `layout` anota cuándo se reconsidera.
+  - **Sobre el riesgo del grafo completo en `record`:** no es lento (16 ms más que no escribir).
+  - **Sincronización:** `status` marca la Fase 2 como cerrada, suma la decisión del sello repetido (`n`) y actualiza el riesgo de arranque con los números reales; `layout`, `method`, `weaver`, `deltas`, `ledger`, `pledge`, `spider` y `survey` recogen lo que cambió al implementar. Lo que la KB describe y todavía no existe es de fases posteriores (`install`, `verify`, `attest`, `stale`, `migrate`, `stats`, `snares ci`).
 
 ## 8. Hitos y commits
 
 | Hito | Pasos | Rama | Resultado verificable |
 |---|---|---|---|
-| H6. Spider para Weaver | 23 a 26 | `feat/spider-writes` | `get` → `record` idempotente; archivo y huella probados |
-| H7. Dominio de Weaver | 27 y 28 | `feat/weaver-cli` | Tabla de niveles e invocaciones en verde |
-| H8. Lecturas y escritura | 29 a 32 | `feat/weaver-cli` | `get`, `find`, `context`, `ready`, `record`, `close` y `claim` en e2e |
-| H9. Checks y estado | 33 a 35 | `feat/weaver-cli` | `check`, `diff`, `brief` y `status` en e2e |
-| H10. Fase 2 cerrada | 36 y 37 | `feat/weaver-cli` | Ramas largas probadas y tiempos en `layout` |
+| H6. Spider para Weaver (hecho) | 23 a 26 | `feat/spider-writes` | `get` → `record` idempotente; archivo y huella probados |
+| H7. Dominio de Weaver (hecho) | 27 y 28 | `feat/weaver-cli` | Tabla de niveles e invocaciones en verde |
+| H8. Lecturas y escritura (hecho) | 29 a 32 | `feat/weaver-cli` | `get`, `find`, `context`, `ready`, `record`, `close` y `claim` en e2e |
+| H9. Checks y estado (hecho) | 33 a 35 | `feat/weaver-cli` | `check`, `diff`, `brief` y `status` en e2e |
+| H10. Fase 2 cerrada (hecho) | 36 y 37 | `feat/weaver-cli` | Ramas largas probadas y tiempos en `layout` |
 
 ## 9. Riesgos de la Fase 2
 
 | Riesgo | Qué lo mitiga |
 |---|---|
 | En Windows, matar un ejecutor no mata a sus hijos (un `pnpm` que lanza `node`) | `cmd.Cancel` más `WaitDelay`, y un test con un ejecutor que lanza un hijo. Si no alcanza, un job object de Windows en `driver/runner`, sin tocar el dominio |
-| Validar el grafo completo en cada `record` es lento en repos grandes | Se mide en el paso 37; la carga ya ronda los 70 ms con 500 capabilities |
+| Validar el grafo completo en cada `record` es lento en repos grandes | Medido en el paso 37: 117 ms con 500 capabilities y 5.000 promesas, 16 ms más que no escribir. Resuelto |
 | El payload completo de una capability grande es largo para el agente | `get --json` da la base exacta; si molesta, se reconsidera el parche (D7) con datos de fricción |
 | El agente escribe un `approved` que la persona no dio | El `approved` del payload se ignora (D16) y el sello solo sale de `--approve`. Sigue siendo un marcado (`deltas`) |
 | La huella cuesta con muchos archivos sin commitear | Se calcula solo sobre los archivos del diff en lote que caen en los `paths` (paso 26) |

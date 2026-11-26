@@ -1,9 +1,11 @@
 package spider
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"maps"
+	"math"
 	"os"
 	"path/filepath"
 	"slices"
@@ -41,6 +43,7 @@ type Finding = action.Finding
 const (
 	FindingError     = action.FindingError
 	CodeNotCanonical = action.CodeNotCanonical
+	CodeLineEndings  = action.CodeLineEndings
 )
 
 type ProjectCode string
@@ -135,7 +138,25 @@ func (p Project) Doctor(ctx context.Context) []Finding {
 
 	findings := append(action.Doctor(ctx, input), repairs...)
 
-	return p.relativeFindings(findings)
+	return p.relativeFindings(refineLineEndings(findings))
+}
+
+const lineEndingsMessage = "the file uses CRLF line endings"
+
+func refineLineEndings(findings []Finding) []Finding {
+	for index, finding := range findings {
+		if finding.Code != CodeNotCanonical {
+			continue
+		}
+
+		data, err := os.ReadFile(finding.File)
+		if err == nil && bytes.Contains(data, []byte("\r\n")) {
+			findings[index].Code = CodeLineEndings
+			findings[index].Message = lineEndingsMessage
+		}
+	}
+
+	return findings
 }
 
 func (p Project) completeCloses(ctx context.Context, lock string) []Finding {
@@ -218,13 +239,29 @@ func (p Project) Brief(
 	ctx context.Context,
 	pending []string,
 ) (BriefView, []Finding) {
+	return p.brief(ctx, pending, false)
+}
+
+func (p Project) Status(
+	ctx context.Context,
+	pending []string,
+) (BriefView, []Finding) {
+	return p.brief(ctx, pending, true)
+}
+
+func (p Project) brief(
+	ctx context.Context,
+	pending []string,
+	uncapped bool,
+) (BriefView, []Finding) {
 	sources, config, failures := p.sources(ctx)
-	result, briefFailures := action.Brief(
-		ctx,
-		sources,
-		config.Limits.Brief,
-		pending,
-	)
+
+	limit := config.Limits.Brief
+	if uncapped {
+		limit = math.MaxInt32
+	}
+
+	result, briefFailures := action.Brief(ctx, sources, limit, pending)
 
 	return briefView(result), p.findings(failures, briefFailures)
 }
@@ -427,7 +464,7 @@ func (p Project) StateChanges(
 
 	views := make([]StateChange, 0, len(changes))
 	for _, change := range changes {
-		view, err := p.stateChange(change)
+		view, err := p.stateChange(change, config)
 		if err != nil {
 			return nil, err
 		}
@@ -438,14 +475,26 @@ func (p Project) StateChanges(
 	return views, nil
 }
 
-func (p Project) stateChange(change commit.StateChange) (StateChange, error) {
+func (p Project) stateChange(
+	change commit.StateChange,
+	config record.Config,
+) (StateChange, error) {
 	view := StateChange{
 		Path:     change.Path,
 		Kind:     string(change.Kind),
 		Baseline: change.Baseline,
 	}
 	if change.Baseline {
-		return view, nil
+		runners, err := baselineRunners(config, change.Path)
+		view.Runners = runners
+
+		return view, err
+	}
+	if change.Archive {
+		var err error
+		view.Closed, err = closuresOf(change)
+
+		return view, err
 	}
 
 	file := filepath.Join(p.root, filepath.FromSlash(change.Path))
@@ -970,6 +1019,26 @@ func parseVerdicts(verdicts []Verdict) ([]action.Verdict, error) {
 	}
 
 	return parsed, nil
+}
+
+func baselineRunners(config record.Config, path string) ([]string, error) {
+	matcher := match.NewMatcher()
+	var runners []string
+
+	for _, name := range slices.Sorted(maps.Keys(config.Runners)) {
+		for _, glob := range config.Runners[name].Baseline {
+			matched, err := matcher.MatchPath(glob, path)
+			if err != nil {
+				return nil, err
+			}
+			if matched {
+				runners = append(runners, name)
+				break
+			}
+		}
+	}
+
+	return runners, nil
 }
 
 func baselinesOf(config record.Config) []kernel.PathGlob {

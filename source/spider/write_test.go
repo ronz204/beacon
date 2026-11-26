@@ -346,3 +346,84 @@ func TestRecordCreatesASubtaskFromItsID(t *testing.T) {
 		t.Fatalf("task = %+v", task)
 	}
 }
+
+func approveText(
+	t *testing.T,
+	project spider.Project,
+	text string,
+	stamp spider.Approval,
+) {
+	t.Helper()
+
+	fields := storedFields(t, project, "bc-7f3a")
+	promise := promisesOf(fields)[0].(map[string]any)
+	promise["text"] = text
+	prepared, err := project.Prepare(
+		context.Background(),
+		payloadOf(t, "capability", fields),
+		author,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	stamps := map[string]spider.Approval{"bc-c3d4": stamp}
+	if err := project.Save(context.Background(), prepared, stamps); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSaveCountsAnApprovalThatRepeatsTheStoredStamp(t *testing.T) {
+	project, root := newProject(t)
+	stamp := spider.Approval{By: "human:jane", At: "2026-11-25", Via: author}
+
+	approveText(t, project, "After 10 failed attempts.", stamp)
+	first := readFile(t, root, capabilityFile)
+	approveText(t, project, "After 20 failed attempts.", stamp)
+	second := readFile(t, root, capabilityFile)
+	approveText(t, project, "After 30 failed attempts.", stamp)
+	third := readFile(t, root, capabilityFile)
+
+	if strings.Contains(first, ", n:") {
+		t.Fatalf("a first stamp must not carry a count:\n%s", first)
+	}
+	if !strings.Contains(second, ", n: 2}") {
+		t.Fatalf("the repeated stamp must count:\n%s", second)
+	}
+	if !strings.Contains(third, ", n: 3}") {
+		t.Fatalf("the count must keep growing:\n%s", third)
+	}
+}
+
+func TestSaveDoesNotCountADifferentStamp(t *testing.T) {
+	project, root := newProject(t)
+	first := spider.Approval{By: "human:jane", At: "2026-11-25", Via: author}
+	next := spider.Approval{By: "human:jane", At: "2026-11-26", Via: author}
+
+	approveText(t, project, "After 10 failed attempts.", first)
+	approveText(t, project, "After 20 failed attempts.", next)
+
+	text := readFile(t, root, capabilityFile)
+	if strings.Contains(text, ", n:") {
+		t.Fatalf("a new day is a new stamp:\n%s", text)
+	}
+}
+
+func TestACountedApprovalReadsBackAndStaysCanonical(t *testing.T) {
+	project, root := newProject(t)
+	stamp := spider.Approval{By: "human:jane", At: "2026-11-25", Via: author}
+	approveText(t, project, "After 10 failed attempts.", stamp)
+	approveText(t, project, "After 20 failed attempts.", stamp)
+
+	result := project.Format(context.Background())
+	doctor := project.Doctor(context.Background())
+
+	if len(result.Changed) != 0 || len(result.Findings) != 0 {
+		t.Fatalf("fmt = %+v\n%s", result, readFile(t, root, capabilityFile))
+	}
+	for _, finding := range doctor {
+		if finding.Severity == spider.FindingError {
+			t.Fatalf("finding = %+v", finding)
+		}
+	}
+}

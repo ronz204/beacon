@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -14,12 +15,14 @@ import (
 
 	"github.com/ronz204/beacon/source/kernel"
 	"github.com/ronz204/beacon/source/spider/internal/domain/agenda"
+	"github.com/ronz204/beacon/source/spider/internal/domain/ledger"
 	"github.com/ronz204/beacon/source/spider/internal/domain/memory"
 	"github.com/ronz204/beacon/source/system"
 )
 
 const (
 	recordsFolder = ".beacon/records/"
+	archiveFolder = ".beacon/archive/"
 	configPath    = ".beacon/config.yaml"
 	guidesFolder  = ".beacon/records/guides"
 	commitMark    = "\x00"
@@ -46,6 +49,7 @@ type StateChange struct {
 	Path     string
 	Kind     ChangeKind
 	Baseline bool
+	Archive  bool
 	Before   []byte
 	After    []byte
 }
@@ -64,6 +68,10 @@ func (r Repository) FilesChangedSince(
 ) ([]string, error) {
 	if !commitPattern.MatchString(commit) {
 		return nil, kernel.FailHistory(errInvalidCommit)
+	}
+
+	if err := r.requireCommit(ctx, commit); err != nil {
+		return nil, err
 	}
 
 	var tracked string
@@ -197,6 +205,7 @@ func (r Repository) StateChanges(
 		}
 
 		entry.Baseline = baseline
+		entry.Archive = strings.HasPrefix(entry.Path, archiveFolder)
 		if err := r.fillContents(ctx, revision, &entry); err != nil {
 			return nil, err
 		}
@@ -268,6 +277,24 @@ func (r Repository) fillContents(
 	}
 
 	change.After = after
+
+	return nil
+}
+
+func (r Repository) requireCommit(ctx context.Context, commit string) error {
+	_, err := system.Git(
+		ctx,
+		r.root,
+		"rev-parse", "--verify", "--quiet", commit+"^{commit}",
+	)
+
+	var exited *exec.ExitError
+	if errors.As(err, &exited) && exited.ExitCode() == 1 {
+		return ledger.ErrCommitUnknown
+	}
+	if err != nil {
+		return kernel.FailHistory(err)
+	}
 
 	return nil
 }
@@ -383,5 +410,7 @@ func matchesAny(
 }
 
 func isStatePath(path string) bool {
-	return path == configPath || strings.HasPrefix(path, recordsFolder)
+	return path == configPath ||
+		strings.HasPrefix(path, recordsFolder) ||
+		strings.HasPrefix(path, archiveFolder)
 }

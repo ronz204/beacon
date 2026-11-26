@@ -4,6 +4,7 @@ import (
 	"errors"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/ronz204/beacon/source/kernel"
@@ -15,6 +16,10 @@ import (
 
 var guideFilePattern = regexp.MustCompile(
 	`^(bc-[0-9a-f]{4,})-.+\.md$`,
+)
+
+var errApprovalCount = errors.New(
+	"approval n must be a whole number from 1",
 )
 
 type fields struct {
@@ -200,9 +205,10 @@ func approval(f *fields) kernel.Approval {
 	}
 
 	approved, err := kernel.ParseApproval(kernel.ApprovalInput{
-		By:  one(section, "by", rawText),
-		At:  one(section, "at", rawText),
-		Via: one(section, "via", rawText),
+		By:    one(section, "by", rawText),
+		At:    one(section, "at", rawText),
+		Via:   one(section, "via", rawText),
+		Count: one(section, "n", approvalCount),
 	})
 	if err != nil {
 		f.fail(section.root.Line, err)
@@ -210,6 +216,20 @@ func approval(f *fields) kernel.Approval {
 	}
 
 	return approved
+}
+
+func approvalCount(raw string) (int, error) {
+	text := strings.TrimSpace(raw)
+	if text == "" {
+		return 0, nil
+	}
+
+	count, err := strconv.Atoi(text)
+	if err != nil || count < 1 {
+		return 0, errApprovalCount
+	}
+
+	return count, nil
 }
 
 func attestation(f *fields) ledger.PromiseAttestation {

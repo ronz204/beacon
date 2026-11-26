@@ -38,6 +38,10 @@ func newProject(t *testing.T) (spider.Project, string) {
 		t.Fatal(err)
 	}
 
+	if result := project.Format(context.Background()); len(result.Changed) > 0 {
+		runGit(t, root, "commit", "-q", "-am", "canonical format")
+	}
+
 	return project, root
 }
 

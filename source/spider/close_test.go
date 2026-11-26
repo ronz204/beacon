@@ -200,3 +200,50 @@ func TestDoctorCompletesAnInterruptedPromiseClose(t *testing.T) {
 		t.Fatal("the interrupted close left the promise in its capability")
 	}
 }
+
+func TestStateChangesReportTheApprovalOfAClosure(t *testing.T) {
+	project, _ := newProject(t)
+	closeRecord(t, project, "bc-c4a1", map[string]spider.Approval{
+		"bc-c4a1": {By: "human:jane", At: "2026-11-25"},
+	})
+
+	changes, err := project.StateChanges(context.Background(), "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var closed []spider.Closure
+	for _, change := range changes {
+		closed = append(closed, change.Closed...)
+	}
+
+	if len(closed) != 1 || closed[0].ID != "bc-c4a1" {
+		t.Fatalf("closed = %+v", closed)
+	}
+	if !strings.Contains(closed[0].Approved, "human:jane") {
+		t.Fatalf("approved = %q", closed[0].Approved)
+	}
+}
+
+func TestStateChangesListThePromisesOfAClosedCapability(t *testing.T) {
+	project, _ := newProject(t)
+	closeRecord(t, project, "bc-7f3a", map[string]spider.Approval{
+		"bc-7f3a": {By: "human:jane", At: "2026-11-25"},
+	})
+
+	changes, err := project.StateChanges(context.Background(), "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var promises []string
+	for _, change := range changes {
+		for _, closed := range change.Closed {
+			promises = append(promises, closed.Promises...)
+		}
+	}
+
+	if len(promises) != 2 || promises[0] != "bc-c3d4" {
+		t.Fatalf("promises = %v", promises)
+	}
+}

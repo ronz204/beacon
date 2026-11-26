@@ -139,6 +139,32 @@ Medición en Go con `gopkg.in/yaml.v3` v3.0.1 (2026-11-22). Cada archivo es una 
 
 Es de 2 a 3 veces más rápido que la medición anterior en Python con libyaml (20 ms, 210 ms y 2 s para 50, 500 y 5.000 archivos). Con decenas de capabilities el arranque no se nota; con cientos sigue por debajo de 100 ms y solo con miles de archivos se siente en cada llamada de CLI.
 
+### Medición de la Fase 2: el binario completo
+
+Medida el 2026-11-26 con el binario real, un proceso por llamada: 500 capabilities con 10 promesas cada una (5.000 promesas, 2,3 MB), repo empaquetado con `git gc`, i7-13620H con Windows, mediana de 7 corridas (9 en `record` y `check`, 5 en `check --all`). El ejecutor de prueba sale al instante y su arranque cuesta 5 ms, que se resta del costo de `check`.
+
+| Comando | Tiempo | Qué incluye |
+|---|---|---|
+| `context <archivo>` | 105 ms | Carga, grafo y señales, sin git de deriva |
+| `diff` | 130 ms | Cambios de estado desde la base, clasificados |
+| `brief` y `status` | 230 ms | Análisis completo, git y pendientes de sí |
+| `doctor` | 424 ms | Valida todos los registros y su formato |
+| `record` de una capability de 10 promesas | 117 ms | Valida el grafo completo, escribe de forma atómica |
+| `record` sin cambios | 101 ms | Lo mismo sin escribir |
+| `check <capability>` | 357 ms propios | Una invocación para sus 10 promesas |
+| `check` sin argumentos, con una capability tocada | 480 ms propios | Suma la base y los archivos cambiados |
+| `check --all` (5.000 promesas, una invocación) | 371 ms propios | Guarda 5.000 veredictos |
+| `status` tras `check --all` | 251 ms | Lee `results.json` y calcula la deriva |
+| `context` tras `check --all` | 138 ms | Lo mismo, sin git de pendientes |
+
+Qué dicen los números:
+
+- **Validar el grafo completo en cada `record` no pesa:** 117 ms con 5.000 promesas, apenas 16 ms más que no escribir nada.
+- **El costo propio de `check` es de 0,4 a 0,5 s con 500 capabilities.** Es de 3 a 4 veces el de `status` porque cada operación (selección, ejecutores, guardar resultados y análisis) vuelve a cargar el estado. Es poco frente a una suite, que tarda segundos o minutos. **Se reconsidera** compartir una sola carga entre esas operaciones si pasa de 1 s con 500 capabilities, o si un pre-commit que corra `check` se siente lento (`snares`).
+- **Los resultados guardados cuestan unos 20 a 30 ms** por llamada (`status` pasa de 230 a 251 ms) por leer `results.json` y comparar huellas.
+- **`context --hook` no consulta git** y sigue por debajo de `context`; lo que se mide antes de cada edición no cambió con la Fase 2.
+- **No se paraleliza `check` (D20).** Lo que tarda es el ejecutor, que el binario no acorta, y correr suites a la vez puede romperlas si comparten puertos o una base de datos. Se mantiene en serie y se reconsidera si la fricción muestra suites independientes que sumen minutos.
+
 Esta tabla se midió con `gopkg.in/yaml.v3`, hoy archivada. En una prueba del 2026-11-23, solo de parseo a nodos, v3.0.6 y v4.0.0 tardaron prácticamente lo mismo (42 y 41 ms para 500 archivos). Al cerrar la Fase 1 se midió el código real: 500 capabilities con 10 promesas cada una, carga más validación del grafo, tardan unos 70 ms (mediana de 5 corridas con caché caliente, en un i7-13620H de 16 hilos). No es comparable directo con la tabla, medida con 2 núcleos.
 
 ### Consultas a git

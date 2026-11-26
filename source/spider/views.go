@@ -41,6 +41,7 @@ type BriefLine struct {
 type BriefView struct {
 	Lines   []BriefLine `json:"lines"`
 	Omitted int         `json:"omitted"`
+	Signals []Signal    `json:"signals"`
 }
 
 type PromiseView struct {
@@ -94,12 +95,21 @@ type FindView struct {
 	Omitted int     `json:"omitted"`
 }
 
+type Closure struct {
+	Type     string   `json:"type"`
+	ID       string   `json:"id"`
+	Approved string   `json:"approved,omitempty"`
+	Promises []string `json:"promises,omitempty"`
+}
+
 type StateChange struct {
-	Path     string  `json:"path"`
-	Kind     string  `json:"kind"`
-	Baseline bool    `json:"baseline"`
-	Before   *Record `json:"before"`
-	After    *Record `json:"after"`
+	Path     string    `json:"path"`
+	Kind     string    `json:"kind"`
+	Baseline bool      `json:"baseline"`
+	Runners  []string  `json:"runners,omitempty"`
+	Closed   []Closure `json:"closed,omitempty"`
+	Before   *Record   `json:"before"`
+	After    *Record   `json:"after"`
 }
 
 func summaryOf(id, text fmt.Stringer) Summary {
@@ -131,7 +141,11 @@ func briefView(result action.BriefResult) BriefView {
 		})
 	}
 
-	return BriefView{Lines: lines, Omitted: result.Omitted}
+	return BriefView{
+		Lines:   lines,
+		Omitted: result.Omitted,
+		Signals: signalViews(result.Signals),
+	}
 }
 
 func promiseView(

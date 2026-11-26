@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/ronz204/beacon/source/kernel"
+	"github.com/ronz204/beacon/source/spider/internal/domain/ledger"
 	"github.com/ronz204/beacon/source/spider/internal/driver/commit"
 	"github.com/ronz204/beacon/source/spider/internal/driver/match"
 )
@@ -129,7 +130,9 @@ func TestFilesChangedSinceReportsUnknownCommit(t *testing.T) {
 	repository := commit.NewRepository(box.root)
 	_, err := repository.FilesChangedSince(context.Background(), "abcdef12")
 
-	requireHistoryFailure(t, err)
+	if !errors.Is(err, ledger.ErrCommitUnknown) {
+		t.Fatalf("expected an unknown commit, got %v", err)
+	}
 }
 
 func TestCommitsSinceListsDaysAndFiles(t *testing.T) {
