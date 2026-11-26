@@ -1,0 +1,107 @@
+package handle
+
+import (
+	"fmt"
+
+	"github.com/ronz204/beacon/source/router/internal/output"
+	"github.com/ronz204/beacon/source/weaver"
+	"github.com/spf13/cobra"
+)
+
+func Diff(printer *output.Printer, exit *int) *cobra.Command {
+	var since, base string
+
+	command := &cobra.Command{
+		Use:   "diff",
+		Short: "Show the state changes by level",
+		Args:  cobra.NoArgs,
+		RunE: func(command *cobra.Command, _ []string) error {
+			project, failure := locateProject()
+			if failure != nil {
+				*exit = printer.Failure(*failure)
+				return nil
+			}
+
+			view, signals, err := weaver.New(project).Diff(
+				command.Context(),
+				since,
+				base,
+			)
+			if err != nil {
+				*exit = printer.Failure(errorFailure(err))
+				return nil
+			}
+
+			result := output.Result{
+				Data:    view,
+				Signals: signals,
+				Lines:   diffLines(view),
+			}
+			if len(view.Pending) > 0 {
+				result.Hint = pendingHint(view)
+			}
+
+			*exit = printer.Done(result)
+
+			return nil
+		},
+	}
+
+	command.Flags().StringVar(&since, "since", "", "compare against a revision")
+	command.Flags().StringVar(&base, "base", "", "branch to compare against")
+
+	return command
+}
+
+func pendingHint(view weaver.DiffView) string {
+	return fmt.Sprintf(
+		"%d changes wait for a yes: ask the person, and if they say yes, "+
+			"send the record again with beacon record --approve -",
+		len(view.Pending),
+	)
+}
+
+func diffLines(view weaver.DiffView) []string {
+	if len(view.Levels) == 0 {
+		return []string{"no state changes since " + view.Revision}
+	}
+
+	var lines []string
+	for _, level := range view.Levels {
+		lines = append(lines, fmt.Sprintf("level %d", level.Level))
+		for _, entry := range level.Changes {
+			lines = append(lines, entryLines(entry)...)
+		}
+	}
+
+	return lines
+}
+
+func entryLines(entry weaver.EntryView) []string {
+	line := fmt.Sprintf(
+		"  %s %s %s %s",
+		entry.Kind,
+		entry.Path,
+		entry.Target,
+		entry.ID,
+	)
+	if entry.Reason != "" {
+		line += " " + entry.Reason
+	}
+	if entry.NeedsYes && entry.Approved {
+		line += " (approved)"
+	}
+	if entry.NeedsYes && !entry.Approved {
+		line += " (needs a yes)"
+	}
+
+	lines := []string{line}
+	if entry.Before != "" {
+		lines = append(lines, "    - "+entry.Before)
+	}
+	if entry.After != "" {
+		lines = append(lines, "    + "+entry.After)
+	}
+
+	return lines
+}

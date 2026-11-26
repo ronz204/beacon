@@ -377,6 +377,21 @@ func (c StateChange) Baseline() bool {
 	return c.baseline
 }
 
+func (c StateChange) PromisesUsing(runners []string) []string {
+	if c.after == nil {
+		return nil
+	}
+
+	var ids []string
+	for _, promise := range c.after.promises {
+		if promise.runner != "" && slices.Contains(runners, promise.runner) {
+			ids = append(ids, promise.id.String())
+		}
+	}
+
+	return ids
+}
+
 func (c StateChange) Runners() []string {
 	return slices.Clone(c.runners)
 }

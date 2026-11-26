@@ -86,12 +86,37 @@ type CheckView struct {
 	Failed       []PromiseResultView `json:"failed"`
 }
 
+type EntryView struct {
+	Path     string `json:"path"`
+	Kind     string `json:"kind"`
+	Target   string `json:"target"`
+	ID       string `json:"id"`
+	Level    int    `json:"level"`
+	Reason   string `json:"reason,omitempty"`
+	Before   string `json:"before,omitempty"`
+	After    string `json:"after,omitempty"`
+	NeedsYes bool   `json:"needsYes"`
+	Approved bool   `json:"approved"`
+}
+
+type LevelView struct {
+	Level   int         `json:"level"`
+	Changes []EntryView `json:"changes"`
+}
+
+type DiffView struct {
+	Revision string      `json:"revision"`
+	Levels   []LevelView `json:"levels"`
+	Pending  []EntryView `json:"pending"`
+}
+
 type Weaver struct {
 	changes deltas.ChangeSource
 	records action.Recorder
 	closer  action.Closer
 	claimer action.Claimer
 	checker action.Checker
+	differ  action.Differ
 }
 
 func New(project spider.Project) Weaver {
@@ -99,12 +124,18 @@ func New(project spider.Project) Weaver {
 	records := facade.NewRecords(project)
 	who := identity.Git{}
 
+	differ := action.Differ{
+		Changes: facade.NewChanges(project),
+		Base:    branch.Git{},
+	}
+
 	return Weaver{
 		changes: facade.NewChanges(project),
 		records: action.Recorder{
 			Store:    records,
 			Identity: who,
 			Today:    today,
+			Pending:  differ,
 		},
 		closer: action.Closer{
 			Store:    facade.NewCloses(project),
@@ -116,12 +147,83 @@ func New(project spider.Project) Weaver {
 			Store:    records,
 			Identity: who,
 		},
+		differ: differ,
 		checker: action.Checker{
 			Source:   facade.NewChecks(project),
 			Base:     branch.Git{},
 			Executor: runner.New(nil),
 		},
 	}
+}
+
+func (w Weaver) Diff(
+	ctx context.Context,
+	since string,
+	base string,
+) (DiffView, []spider.Signal, error) {
+	result, err := w.differ.Diff(ctx, action.DiffInput{
+		Since: since,
+		Base:  base,
+	})
+
+	return diffView(result), pendingSignals(result.Pending), err
+}
+
+func diffView(result action.DiffResult) DiffView {
+	view := DiffView{
+		Revision: result.Revision,
+		Levels:   []LevelView{},
+		Pending:  entryViews(result.Pending),
+	}
+
+	for _, entry := range entryViews(result.Entries) {
+		last := len(view.Levels) - 1
+		if last < 0 || view.Levels[last].Level != entry.Level {
+			view.Levels = append(view.Levels, LevelView{Level: entry.Level})
+			last++
+		}
+
+		view.Levels[last].Changes = append(view.Levels[last].Changes, entry)
+	}
+
+	return view
+}
+
+func entryViews(entries []action.Entry) []EntryView {
+	views := make([]EntryView, 0, len(entries))
+
+	for _, entry := range entries {
+		report := action.ReportOf(entry.Finding)
+		views = append(views, EntryView{
+			Path:     entry.Path,
+			Kind:     entry.Kind,
+			Target:   report.Target,
+			ID:       report.ID,
+			Level:    report.Level,
+			Reason:   report.Reason,
+			Before:   report.Before,
+			After:    report.After,
+			NeedsYes: report.NeedsYes,
+			Approved: entry.Approved,
+		})
+	}
+
+	return views
+}
+
+const pendingSignal = "pending_yes"
+
+func pendingSignals(pending []action.Entry) []spider.Signal {
+	signals := make([]spider.Signal, 0, len(pending))
+
+	for _, entry := range pending {
+		signals = append(signals, spider.Signal{
+			Kind:   pendingSignal,
+			Record: action.ReportOf(entry.Finding).ID,
+		})
+	}
+
+	return signals
 }
 
 func (w Weaver) Streaming(out io.Writer) Weaver {
