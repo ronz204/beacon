@@ -4,7 +4,7 @@ Este plan cubre solo la fase en curso: en qué orden se construye y qué archivo
 
 La numeración de pasos y decisiones sigue la del plan de la Fase 1 (Spider), ya cerrada, para que las referencias de la KB y de los commits sigan valiendo: por eso los pasos empiezan en el 23 y las decisiones en D5. Ese plan está en el historial de git (`git show 967f5aa:PLANNING.md`).
 
-> **Estado: en curso.** Bloques 4 y 5 cerrados (pasos 23 a 28); sigue el paso 29, con la rama `feat/weaver-cli`. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
+> **Estado: en curso.** Bloques 4 y 5 cerrados y pasos 29 y 30 hechos; sigue el paso 31, con la rama `feat/weaver-cli`. Las decisiones D5 a D20 están cerradas con la persona y registradas en la KB.
 
 ## 1. Panorama
 
@@ -456,7 +456,7 @@ cmd/beacon → router → weaver.go → action → domain → kernel
 
 Cada comando tiene un test e2e que corre el binario real sobre un repo temporal (`testing/utils`).
 
-### Paso 29. Salida, señales y lecturas
+### Paso 29. Salida, señales y lecturas (hecho)
 
 - **Objetivo:** completar el sobre `--json` y poner en marcha las lecturas puras.
 - **Construye:** el código 2 (`ExitBlocked`) en `output`, `signals.go` y los handlers de `get`, `find`, `context` (con `--hook`) y `ready`.
@@ -464,8 +464,14 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
 - **`ready`** toma la rama actual de git. Con HEAD separado, usa el commit y lo avisa.
 - **`context --hook`** necesita un id de sesión, que recibe con `--session <id>`. De dónde lo saca cada agente se decide en la Fase 3 (abierto en `status`).
 - **Hecho cuando:** los cuatro comandos devuelven el sobre con `signals` llenas, y un archivo sin dueño recibe en `context` solo la meta y las guides `always`.
+- **Cómo quedó:**
+  - `output.Printer` tiene `Done(Result)` (datos, señales, `hint` y código de salida) y `Failure` acepta un código de salida; `ExitBlocked` es 2. En texto, una línea `signal: <kind> <registro> [<relación> <relacionado>]` por señal.
+  - `get`, `find` y `ready` van directo a Spider. `context` convierte las rutas a la raíz del repo (`Project.RepoPath`) y con `--hook --session <id>` imprime solo lo nuevo, sin salida si no hay nada. Sin `--session` falla con `session_required`.
+  - `ready` toma la rama con `Project.Branch` (`git symbolic-ref`); con HEAD separado usa el commit y avisa en una línea y en el `hint`.
+  - Solo `context` entrega `signals` en el sobre: `get`, `find` y `ready` no tienen señales que dar, y sus `signals` van vacías.
+  - Un error de Spider se traduce a `code`, `message`, `details` y un `hint` por código (`handle/failure.go`); un código sin `hint` propio manda a `beacon doctor`.
 
-### Paso 30. `record`
+### Paso 30. `record` (hecho)
 
 - **Flujo:** leer stdin → `Prepare` → `ClassifyChange` en cada cambio → si alguno pide sí y no hay `--approve`, salir con código 2 sin escribir → con `--approve`, sellar `approved` en cada elemento afectado → `Save`.
 - **Respuesta:** `data` con el id, el archivo, los cambios con su nivel y los campos del payload que se ignoraron (D16).
@@ -481,6 +487,12 @@ Cada comando tiene un test e2e que corre el binario real sobre un repo temporal 
 | `identity_missing` | 1 | `set git config user.name, then rerun` |
 
 - **Hecho cuando:** el ejemplo de `deltas` se bloquea con código 2, el mismo payload con `--approve` se guarda con `approved: {by, at, via}`, y un payload de config con `runners` cambiados sigue el mismo camino (D13).
+- **Cómo quedó:**
+  - `action.Recorder` hace el flujo: identidad, `Prepare`, `ClassifyElements`, y si algún hallazgo pide sí y no hay `--approve`, `approval_required` (código 2, con los cambios en `details.changes`) sin escribir. Con `--approve`, sella cada elemento que pide sí (la promesa, el registro o `config`) y llama a `Save`. Un registro sin cambios no se escribe.
+  - `driver/identity` resuelve el actor: `BEACON_ACTOR` si existe, y si no `human:<user.name>`; sin nombre, `identity_missing`. Un agente necesita además el nombre solo al sellar.
+  - `ClassifyElements` solo informa lo que cambió: una promesa intacta o una capability sin cambios propios no salen en `changes`.
+  - La respuesta es `{type, id, file, saved, unchanged, changes: [{target, id, level, needsYes}], ignored}`. La guía de redacción de promesas sigue en la Fase 3.
+  - `errorFailure` mapea cada código de Spider y de Weaver a su `hint`; los códigos de la tabla de arriba coinciden con los del plan.
 
 ### Paso 31. `close`
 

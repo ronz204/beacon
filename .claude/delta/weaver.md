@@ -24,6 +24,8 @@ Sin `--json`, la salida es texto breve para personas. Con `--json`, **todos los 
 - `hint`: el siguiente paso exacto cuando algo bloquea, o `null` (P7).
 - Si `ok` es `false`, `data` es `null` y aparece `error: {code, message, details}`. `details` es opcional y lleva lo que explica el fallo, por ejemplo los hallazgos de `doctor` con archivo y línea.
 
+**Bloqueo por un sí:** `record` y `close` responden `ok: false`, `error.code: approval_required`, los cambios que piden sí en `error.details.changes` y el `hint` con el comando exacto, con código 2.
+
 **Códigos de salida:** `0` ok, `1` error de uso (argumentos o registro inválido), `2` bloqueado, a la espera de un sí o de una respuesta de la persona, con un recurso ocupado (por ejemplo una tarea ya reclamada) o con una promesa en rojo tras `beacon check`.
 
 **Idioma:** los mensajes, los `hint` y los errores van **en inglés**, igual que las claves y la guía del método (`design`).
