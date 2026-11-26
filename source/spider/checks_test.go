@@ -62,3 +62,29 @@ func TestTouchedCapabilitiesFollowTheChangedFiles(t *testing.T) {
 		t.Fatalf("none = %v, some = %v", none, some)
 	}
 }
+
+func TestStatusHoldsEverythingTheCappedBriefOmitted(t *testing.T) {
+	project, root := newProject(t)
+	writeFile(t, root, configFile, strings.Replace(
+		readFile(t, root, configFile),
+		"brief: 60",
+		"brief: 3",
+		1,
+	))
+
+	brief, briefFindings := project.Brief(context.Background(), nil)
+	status, statusFindings := project.Status(context.Background(), nil)
+
+	if len(briefFindings) != 0 || len(statusFindings) != 0 {
+		t.Fatalf("findings = %+v %+v", briefFindings, statusFindings)
+	}
+	if brief.Omitted == 0 || status.Omitted != 0 {
+		t.Fatalf("omitted = %d and %d", brief.Omitted, status.Omitted)
+	}
+	if len(status.Lines) != len(brief.Lines)-1+brief.Omitted {
+		t.Fatalf("lines = %d, brief = %+v", len(status.Lines), brief)
+	}
+	if len(status.Signals) == 0 {
+		t.Fatal("status must carry the signals it was built from")
+	}
+}

@@ -32,6 +32,7 @@ type BriefLine struct {
 type BriefResult struct {
 	Lines   []BriefLine
 	Omitted int
+	Signals []thread.Signal
 }
 
 type briefTexts struct {
@@ -58,7 +59,10 @@ func Brief(
 		guideLines(snapshot.Guides),
 	)
 
-	return fitBrief(goalLines(snapshot.Goals), ranked, limit), failures
+	result := fitBrief(goalLines(snapshot.Goals), ranked, limit)
+	result.Signals = analysis.Signals
+
+	return result, failures
 }
 
 func newBriefTexts(snapshot Snapshot) briefTexts {

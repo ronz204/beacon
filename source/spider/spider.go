@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"maps"
+	"math"
 	"os"
 	"path/filepath"
 	"slices"
@@ -218,13 +219,29 @@ func (p Project) Brief(
 	ctx context.Context,
 	pending []string,
 ) (BriefView, []Finding) {
+	return p.brief(ctx, pending, false)
+}
+
+func (p Project) Status(
+	ctx context.Context,
+	pending []string,
+) (BriefView, []Finding) {
+	return p.brief(ctx, pending, true)
+}
+
+func (p Project) brief(
+	ctx context.Context,
+	pending []string,
+	uncapped bool,
+) (BriefView, []Finding) {
 	sources, config, failures := p.sources(ctx)
-	result, briefFailures := action.Brief(
-		ctx,
-		sources,
-		config.Limits.Brief,
-		pending,
-	)
+
+	limit := config.Limits.Brief
+	if uncapped {
+		limit = math.MaxInt32
+	}
+
+	result, briefFailures := action.Brief(ctx, sources, limit, pending)
 
 	return briefView(result), p.findings(failures, briefFailures)
 }

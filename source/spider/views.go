@@ -41,6 +41,7 @@ type BriefLine struct {
 type BriefView struct {
 	Lines   []BriefLine `json:"lines"`
 	Omitted int         `json:"omitted"`
+	Signals []Signal    `json:"signals"`
 }
 
 type PromiseView struct {
@@ -140,7 +141,11 @@ func briefView(result action.BriefResult) BriefView {
 		})
 	}
 
-	return BriefView{Lines: lines, Omitted: result.Omitted}
+	return BriefView{
+		Lines:   lines,
+		Omitted: result.Omitted,
+		Signals: signalViews(result.Signals),
+	}
 }
 
 func promiseView(
