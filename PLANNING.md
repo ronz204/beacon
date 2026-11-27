@@ -2,7 +2,7 @@
 
 Plan de ejecución de los packs descritos en `KETSET.md` (qué es y por qué) y en `.claude/delta/packs.md` (el diseño vigente). Aquí va el cómo, el orden y la verificación. Rama: `feat/add-skills-and-rules`.
 
-**Estado:** propuesta y plan aprobados por la persona dueña el 2026-11-27, con el nombre `packs`. D5 quedó en nivel 3 y los packs se redujeron a tres. K0 se cerró el mismo día y el siguiente paso es K1. Quedan dos preguntas abiertas (sección 6), y ninguna bloquea K1. Los planes anteriores (Fases 1 a 4) están en el historial de git: `PLANNING.md` hasta el commit `7895362`.
+**Estado:** propuesta y plan aprobados por la persona dueña el 2026-11-27, con el nombre `packs`. D5 quedó en nivel 3 y los packs se redujeron a tres. K0 se cerró el mismo día. Las dos preguntas que quedaban se cerraron después (D16 y D17), así que el plan está listo para implementar K1. Los planes anteriores (Fases 1 a 4) están en el historial de git: `PLANNING.md` hasta el commit `7895362`.
 
 ---
 
@@ -33,7 +33,7 @@ Todo se renderiza con una plantilla y un binding, para que sirva en cualquier st
 
 ## 2. Decisiones
 
-D1 a D12 quedaron aprobadas el 2026-11-27, con los ajustes que se indican. D13 a D15 son nuevas de ese día.
+D1 a D12 quedaron aprobadas el 2026-11-27, con los ajustes que se indican. D13 a D17 son nuevas de ese día.
 
 ### D1. Los packs viven en Anchor
 
@@ -103,7 +103,31 @@ Criterio de aceptación de K1, K2 y K7: cero preguntas por defecto, `--preview` 
 
 ### D15. `install` crece sin romper lo existente
 
-`--pack <nombre>` es nuevo. `--skip` hoy acepta `hooks` y `reinject`; pasa a aceptar también el nombre de una pieza. Los comportamientos actuales de `install` no cambian.
+`--pack <nombre>` es nuevo. `--skip` hoy acepta `hooks` y `reinject`; pasa a aceptar también el nombre de una pieza. Los comportamientos actuales de `install` no cambian. `--approve` es nuevo y solo se usa cuando un agente sin terminal cambia `packs:` (D5). `--skip <pieza>` se guarda en `packs.skip`; `hooks` y `reinject` siguen valiendo solo para esa ejecución.
+
+### D16. El modelo invoca 7 skills; `tailor` y `refute` solo la persona
+
+El modelo puede invocar `elicit`, `ensure`, `locate`, `finish`, `digest`, `review` y `divide`. `tailor` y `refute` llevan `disable-model-invocation: true`: `tailor` cambia la configuración y `refute` lanza un revisor aparte que gasta tokens. Sus señales van dirigidas a la persona. Si el modelo intenta invocar una skill desactivada sin que la persona la nombre, Claude Code lo bloquea (documentación de Claude Code). Restringir no ahorra contexto: el listado usa hasta el 1% de la ventana, y nueve descripciones de unos 120 caracteres pesan poco. Los mensajes de las señales se redactan como hechos, no como órdenes.
+
+### D17. La forma de `packs:`
+
+```yaml
+packs:
+  enabled: [core, git]
+  skip: [refute]
+  stacks: [go]
+  language:
+    code: en
+    ui: es
+  commit:
+    min: 40
+    max: 50
+```
+
+- `install` escribe todo explícito la primera vez, para que dos clones obtengan las mismas rules. `stacks` es una lista (admite monorepos) con los nombres que ya detecta `init`: `go`, `bun`, `node` y `python`. `commit` es opcional y por defecto vale 40 y 50.
+- Un pack, una pieza o un stack desconocido falla al cargar; `min` y `max` son positivos y `min` no supera a `max`.
+- El orden canónico es `enabled`, `skip`, `stacks`, `language`, `commit`, con las listas en línea.
+- **Dónde toca el código (K2):** decodificar y validar en `source/spider/internal/driver/record/config.go`; el orden en `canonical.go` (`configKeys` y las listas en línea); y el nivel 3 en `source/weaver/internal/domain/deltas` (`configGuardedFields`, un `ReasonPacksChanged` nuevo y `configReasons`). El CI solo trata `runners_changed` aparte; un cambio de `packs:` debe pasar por `unapproved_change`.
 
 ## 3. Estructura objetivo
 
@@ -130,12 +154,12 @@ Cada paso deja el repositorio funcionando. El tamaño es relativo: S pequeño, M
 |---|---|---|---|---|
 | **K0** | S | Aprobar `KETSET.md`, este plan y la KB, y resolver las preguntas que bloqueaban (hecho el 2026-11-27) | La persona dice sí (hecho) | `docs(packs): record packs proposal and its plan` |
 | **K1** | L | Mecánica de instalación de rules y skills en Anchor, solo Claude Code: plantilla, instalar, `--preview`, `--uninstall`, copia de seguridad, prefijo `beacon-`, `--pack`, `--skip <pieza>` y las líneas de `.gitattributes` (D13). Con una rule y una skill mínimas de prueba | Pruebas de `install` con archivos de referencia; idempotencia; desinstalar borra solo lo idéntico; D14 | `feat(anchor): install pack rules and skills` |
-| **K2** | M | Sección `packs:` de `config.yaml` y detección de stack reutilizando el escaneo de `init`; el sello del sí desde una terminal y el código 2 sin ella (D5) | Pruebas del esquema; `fmt` estable; un `packs:` inválido falla al cargar; un cambio sin sí se bloquea | `feat(anchor): add pack config and stack scan` |
-| **K3** | M | Rules universales y paramétricas: `record`, `pledge`, `frugal`, `locale`, `vendor`, `commit`, `branch` | La prueba de D9 sobre las rules que ya existen; la prueba de nombres y topes (D2, D8) | `feat(anchor): add core and git pack rules` |
-| **K4** | M | Skills `elicit`, `ensure`, `finish`: las que ya tienen comandos que las respaldan; `elicit` se escribe desde cero | Una sesión real en el proyecto de pruebas por skill | `feat(anchor): add elicit ensure finish skills` |
+| **K2** | M | Sección `packs:` con la forma de D17: decodificar y validar, orden canónico y nivel 3; detección de stack con el escaneo de `init`; el sello del sí desde una terminal y el código 2 sin ella, con `--approve` (D5) | Pruebas del esquema; `fmt` estable; un `packs:` inválido falla al cargar; un cambio sin sí se bloquea en `record` y se comprueba que el CI lo trate por `unapproved_change` | `feat(anchor): add pack config and stack scan` |
+| **K3** | M | Rules universales y paramétricas: `record`, `pledge`, `frugal`, `locale`, `vendor`, `commit`, `branch`; `frugal` y `locale` con los `paths:` del binding, `commit` y `branch` sin ellos | La prueba de D9 sobre las rules que ya existen; la prueba de nombres y topes (D2, D8); una prueba renderiza cada rule y comprueba que su encabezado se lee (si no, carga siempre) | `feat(anchor): add core and git pack rules` |
+| **K4** | M | Skills `elicit`, `ensure`, `finish`: las que ya tienen comandos que las respaldan; `elicit` se escribe desde cero. Antes, un spike en el proyecto de pruebas: ¿un hook que nombra una skill hace que el modelo la invoque?, y ¿una skill con `disable-model-invocation` conserva su descripción en `/context`? | Una sesión real en el proyecto de pruebas por skill | `feat(anchor): add elicit ensure finish skills` |
 | **K5** | M | Skills `locate`, `digest`, `tailor`; `digest` se escribe desde cero | Ídem; `tailor` produce un cambio de `config.yaml` que pasa por `record` | `feat(anchor): add locate digest tailor skills` |
 | **K6** | M | Skills `review`, `refute`, `divide` | Ídem | `feat(anchor): add review refute divide skills` |
-| **K7** | M | Señales que apuntan a skills en `brief`, `check` y `context`, y la comprobación en `doctor` (avisos de piezas editadas, rules omitidas y skills no instaladas) | Una prueba por mensaje: nombra una skill solo si está instalada (D7) | `feat(weaver): point signals to pack skills` |
+| **K7** | M | Solo si el spike de K4 funciona (si no, los mensajes piden a la persona que ejecute el comando): señales que apuntan a skills en `brief`, `check` y `context`, y la comprobación en `doctor` (avisos de piezas editadas, rules omitidas y skills no instaladas) | Una prueba por mensaje: nombra una skill solo si está instalada (D7) | `feat(weaver): point signals to pack skills` |
 | **K8** | L | Rules ligadas al stack: `format`, `errors`, `secure`, `domain`; binding de Go; revisar la excepción de tamaño de `domain` | Renderizado contra `golang-style` y `domain-layer` (D9) | `feat(anchor): add go stack-bound pack rules` |
 | **K9** | M | Condición E del benchmark, ablación con `--skip` y primera medición | Resultado del piloto; si no mejora, se recorta | `test(benchmark): add pack condition to harness` |
 | **K10** | L | Rules compiladas en comprobaciones: `commit-msg`, nombre de rama, linter de largo de línea, import del dominio | Cada una con su promesa y su ejecutor | `feat(snares): compile pack rules into checks` |
@@ -167,18 +191,17 @@ Cada paso deja el repositorio funcionando. El tamaño es relativo: S pequeño, M
 | Skills de baja calidad | Cada una se prueba en una sesión real antes de su commit; el benchmark decide si se queda. |
 | Saturar al agente | Topes, `paths:` y la condición E. |
 | Medir sin línea base | El piloto no se ha corrido. K9 espera a que se corra o lo corre junto con la Fase 6. |
+| Un hook no logra que el modelo invoque la skill | Spike en K4; si no funciona, K7 pide a la persona que ejecute el comando. |
+| Un `paths:` mal escrito vuelve la rule permanente | Una prueba renderiza cada rule y comprueba su encabezado (K3). |
 | Cambiar `--skip` rompe a quien lo usa | D15: lo existente no cambia; solo se añade. Una prueba lo cubre. |
 | Agentes cambiantes | K11 verifica cada agente contra su documentación, como ya exige `anchor.md`. |
 | La KB y este plan se desincronizan | K12 revisa todo; mientras tanto, cada paso que cambie una decisión actualiza `packs.md` en el mismo commit. |
 
 ## 6. Preguntas que bloquean pasos
 
-| Pregunta | Bloquea | Propuesta |
-|---|---|---|
-| Qué skills invoca el modelo | K4 | `ensure`, `locate` y `finish`; antes se verifica si desactivar la invocación quita la descripción del contexto |
-| Forma exacta de `packs:` | K2 | La de `packs.md`, ajustada al esquema |
+No queda ninguna pregunta abierta. Quedan dos verificaciones al construir, ambas en el spike de K4: si un hook puede hacer que el modelo invoque una skill por su nombre, y si una skill desactivada conserva su descripción en el contexto.
 
-Resueltas el 2026-11-27: el nivel de `packs:` (3), los tres packs, la fase (4b), el sello del sí de `install` (ejecutarlo en una terminal es el sí), las skills `elicit` y `digest` (se escriben desde cero y la persona las ajusta si encuentra las de Delta), las rules de este repo como salida de los packs (D9) y trabajar todo en una sola rama.
+Resueltas el 2026-11-27: el nivel de `packs:` (3), los tres packs, la fase (4b), el sello del sí de `install` (ejecutarlo en una terminal es el sí), las skills `elicit` y `digest` (se escriben desde cero y la persona las ajusta si encuentra las de Delta), las rules de este repo como salida de los packs (D9), trabajar todo en una sola rama, la invocación de skills (D16) y la forma de `packs:` (D17).
 
 ## 7. Hitos
 

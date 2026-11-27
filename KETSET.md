@@ -18,6 +18,8 @@
 | Skills de Delta | `elicit` y `digest` se escriben desde cero; la persona las ajusta si encuentra las antiguas |
 | Rules de este repo | Salen de los packs (criterio 9.4); la que no encaje se queda a mano |
 | Ramas | Todo el plan en `feat/add-skills-and-rules`, por preferencia de la persona |
+| Invocación de skills | El modelo invoca 7 (`elicit`, `ensure`, `locate`, `finish`, `digest`, `review`, `divide`); `tailor` y `refute` solo las invoca la persona |
+| Forma de `packs:` | `enabled`, `skip`, `stacks` (lista), `language` y `commit`, todo explícito desde el primer `install`; `commit` por defecto de 40 a 50 |
 
 ---
 
@@ -67,14 +69,40 @@ El miedo es que cada lenguaje exija reescribir cada rule. Se evita separando **l
 
 **Por qué no la otra opción (que el agente reescriba la rule entera):** cada proyecto acabaría con una rule distinta e irreproducible, no habría forma de actualizarla sin pisar lo editado, y rompe la separación entre lo que decide el modelo y lo que decide el código.
 
+### Forma de `packs:`
+
+Fijada el 2026-11-27, a partir de cómo el código ya carga `config.yaml` (`record/config.go`, orden canónico en `canonical.go`):
+
+```yaml
+packs:
+  enabled: [core, git]
+  skip: [refute]
+  stacks: [go]
+  language:
+    code: en
+    ui: es
+  commit:
+    min: 40
+    max: 50
+```
+
+- `enabled`: todos los packs activos. La primera vez, `install` lo escribe explícito.
+- `skip`: piezas que no se instalan (opcional). Lo escribe `--skip <pieza>`.
+- `stacks`: lista con los nombres que ya detecta `init` (`go`, `bun`, `node`, `python`). Cada stack aporta su binding y los `paths:` de sus rules. Al principio solo Go trae binding: los demás stacks reciben solo las rules universales y paramétricas.
+- `language`: `code` (`en` por defecto) y `ui` (opcional; lo añade `tailor` o la persona).
+- `commit`: opcional; por defecto `min: 40` y `max: 50`, y solo importa con `git` activo.
+- **Validación:** un pack, una pieza o un stack desconocido falla al cargar; `min` y `max` son positivos y `min` no supera a `max`.
+- **Orden canónico:** `enabled`, `skip`, `stacks`, `language`, `commit`; las listas van en línea.
+- Lo que no está aquí (el largo de línea de `format`, la forma del dominio) viene en el binding que trae Beacon para cada stack y no se configura todavía.
+
 ## 5. Las rules (11)
 
 | Rule | Sale de | Nivel | Qué hace | Carga |
 |---|---|---|---|---|
 | `record` | Regla 1 de la guía | Universal | Nunca editar los registros a mano; usar `beacon record`. | Al tocar `.beacon/**` |
 | `pledge` | Regla 5 de la guía y `deltas` | Paramétrica | El test cita el id de su promesa. Nunca debilitar ni borrar una promesa para que algo pase. | Archivos de test del stack |
-| `frugal` | `code-change-size` | Universal | La escalera de lo más barato primero, con el cierre de lo omitido. Los atajos con límite se anotan con `beacon record`. | Al escribir código |
-| `locale` | `code-english-only` | Paramétrica | Un idioma para identificadores y errores, otro para la UI. | Código y UI del stack |
+| `frugal` | `code-change-size` | Universal | La escalera de lo más barato primero, con el cierre de lo omitido. Los atajos con límite se anotan con `beacon record`. | Código del stack (`paths:` del binding); sin binding, siempre |
+| `locale` | `code-english-only` | Paramétrica | Un idioma para identificadores y errores, otro para la UI. | Código del stack (`paths:` del binding); sin binding, siempre |
 | `vendor` | `code-change-size` y la decisión de dependencias de `status.md` | Paramétrica | Una dependencia nueva se justifica con la escalera y queda como `decision` con sus alternativas descartadas. | Solo manifiestos (`go.mod`, `package.json`, `pyproject.toml`...) |
 | `format` | `code-golang-style` | Ligada al stack | Vertical sobre horizontal, sin comentarios, datos de prueba ficticios. | Código del stack |
 | `errors` | Parte de `code-domain-layer` | Ligada al stack | Códigos estables, mensajes fijos, detalle estructurado. | Código de errores |
@@ -84,6 +112,8 @@ El miedo es que cada lenguaje exija reescribir cada rule. Se evita separando **l
 | `domain` | `code-domain-layer` | Ligada al stack | Dominio puro que solo mira hacia adentro. | Dominio, según el binding |
 
 `domain` pesa 87 líneas hoy. Al sacar `errors` baja, pero seguirá sobre el tope de 40: es la única excepción documentada, porque carga solo al tocar el dominio. Se revisa en el paso K8.
+
+**Cómo cargan (confirmado en la documentación de Claude Code):** una rule sin `paths:` carga al empezar la sesión, y una con `paths:` carga cuando el agente lee o edita un archivo que coincide. Por eso `commit` y `branch` (sin `paths:`) siempre están, y las demás usan los `paths:` de su binding. Si el YAML del encabezado no se puede leer, la rule queda sin `paths:` y carga siempre: una prueba renderiza cada rule y comprueba que el encabezado se lee. Las cuatro rules actuales de este repo no llevan `paths:`, así que hoy cargan siempre.
 
 ## 6. Packs
 
@@ -115,7 +145,7 @@ Las dos que se conocían de Delta reaparecen: la entrevista para dejar specs cla
 | `refute` | Un revisor con contexto limpio ataca una decisión no trivial. Máximo 3 ciclos. El resultado es una `decision` con sus `rejected`. | `beacon record` de la decisión. El tope de ciclos es prosa, no se puede comprobar | `doubt-driven-development` de Osmani |
 | `divide` | Parte un `work` en tareas, cada una con un resultado comprobable y sus `blocks`. | `beacon doctor` valida la jerarquía y `beacon ready` muestra qué sigue | `writing-plans` de Superpowers, `to-tickets` de Pocock y `planning-and-task-breakdown` de Osmani |
 
-Invocación (a confirmar): `ensure`, `locate` y `finish` pueden ser invocables por el modelo, porque aparecen en el trabajo normal. Las demás se invocan por la persona o por una señal.
+**Invocación (decidida el 2026-11-27):** el modelo puede invocar `elicit`, `ensure`, `locate`, `finish`, `digest`, `review` y `divide`. `tailor` (cambia la configuración) y `refute` (lanza un revisor aparte y gasta tokens) llevan `disable-model-invocation: true`: solo las invoca la persona, y sus señales se lo piden a ella. Si el modelo intenta invocar una skill desactivada sin que la persona la nombre, Claude Code lo bloquea. La documentación se contradice sobre si una skill desactivada conserva su descripción en el contexto; se mide con `/context` en K4.
 
 ## 8. Experiencia de desarrollo
 
@@ -152,6 +182,8 @@ P7 dice que un mensaje de Beacon lleva a una salida. Hoy las salidas son comando
 | Los packs sin binding para el stack | `/beacon-tailor` (lo dice `doctor`) |
 
 **Condición de P7:** un mensaje solo nombra una skill si está instalada; `doctor` lo comprueba.
+
+**Sin confirmar:** la documentación no dice que un hook pueda hacer que el modelo invoque una skill por su nombre. En K4 se prueba con un spike en el proyecto de pruebas; si no funciona, el mensaje pide a la persona que escriba el comando. Los mensajes se redactan como hechos ("la skill `beacon-elicit` atiende esto") y no como órdenes, porque la documentación desaconseja el texto imperativo en `additionalContext`. Las señales de `tailor` y `refute` van dirigidas a la persona.
 
 ### 9.2 Reglas que se compilan en comprobaciones
 
@@ -197,6 +229,14 @@ Se leyeron 6 de las 20 skills de Superpowers, 3 de las 26 de Osmani, y 4 de las 
 
 **Sobre saturar:** las descripciones de todas las skills se cargan en cada sesión. Hay guías que recomiendan pocas y bien acotadas, y un paper (SkillReducer, arXiv) reporta que recortar mejora la calidad. Las cifras son de blogs y de un paper no revisado, así que es una dirección y no un dato firme. Con 9 descripciones cortas estamos lejos del problema que describen (decenas de skills), y se mide con E.
 
+**Lo confirmado en la documentación de Claude Code (2026-11-27):**
+
+- El listado de skills incluye siempre el nombre de todas. Cada entrada admite hasta 1.536 caracteres entre `description` y `when_to_use`, y el listado entero usa el 1% de la ventana de contexto. El tope de unos 120 caracteres de los packs es propio. `/context` y `/doctor` muestran el costo.
+- `SKILL.md` puede referir otros archivos, y la guía oficial sugiere menos de 500 líneas (el tope aquí es 60).
+- Una skill de proyecto en `.claude/skills/<nombre>/SKILL.md` se invoca como `/<nombre>`; el prefijo `beacon-` no da problemas según la documentación.
+- El `paths:` de una rule admite llaves (`*.{ts,tsx}`).
+- **No confirmado:** los caracteres que admite el nombre de una skill, y que un hook pueda disparar una skill.
+
 ## 11. Estructura propuesta
 
 ```text
@@ -223,6 +263,8 @@ Está en `PLANNING.md`: decisiones, pasos K0 a K12, verificación de cada uno y 
 | Las plantillas se vuelven un mini lenguaje | Solo sustitución y secciones opcionales con `text/template`; si hace falta más, la rule no es agnóstica y pasa al nivel 3. |
 | El agente propone un binding malo | Entra por `record` y exige un sí; el binding es corto y se revisa de un vistazo. |
 | `paths:` en rules es de Claude Code | Los otros agentes lo resuelven en K11; el tope de 32 KiB de `AGENTS.md` en Codex limita meter todo ahí. |
+| Un hook no logra que el modelo invoque la skill | Spike en K4; si no funciona, el mensaje pide a la persona que ejecute el comando. |
+| Un `paths:` mal escrito vuelve la rule permanente | Una prueba renderiza cada rule y comprueba que el encabezado se lee. |
 | Choques con rules o skills del usuario | Prefijo `beacon-` y borrado solo de lo que coincide byte a byte. |
 | Los saltos de línea rompen la comparación byte a byte en Windows | `.gitattributes` con `text eol=lf` para los archivos de los packs. |
 | Los packs crecen más rápido que su valor | Todo lo que no mejore una métrica se borra; los packs son parte del benchmark. |
@@ -232,10 +274,9 @@ Está en `PLANNING.md`: decisiones, pasos K0 a K12, verificación de cada uno y 
 
 ## 14. Preguntas abiertas
 
-1. **¿Qué skills son invocables por el modelo?** Propuesta en la sección 7. Falta confirmar si desactivar la invocación del modelo quita también la descripción del contexto (se verifica en K4).
-2. **¿Cuál es la forma exacta de `packs:`?** Se fija en K2.
+No quedan preguntas abiertas. Quedan dos verificaciones al construir, ambas en K4: si un hook puede hacer que el modelo invoque una skill, y si una skill desactivada conserva su descripción en el contexto.
 
-Resueltas el 2026-11-27: el nivel de `packs:` (3), la agrupación en tres packs, la fase (4b), el sello del sí de `install`, las skills de Delta (desde cero) y las rules de este repo como salida de los packs.
+Resueltas el 2026-11-27: el nivel de `packs:` (3), la agrupación en tres packs, la fase (4b), el sello del sí de `install`, las skills de Delta (desde cero), las rules de este repo como salida de los packs, la invocación de skills (7 el modelo, 2 la persona) y la forma de `packs:` (sección 4).
 
 ## 15. Fuera de alcance
 
@@ -250,6 +291,7 @@ Resueltas el 2026-11-27: el nivel de `packs:` (3), la agrupación en tres packs,
 - Superpowers: <https://github.com/obra/superpowers>
 - Osmani: <https://github.com/addyosmani/agent-skills>
 - Anthropic: <https://github.com/anthropics/skills>
+- Documentación de Claude Code: <https://code.claude.com/docs/en/skills.md>, <https://code.claude.com/docs/en/memory.md> y <https://code.claude.com/docs/en/hooks.md>
 - Rules por path: <https://ytrofr.github.io/claude-code-guide/docs/guide/part4-context-engineering/02-rules-system.html>
 - Saturación de skills: <https://developer.microsoft.com/blog/stop-skillmaxxing-save-your-tokens/> y <https://arxiv.org/html/2603.29919>
 - Lo de Beacon: `.claude/delta/` (`packs`, `anchor`, `status`, `deltas`, `weaver`) y las seis rules de `.claude/rules/`.
