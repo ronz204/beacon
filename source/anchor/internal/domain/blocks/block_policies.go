@@ -34,6 +34,10 @@ func Upsert(text string, block Block) (string, error) {
 }
 
 func appendBlock(text, rendered, newline string) string {
+	if cut, found := beforeExit(text); found {
+		return text[:cut] + rendered + newline + text[cut:]
+	}
+
 	switch {
 	case text == "":
 		return rendered + newline
@@ -42,6 +46,13 @@ func appendBlock(text, rendered, newline string) string {
 	default:
 		return text + newline + newline + rendered + newline
 	}
+}
+
+func beforeExit(text string) (int, bool) {
+	trimmed := strings.TrimRight(text, "\r\n")
+	cut := strings.LastIndexByte(trimmed, '\n') + 1
+
+	return cut, strings.TrimSpace(trimmed[cut:]) == "exit 0"
 }
 
 func Remove(text string, block Block) (string, RemovalStatus, error) {

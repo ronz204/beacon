@@ -43,7 +43,7 @@ func TestInstallDryRunListsTheFilesAndWritesNothing(t *testing.T) {
 
 	data := runInstall(t, root, "--dry-run")
 
-	if !data.DryRun || len(data.Changes) != 4 {
+	if !data.DryRun || len(data.Changes) != 5 {
 		t.Fatalf("data = %+v", data)
 	}
 	if present(root, "AGENTS.md") || present(root, ".gitattributes") {
@@ -85,7 +85,7 @@ func TestUninstallLeavesTheRepositoryAsItWas(t *testing.T) {
 	runInstall(t, root)
 	data := runInstall(t, root, "--uninstall")
 
-	if !data.Uninstall || len(data.Changes) != 4 {
+	if !data.Uninstall || len(data.Changes) != 5 {
 		t.Fatalf("data = %+v", data)
 	}
 	if utilities.ReadFile(t, filepath.Join(root, "AGENTS.md")) != "# Mine\n" {
@@ -179,7 +179,12 @@ func TestInstallDryRunTextNamesTheFilesAndTheirLines(t *testing.T) {
 
 func TestInstallDoesNotDuplicateTheLineEndingRuleWrittenByHand(t *testing.T) {
 	root := newBareRepository(t)
-	utilities.WriteFile(t, root, ".gitattributes", ".beacon/** text eol=lf\n")
+	utilities.WriteFile(
+		t,
+		root,
+		".gitattributes",
+		".beacon/** text eol=lf linguist-generated\n",
+	)
 
 	data := runInstall(t, root)
 

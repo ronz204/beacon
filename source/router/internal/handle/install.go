@@ -12,16 +12,24 @@ import (
 )
 
 const (
-	skipHooks    = "hooks"
-	skipReinject = "reinject"
-	skipCode     = "skip_invalid"
-	skipMessage  = "--skip accepts only hooks or reinject"
-	skipHint     = "use --skip hooks or --skip reinject"
+	skipHooks     = "hooks"
+	skipReinject  = "reinject"
+	skipPrecommit = "precommit"
+	skipCode      = "skip_invalid"
+	skipMessage   = "--skip accepts only hooks, reinject or precommit"
+	skipHint      = "use --skip hooks, --skip reinject or --skip precommit"
+	ciGithub      = "github"
+	ciCode        = "ci_invalid"
+	ciMessage     = "--ci accepts only github"
+	ciHint        = "use --ci github or leave the flag out"
 )
+
+var skipParts = []string{skipHooks, skipReinject, skipPrecommit}
 
 func Install(printer *output.Printer) *cobra.Command {
 	var dryRun, uninstall bool
 	var skip []string
+	var ci string
 
 	command := &cobra.Command{
 		Use:   "install",
@@ -31,7 +39,7 @@ func Install(printer *output.Printer) *cobra.Command {
 			command *cobra.Command,
 			_ []string,
 		) (output.Result, *output.Failure) {
-			options, failure := installOptions(dryRun, skip)
+			options, failure := installOptions(dryRun, skip, ci)
 			if failure != nil {
 				return output.Result{}, failure
 			}
@@ -67,7 +75,8 @@ func Install(printer *output.Printer) *cobra.Command {
 	flags := command.Flags()
 	flags.BoolVar(&dryRun, "dry-run", false, "show the changes without writing")
 	flags.BoolVar(&uninstall, "uninstall", false, "remove what install added")
-	flags.StringSliceVar(&skip, "skip", nil, "leave out hooks or reinject")
+	flags.StringVar(&ci, "ci", "", "add the CI workflow of a platform: github")
+	flags.StringSliceVar(&skip, "skip", nil, "leave out hooks, reinject or precommit")
 
 	return command
 }
@@ -75,9 +84,18 @@ func Install(printer *output.Printer) *cobra.Command {
 func installOptions(
 	dryRun bool,
 	skip []string,
+	ci string,
 ) (anchor.InstallOptions, *output.Failure) {
+	if ci != "" && ci != ciGithub {
+		return anchor.InstallOptions{}, &output.Failure{
+			Code:    ciCode,
+			Message: ciMessage,
+			Hint:    ciHint,
+		}
+	}
+
 	for _, part := range skip {
-		if part != skipHooks && part != skipReinject {
+		if !slices.Contains(skipParts, part) {
 			return anchor.InstallOptions{}, &output.Failure{
 				Code:    skipCode,
 				Message: skipMessage,
@@ -90,9 +108,11 @@ func installOptions(
 	hooks := !slices.Contains(skip, skipHooks)
 
 	return anchor.InstallOptions{
-		DryRun:   dryRun,
-		Hooks:    hooks,
-		Reinject: hooks && !slices.Contains(skip, skipReinject),
+		DryRun:    dryRun,
+		Hooks:     hooks,
+		Reinject:  hooks && !slices.Contains(skip, skipReinject),
+		Precommit: !slices.Contains(skip, skipPrecommit),
+		CI:        ci,
 	}, nil
 }
 

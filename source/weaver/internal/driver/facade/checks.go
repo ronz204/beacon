@@ -36,6 +36,26 @@ func (c Checks) Runners(ctx context.Context) ([]action.RunnerDef, error) {
 	return defs, nil
 }
 
+func (c Checks) RunnersAt(
+	ctx context.Context,
+	revision string,
+) ([]action.RunnerDef, error) {
+	runners, err := c.project.RunnersAt(ctx, revision)
+	if err != nil {
+		return nil, err
+	}
+
+	defs := make([]action.RunnerDef, 0, len(runners))
+	for _, runner := range runners {
+		defs = append(defs, action.RunnerDef{
+			Name: runner.Name,
+			Run:  runner.Run,
+		})
+	}
+
+	return defs, nil
+}
+
 func (c Checks) Targets(ctx context.Context) ([]action.TargetDef, error) {
 	targets, findings := c.project.CheckTargets(ctx)
 	if hasErrors(findings) {

@@ -281,6 +281,28 @@ func (r Repository) fillContents(
 	return nil
 }
 
+func (r Repository) ConfigAt(
+	ctx context.Context,
+	revision string,
+) ([]byte, bool, error) {
+	if !isRevision(revision) {
+		return nil, false, kernel.FailHistory(errInvalidRevision)
+	}
+
+	spec := revision + ":./" + configPath
+	_, err := system.Git(ctx, r.root, "cat-file", "-e", spec)
+	if err != nil {
+		return nil, false, nil
+	}
+
+	data, err := r.git(ctx, "show", spec)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return []byte(data), true, nil
+}
+
 func (r Repository) requireCommit(ctx context.Context, commit string) error {
 	_, err := system.Git(
 		ctx,

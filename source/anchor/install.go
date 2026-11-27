@@ -2,6 +2,8 @@ package anchor
 
 import (
 	"context"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ronz204/beacon/source/anchor/internal/action"
@@ -18,6 +20,12 @@ const (
 
 	missingBinaryNote = "beacon is not on PATH; the agent calls it by " +
 		"name, so install it with go install or add it to PATH"
+	latestVersion       = "latest"
+	unpinnedVersionNote = "this beacon has no release version, so the " +
+		"workflow installs the latest one; push a tag or install a tagged " +
+		"beacon and run install again to pin it"
+	versionedHookNote = "the pre-commit hook is a file of the project, so " +
+		"this edits it and the change is committed with the project: "
 )
 
 func (a Anchor) Install(
@@ -35,7 +43,7 @@ func (a Anchor) Install(
 	}
 
 	view.Skipped = skippedParts(options)
-	view.Review = reviewNotes(a.lookup)
+	view.Review = a.reviewNotes(options)
 
 	return view, nil
 }
@@ -45,9 +53,10 @@ func (a Anchor) Uninstall(
 	options InstallOptions,
 ) (InstallView, error) {
 	everything := InstallOptions{
-		DryRun:   options.DryRun,
-		Hooks:    true,
-		Reinject: true,
+		DryRun:    options.DryRun,
+		Hooks:     true,
+		Reinject:  true,
+		Precommit: true,
 	}
 
 	plan, err := a.planner.Withdraw(ctx, agentOptions(everything))
@@ -92,26 +101,52 @@ func (a Anchor) finish(
 }
 
 func agentOptions(options InstallOptions) agents.Options {
-	return agents.Options{Hooks: options.Hooks, Reinject: options.Reinject}
+	return agents.Options{
+		Hooks:     options.Hooks,
+		Reinject:  options.Reinject,
+		Precommit: options.Precommit,
+		CI:        options.CI,
+	}
 }
 
 func skippedParts(options InstallOptions) []string {
-	switch {
-	case !options.Hooks:
-		return []string{string(agents.PartHooks), string(agents.PartReinject)}
-	case !options.Reinject:
-		return []string{string(agents.PartReinject)}
-	default:
-		return []string{}
+	skipped := []string{}
+
+	if !options.Hooks {
+		skipped = append(
+			skipped,
+			string(agents.PartHooks),
+			string(agents.PartReinject),
+		)
 	}
+	if options.Hooks && !options.Reinject {
+		skipped = append(skipped, string(agents.PartReinject))
+	}
+	if !options.Precommit {
+		skipped = append(skipped, string(agents.PartPrecommit))
+	}
+
+	return skipped
 }
 
-func reviewNotes(lookup func(string) (string, error)) []string {
-	if _, err := lookup(binaryName); err != nil {
-		return []string{missingBinaryNote}
+func (a Anchor) reviewNotes(options InstallOptions) []string {
+	notes := []string{}
+
+	if _, err := a.lookup(binaryName); err != nil {
+		notes = append(notes, missingBinaryNote)
+	}
+	if options.CI != "" && !a.pinned {
+		notes = append(notes, unpinnedVersionNote)
+	}
+	if options.Precommit && versionedHook(a.hookPath) {
+		notes = append(notes, versionedHookNote+a.hookPath)
 	}
 
-	return []string{}
+	return notes
+}
+
+func versionedHook(path string) bool {
+	return !filepath.IsAbs(path) && !strings.HasPrefix(path, ".git/")
 }
 
 func viewOf(plan action.Plan, dryRun bool) InstallView {

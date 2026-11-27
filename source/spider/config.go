@@ -1,16 +1,40 @@
 package spider
 
 import (
+	"context"
 	"maps"
 	"os"
 	"slices"
 
 	"github.com/ronz204/beacon/source/kernel"
+	"github.com/ronz204/beacon/source/spider/internal/driver/commit"
 	"github.com/ronz204/beacon/source/spider/internal/driver/record"
 )
 
 func (p Project) Runners() ([]RunnerConfig, []Finding) {
 	config, failures := p.store.LoadConfig()
+
+	return runnersOf(config), p.findings(failures)
+}
+
+func (p Project) RunnersAt(
+	ctx context.Context,
+	revision string,
+) ([]RunnerConfig, error) {
+	data, found, err := commit.NewRepository(p.root).ConfigAt(ctx, revision)
+	if err != nil || !found {
+		return []RunnerConfig{}, err
+	}
+
+	config, failures := record.ParseConfig(p.store.ConfigFile(), data)
+	if len(failures) > 0 {
+		return nil, failures[0]
+	}
+
+	return runnersOf(config), nil
+}
+
+func runnersOf(config record.Config) []RunnerConfig {
 	runners := make([]RunnerConfig, 0, len(config.Runners))
 
 	for _, name := range slices.Sorted(maps.Keys(config.Runners)) {
@@ -27,7 +51,7 @@ func (p Project) Runners() ([]RunnerConfig, []Finding) {
 		runners = append(runners, view)
 	}
 
-	return runners, p.findings(failures)
+	return runners
 }
 
 func (p Project) Config() (StoredRecord, error) {

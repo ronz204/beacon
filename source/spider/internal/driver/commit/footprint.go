@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -39,7 +40,10 @@ func (r Repository) FootprintOf(
 			return "", err
 		}
 
-		digest.Write([]byte(file + "\x00" + content + "\n"))
+		io.WriteString(digest, file)
+		io.WriteString(digest, "\x00")
+		io.WriteString(digest, content)
+		io.WriteString(digest, "\n")
 	}
 
 	return hex.EncodeToString(digest.Sum(nil)), nil

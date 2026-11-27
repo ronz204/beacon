@@ -8,7 +8,13 @@ import (
 	"github.com/ronz204/beacon/source/weaver/internal/action"
 )
 
-var defaultBases = []string{"origin/HEAD", "main", "master"}
+var defaultBases = []string{
+	"origin/HEAD",
+	"main",
+	"master",
+	"origin/main",
+	"origin/master",
+}
 
 type Git struct {
 	Directory string

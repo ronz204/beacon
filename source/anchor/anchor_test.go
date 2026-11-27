@@ -181,9 +181,18 @@ func TestInstallReportsWhatTheOptionsSkip(t *testing.T) {
 		options anchor.InstallOptions
 		want    int
 	}{
-		{anchor.InstallOptions{DryRun: true}, 2},
-		{anchor.InstallOptions{DryRun: true, Hooks: true}, 1},
-		{anchor.InstallOptions{DryRun: true, Hooks: true, Reinject: true}, 0},
+		{anchor.InstallOptions{DryRun: true, Precommit: true}, 2},
+		{anchor.InstallOptions{DryRun: true, Hooks: true, Precommit: true}, 1},
+		{
+			anchor.InstallOptions{
+				DryRun:    true,
+				Hooks:     true,
+				Reinject:  true,
+				Precommit: true,
+			},
+			0,
+		},
+		{anchor.InstallOptions{DryRun: true, Hooks: true, Reinject: true}, 1},
 	}
 
 	for _, c := range cases {

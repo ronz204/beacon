@@ -183,3 +183,23 @@ func TestCoversRecognizesTheSameLinesWrittenByHand(t *testing.T) {
 		}
 	}
 }
+
+func TestUpsertInsertsTheBlockBeforeAClosingExit(t *testing.T) {
+	block := mustBlock(t, "# BEGIN BEACON (managed)\nrule\n# END BEACON")
+	original := "#!/bin/sh\necho hi\n\nexit 0\n"
+
+	changed, err := blocks.Upsert(original, block)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := "#!/bin/sh\necho hi\n\n" + block.String() + "\nexit 0\n"
+	if changed != want {
+		t.Fatalf("changed = %q", changed)
+	}
+
+	restored, _, err := blocks.Remove(changed, block)
+	if err != nil || restored != original {
+		t.Errorf("restored = %q, err = %v", restored, err)
+	}
+}

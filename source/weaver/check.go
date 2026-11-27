@@ -30,6 +30,21 @@ func (w Weaver) Check(
 	return checkView(result), signalViews(result.Signals), err
 }
 
+func (w Weaver) CheckAt(
+	ctx context.Context,
+	all bool,
+	base string,
+	runnersAt string,
+) (CheckView, []spider.Signal, error) {
+	result, err := w.checker.Check(ctx, action.CheckInput{
+		All:       all,
+		Base:      base,
+		RunnersAt: runnersAt,
+	})
+
+	return checkView(result), signalViews(result.Signals), err
+}
+
 func checkView(result action.CheckResult) CheckView {
 	view := CheckView{
 		Base:         result.Base,
@@ -38,6 +53,7 @@ func checkView(result action.CheckResult) CheckView {
 		Promises:     promiseResults(result.Promises),
 		Invocations:  make([]InvocationView, 0, len(result.Invocations)),
 		Manual:       nonNil(result.Manual),
+		Skipped:      nonNil(result.Skipped),
 		Failed:       promiseResults(result.Failed),
 	}
 

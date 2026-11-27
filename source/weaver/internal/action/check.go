@@ -14,6 +14,7 @@ type CheckInput struct {
 	Capability string
 	All        bool
 	Base       string
+	RunnersAt  string
 }
 
 type PromiseReport struct {
@@ -42,6 +43,7 @@ type CheckResult struct {
 	Promises     []PromiseReport
 	Invocations  []InvocationReport
 	Manual       []string
+	Skipped      []string
 	Failed       []PromiseReport
 	Signals      []Signal
 }
@@ -83,7 +85,7 @@ func (c Checker) Check(
 		}
 	}
 
-	planned, err := c.plan(ctx, promises)
+	planned, err := c.plan(ctx, input, promises, &result)
 	if err != nil {
 		return result, err
 	}

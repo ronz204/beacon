@@ -320,10 +320,9 @@ func (d document) String() string {
 	var out strings.Builder
 	d.root.write(&out, d.indent, 0)
 
-	text := out.String()
 	if d.trailing {
-		text += "\n"
+		out.WriteString("\n")
 	}
 
-	return strings.ReplaceAll(text, "\n", d.newline)
+	return strings.ReplaceAll(out.String(), "\n", d.newline)
 }

@@ -2,7 +2,9 @@ package action
 
 import (
 	"context"
+	"maps"
 	"slices"
+	"strings"
 
 	"github.com/ronz204/beacon/source/anchor/internal/agents"
 	"github.com/ronz204/beacon/source/anchor/internal/domain/blocks"
@@ -38,6 +40,8 @@ type Planner struct {
 	Files  FileStore
 	Shared agents.Contribution
 	Agents []agents.Agent
+	Git    agents.Contribution
+	CI     map[string]agents.Contribution
 }
 
 type step func(*workspace, context.Context, agents.Contribution) error
@@ -46,20 +50,21 @@ func (p Planner) Plan(
 	ctx context.Context,
 	options agents.Options,
 ) (Plan, error) {
-	return p.run(ctx, options, (*workspace).contribute)
+	return p.run(ctx, options, (*workspace).contribute, false)
 }
 
 func (p Planner) Withdraw(
 	ctx context.Context,
 	options agents.Options,
 ) (Plan, error) {
-	return p.run(ctx, options, (*workspace).withdraw)
+	return p.run(ctx, options, (*workspace).withdraw, true)
 }
 
 func (p Planner) run(
 	ctx context.Context,
 	options agents.Options,
 	apply step,
+	everything bool,
 ) (Plan, error) {
 	space := workspace{files: p.Files, drafts: map[string]*draft{}}
 	plan := Plan{}
@@ -80,10 +85,34 @@ func (p Planner) run(
 		plan.Agents = append(plan.Agents, describe(agent))
 	}
 
+	for _, contribution := range p.extras(options, everything) {
+		if err := apply(&space, ctx, contribution); err != nil {
+			return Plan{}, err
+		}
+	}
+
 	plan.Changes = space.changes()
 	plan.Kept = space.kept
 
 	return plan, nil
+}
+
+func (p Planner) extras(
+	options agents.Options,
+	everything bool,
+) []agents.Contribution {
+	var found []agents.Contribution
+
+	if options.Precommit {
+		found = append(found, p.Git)
+	}
+	for _, name := range slices.Sorted(maps.Keys(p.CI)) {
+		if everything || name == options.CI {
+			found = append(found, p.CI[name])
+		}
+	}
+
+	return found
 }
 
 func describe(agent agents.Agent) AgentPlan {
@@ -158,7 +187,12 @@ func (w *workspace) contribute(
 			continue
 		}
 
-		after, err := blocks.Upsert(current.after, file.Block)
+		start := current.after
+		if start == "" && file.Preamble != "" {
+			start = file.Preamble + "\n"
+		}
+
+		after, err := blocks.Upsert(start, file.Block)
 		if err != nil {
 			return err
 		}
@@ -199,6 +233,10 @@ func (w *workspace) withdraw(
 		}
 		if status == blocks.RemovalEdited {
 			w.kept = append(w.kept, Kept{file.Path, file.Part})
+		}
+
+		if file.Preamble != "" && strings.TrimSpace(after) == file.Preamble {
+			after = ""
 		}
 
 		current.set(file.Part, after)
