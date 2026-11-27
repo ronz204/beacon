@@ -223,3 +223,20 @@ func TestAnApprovalWithoutAHookedSessionIsFromAnUnknownAgent(t *testing.T) {
 		t.Fatalf("code %d, text:\n%s", result.Code, text)
 	}
 }
+
+func TestHookFindsTheProjectFromASubdirectory(t *testing.T) {
+	root := utils.NewRepository(t)
+	utils.WriteFile(t, root, "src/auth/login.go", "package auth")
+	nested := filepath.Join(root, "src", "auth")
+	stdin := hookPayload(t, map[string]any{
+		"session_id": "sample-session",
+		"cwd":        nested,
+		"source":     "resume",
+	})
+
+	result := runHook(t, nested, "start", stdin)
+
+	if result.Code != 0 || !strings.Contains(result.Stdout, "SessionStart") {
+		t.Errorf("code %d, stdout %q", result.Code, result.Stdout)
+	}
+}
