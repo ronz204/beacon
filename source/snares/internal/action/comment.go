@@ -11,7 +11,8 @@ func Comment(result CIResult) string {
 	var out strings.Builder
 
 	out.WriteString("## Beacon\n\n")
-	out.WriteString(statusLine(result) + "\n")
+	out.WriteString(statusLine(result))
+	out.WriteString("\n")
 	if result.Revision != "" {
 		fmt.Fprintf(&out, "\n**Risk:** %s\n", riskText(result.Diff.Risk))
 	}
