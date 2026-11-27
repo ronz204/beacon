@@ -1,4 +1,4 @@
-package e2e_test
+package integration_test
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ronz204/beacon/testing/utils"
+	"github.com/ronz204/beacon/testing/utilities"
 )
 
 type signal struct {
@@ -47,9 +47,9 @@ func hintContains(hint *string, text string) bool {
 }
 
 func TestGetPrintsTheRecordInTheEnvelope(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
-	result := utils.Beacon(t, root, "get", "bc-7f3a", "--json")
+	result := utilities.Beacon(t, root, "get", "bc-7f3a", "--json")
 
 	var data struct {
 		Type     string `json:"type"`
@@ -66,9 +66,9 @@ func TestGetPrintsTheRecordInTheEnvelope(t *testing.T) {
 }
 
 func TestGetOfAnUnknownIDHintsAtFind(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
-	result := utils.Beacon(t, root, "get", "bc-ffff", "--json")
+	result := utilities.Beacon(t, root, "get", "bc-ffff", "--json")
 
 	envelope := parseRead(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "record_missing" {
@@ -80,9 +80,9 @@ func TestGetOfAnUnknownIDHintsAtFind(t *testing.T) {
 }
 
 func TestFindListsMatchingRecords(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
-	result := utils.Beacon(t, root, "find", "sign-in")
+	result := utilities.Beacon(t, root, "find", "sign-in")
 
 	if result.Code != 0 || !strings.Contains(result.Stdout, "bc-7f3a") {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
@@ -90,9 +90,11 @@ func TestFindListsMatchingRecords(t *testing.T) {
 }
 
 func TestContextReturnsWhatAppliesWithSignals(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
-	result := utils.Beacon(t, root, "context", "src/auth/login.go", "--json")
+	result := utilities.Beacon(
+		t, root, "context", "src/auth/login.go", "--json",
+	)
 
 	envelope := parseRead(t, result.Stdout)
 	if result.Code != 0 || !strings.Contains(string(envelope.Data), "bc-7f3a") {
@@ -104,9 +106,9 @@ func TestContextReturnsWhatAppliesWithSignals(t *testing.T) {
 }
 
 func TestContextOfAFileWithoutOwnerOnlyHasTheGoalAndGuides(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
-	result := utils.Beacon(t, root, "context", "docs/notes.md", "--json")
+	result := utilities.Beacon(t, root, "context", "docs/notes.md", "--json")
 
 	var data struct {
 		Goals        []json.RawMessage `json:"goals"`
@@ -124,9 +126,11 @@ func TestContextOfAFileWithoutOwnerOnlyHasTheGoalAndGuides(t *testing.T) {
 }
 
 func TestHookContextNeedsASession(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
-	result := utils.Beacon(t, root, "context", "--hook", "src/auth/login.go")
+	result := utilities.Beacon(
+		t, root, "context", "--hook", "src/auth/login.go",
+	)
 
 	if result.Code != 1 || !strings.Contains(result.Stderr, "--session") {
 		t.Fatalf("code = %d, stderr = %s", result.Code, result.Stderr)
@@ -134,13 +138,13 @@ func TestHookContextNeedsASession(t *testing.T) {
 }
 
 func TestHookContextOnlySendsWhatIsNewInTheSession(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	args := []string{
 		"context", "--hook", "--session", "sample-session", "src/auth/login.go",
 	}
 
-	first := utils.Beacon(t, root, args...)
-	second := utils.Beacon(t, root, args...)
+	first := utilities.Beacon(t, root, args...)
+	second := utilities.Beacon(t, root, args...)
 
 	if first.Code != 0 || strings.TrimSpace(first.Stdout) == "" {
 		t.Fatalf("first = %+v", first)
@@ -151,9 +155,9 @@ func TestHookContextOnlySendsWhatIsNewInTheSession(t *testing.T) {
 }
 
 func TestReadyReportsTheCurrentBranch(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
-	result := utils.Beacon(t, root, "ready", "--json")
+	result := utilities.Beacon(t, root, "ready", "--json")
 
 	var data struct {
 		Branch struct {
@@ -169,10 +173,10 @@ func TestReadyReportsTheCurrentBranch(t *testing.T) {
 }
 
 func TestReadyWarnsOnADetachedHead(t *testing.T) {
-	root := utils.NewRepository(t)
-	utils.Git(t, root, "checkout", "-q", "--detach")
+	root := utilities.NewRepository(t)
+	utilities.Git(t, root, "checkout", "-q", "--detach")
 
-	result := utils.Beacon(t, root, "ready")
+	result := utilities.Beacon(t, root, "ready")
 
 	if result.Code != 0 || !strings.Contains(result.Stdout, "detached") {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
@@ -180,18 +184,20 @@ func TestReadyWarnsOnADetachedHead(t *testing.T) {
 }
 
 func TestContextSurvivesAnAttestedCommitThatNoLongerExists(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	path := filepath.Join(root, filepath.FromSlash(capabilityPath))
-	text := utils.ReadFile(t, path)
+	text := utilities.ReadFile(t, path)
 	attested := regexp.MustCompile(`commit: [0-9a-f]{7}`)
-	utils.WriteFile(
+	utilities.WriteFile(
 		t,
 		root,
 		capabilityPath,
 		attested.ReplaceAllString(text, "commit: 9f3c2ab"),
 	)
 
-	result := utils.Beacon(t, root, "context", "src/auth/login.go", "--json")
+	result := utilities.Beacon(
+		t, root, "context", "src/auth/login.go", "--json",
+	)
 
 	var data struct {
 		Capabilities []struct {

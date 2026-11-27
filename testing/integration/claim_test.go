@@ -1,4 +1,4 @@
-package e2e_test
+package integration_test
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ronz204/beacon/testing/utils"
+	"github.com/ronz204/beacon/testing/utilities"
 )
 
 const claimedTask = "bc-91cd.1.1"
@@ -14,14 +14,14 @@ const claimedTask = "bc-91cd.1.1"
 func repositoryWithReadyTask(t *testing.T) string {
 	t.Helper()
 
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	closed := closeWithReason(t, root, "bc-e5f6")
 	if closed.Code != 0 {
 		t.Fatalf("close = %+v", closed)
 	}
 
-	utils.Git(t, root, "add", "-A")
-	utils.Git(t, root, "commit", "-q", "-m", "answer the question")
+	utilities.Git(t, root, "add", "-A")
+	utilities.Git(t, root, "commit", "-q", "-m", "answer the question")
 
 	return root
 }
@@ -30,20 +30,20 @@ func addWorktree(t *testing.T, root, branch string) string {
 	t.Helper()
 
 	path := filepath.Join(t.TempDir(), "worktree")
-	utils.Git(t, root, "worktree", "add", "-q", "-b", branch, path)
+	utilities.Git(t, root, "worktree", "add", "-q", "-b", branch, path)
 
 	return path
 }
 
-func claim(t *testing.T, directory string, flags ...string) utils.Result {
+func claim(t *testing.T, directory string, flags ...string) utilities.Result {
 	t.Helper()
 
 	args := append([]string{"claim", claimedTask, "--json"}, flags...)
 
-	return utils.BeaconWith(
+	return utilities.BeaconWith(
 		t,
 		directory,
-		utils.Options{Actor: sampleAgent},
+		utilities.Options{Actor: sampleAgent},
 		args...,
 	)
 }
@@ -51,7 +51,7 @@ func claim(t *testing.T, directory string, flags ...string) utils.Result {
 func readyTasks(t *testing.T, directory string) []string {
 	t.Helper()
 
-	result := utils.Beacon(t, directory, "ready", "--json")
+	result := utilities.Beacon(t, directory, "ready", "--json")
 
 	var data struct {
 		Tasks []struct {
@@ -73,7 +73,7 @@ func TestClaimWritesTheLocalClaimAndTheRecord(t *testing.T) {
 
 	result := claim(t, root)
 
-	stored := utils.Beacon(t, root, "get", claimedTask, "--json")
+	stored := utilities.Beacon(t, root, "get", claimedTask, "--json")
 	var data struct {
 		Record map[string]any `json:"record"`
 	}
@@ -163,8 +163,8 @@ func TestClaimIsRepeatableOnTheSameBranch(t *testing.T) {
 func TestClaimRejectsWhatIsNotAClaimableTask(t *testing.T) {
 	root := repositoryWithReadyTask(t)
 
-	notTask := utils.Beacon(t, root, "claim", "bc-7f3a", "--json")
-	unknown := utils.Beacon(t, root, "claim", "bc-ffff", "--json")
+	notTask := utilities.Beacon(t, root, "claim", "bc-7f3a", "--json")
+	unknown := utilities.Beacon(t, root, "claim", "bc-ffff", "--json")
 
 	var first, second struct {
 		Error struct {
@@ -188,7 +188,7 @@ func TestClaimRejectsWhatIsNotAClaimableTask(t *testing.T) {
 
 func TestClaimNeedsABranch(t *testing.T) {
 	root := repositoryWithReadyTask(t)
-	utils.Git(t, root, "checkout", "-q", "--detach")
+	utilities.Git(t, root, "checkout", "-q", "--detach")
 
 	result := claim(t, root)
 
@@ -208,9 +208,9 @@ func TestDoctorFreesTheClaimOfARemovedWorktree(t *testing.T) {
 		t.Fatalf("blocked = %+v", blocked)
 	}
 
-	utils.Git(t, root, "worktree", "remove", "--force", other)
-	utils.Git(t, root, "branch", "-D", "feat/other-work")
-	doctor := utils.Beacon(t, root, "doctor", "--json")
+	utilities.Git(t, root, "worktree", "remove", "--force", other)
+	utilities.Git(t, root, "branch", "-D", "feat/other-work")
+	doctor := utilities.Beacon(t, root, "doctor", "--json")
 	retry := claim(t, root)
 
 	if doctor.Code != 0 || !strings.Contains(doctor.Stdout, "claim_removed") {

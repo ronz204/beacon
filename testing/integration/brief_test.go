@@ -1,4 +1,4 @@
-package e2e_test
+package integration_test
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ronz204/beacon/testing/utils"
+	"github.com/ronz204/beacon/testing/utilities"
 )
 
 type summary struct {
@@ -39,8 +39,8 @@ func limitBrief(t *testing.T, root, limit string) {
 	t.Helper()
 
 	path := filepath.Join(root, filepath.FromSlash(configPath))
-	utils.WriteFile(t, root, configPath, strings.Replace(
-		utils.ReadFile(t, path),
+	utilities.WriteFile(t, root, configPath, strings.Replace(
+		utilities.ReadFile(t, path),
 		"brief: 60",
 		"brief: "+limit,
 		1,
@@ -48,9 +48,9 @@ func limitBrief(t *testing.T, root, limit string) {
 }
 
 func TestBriefStartsWithTheGoalAndCarriesSignals(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
-	result := utils.Beacon(t, root, "brief", "--json")
+	result := utilities.Beacon(t, root, "brief", "--json")
 
 	data := decodeSummary(t, result.Stdout)
 	envelope := parseRead(t, result.Stdout)
@@ -66,10 +66,10 @@ func TestBriefStartsWithTheGoalAndCarriesSignals(t *testing.T) {
 }
 
 func TestBriefListsTheYesesThatArePending(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	editByHand(t, root, "After 5 failed", "After 10 failed")
 
-	result := utils.Beacon(t, root, "brief", "--json")
+	result := utilities.Beacon(t, root, "brief", "--json")
 
 	data := decodeSummary(t, result.Stdout)
 	envelope := parseRead(t, result.Stdout)
@@ -93,17 +93,17 @@ func TestBriefListsTheYesesThatArePending(t *testing.T) {
 }
 
 func TestCappedBriefNamesStatusAndStatusHoldsTheRest(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	editByHand(t, root, "After 5 failed", "After 10 failed")
 	limitBrief(t, root, "4")
 
 	brief := decodeSummary(
 		t,
-		utils.Beacon(t, root, "brief", "--json").Stdout,
+		utilities.Beacon(t, root, "brief", "--json").Stdout,
 	)
 	status := decodeSummary(
 		t,
-		utils.Beacon(t, root, "status", "--json").Stdout,
+		utilities.Beacon(t, root, "status", "--json").Stdout,
 	)
 
 	last := brief.Lines[len(brief.Lines)-1]
@@ -127,10 +127,10 @@ func TestCappedBriefNamesStatusAndStatusHoldsTheRest(t *testing.T) {
 
 func TestStatusSummarisesTheCountsAndNeverBlocks(t *testing.T) {
 	root := repositoryWithRunner(t)
-	failing := utils.Beacon(t, root, "check", "bc-7f3a", "--json")
+	failing := utilities.Beacon(t, root, "check", "bc-7f3a", "--json")
 	editByHand(t, root, "After 5 failed", "After 10 failed")
 
-	result := utils.Beacon(t, root, "status")
+	result := utilities.Beacon(t, root, "status")
 
 	if failing.Code != 2 {
 		t.Fatalf("setup = %+v", failing)
@@ -151,10 +151,10 @@ func TestStatusSummarisesTheCountsAndNeverBlocks(t *testing.T) {
 }
 
 func TestStatusOfAnInvalidProjectFailsWithAHint(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	breakGoal(t, root)
 
-	result := utils.Beacon(t, root, "status", "--json")
+	result := utilities.Beacon(t, root, "status", "--json")
 
 	var parsed struct {
 		Error struct {
@@ -171,12 +171,12 @@ func TestStatusOfAnInvalidProjectFailsWithAHint(t *testing.T) {
 }
 
 func TestBriefWithoutABaseSaysThatPendingYesesWereNotChecked(t *testing.T) {
-	root := utils.NewRepository(t)
-	utils.Git(t, root, "branch", "-m", "trunk")
+	root := utilities.NewRepository(t)
+	utilities.Git(t, root, "branch", "-m", "trunk")
 	editByHand(t, root, "After 5 failed", "After 10 failed")
 
-	result := utils.Beacon(t, root, "brief", "--json")
-	text := utils.Beacon(t, root, "brief")
+	result := utilities.Beacon(t, root, "brief", "--json")
+	text := utilities.Beacon(t, root, "brief")
 
 	envelope := parseRead(t, result.Stdout)
 	if result.Code != 0 || !hintContains(envelope.Hint, "--base") {
@@ -189,17 +189,17 @@ func TestBriefWithoutABaseSaysThatPendingYesesWereNotChecked(t *testing.T) {
 		t.Fatalf("the text brief must carry the hint: %s", text.Stdout)
 	}
 
-	checked := utils.Beacon(t, root, "diff", "--base", "trunk", "--json")
+	checked := utilities.Beacon(t, root, "diff", "--base", "trunk", "--json")
 	if len(decodeDiff(t, checked.Stdout).Pending) != 1 {
 		t.Fatalf("the hint must work: %s", checked.Stdout)
 	}
 }
 
 func TestStatusReportsItsCountsInTheData(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	editByHand(t, root, "After 5 failed", "After 10 failed")
 
-	result := utils.Beacon(t, root, "status", "--json")
+	result := utilities.Beacon(t, root, "status", "--json")
 
 	var data struct {
 		Counts map[string]int `json:"counts"`
@@ -215,9 +215,9 @@ func TestStatusReportsItsCountsInTheData(t *testing.T) {
 }
 
 func TestBriefStaysQuietAboutTheBaseWhenItExists(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
-	result := utils.Beacon(t, root, "brief", "--json")
+	result := utilities.Beacon(t, root, "brief", "--json")
 
 	if envelope := parseRead(t, result.Stdout); envelope.Hint != nil {
 		t.Fatalf("hint = %v", *envelope.Hint)

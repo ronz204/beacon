@@ -1,4 +1,4 @@
-package e2e_test
+package integration_test
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ronz204/beacon/testing/utils"
+	"github.com/ronz204/beacon/testing/utilities"
 )
 
 const existingSettings = `{
@@ -36,7 +36,8 @@ type claudeSettings struct {
 func readSettings(t *testing.T, root string) claudeSettings {
 	t.Helper()
 
-	text := utils.ReadFile(t, filepath.Join(root, ".claude", "settings.json"))
+	settings := filepath.Join(root, ".claude", "settings.json")
+	text := utilities.ReadFile(t, settings)
 
 	var parsed claudeSettings
 	if err := json.Unmarshal([]byte(text), &parsed); err != nil {
@@ -48,7 +49,7 @@ func readSettings(t *testing.T, root string) claudeSettings {
 
 func TestInstallKeepsWhatClaudeSettingsAlreadyHad(t *testing.T) {
 	root := newBareRepository(t)
-	utils.WriteFile(t, root, ".claude/settings.json", existingSettings)
+	utilities.WriteFile(t, root, ".claude/settings.json", existingSettings)
 
 	runInstall(t, root)
 	parsed := readSettings(t, root)
@@ -69,24 +70,24 @@ func TestInstallKeepsWhatClaudeSettingsAlreadyHad(t *testing.T) {
 
 func TestUninstallGivesTheSettingsBackByteForByte(t *testing.T) {
 	root := newBareRepository(t)
-	utils.WriteFile(t, root, ".claude/settings.json", existingSettings)
+	utilities.WriteFile(t, root, ".claude/settings.json", existingSettings)
 
 	runInstall(t, root)
 	runInstall(t, root, "--uninstall")
 
 	path := filepath.Join(root, ".claude", "settings.json")
-	if utils.ReadFile(t, path) != existingSettings {
-		t.Errorf("settings changed:\n%s", utils.ReadFile(t, path))
+	if utilities.ReadFile(t, path) != existingSettings {
+		t.Errorf("settings changed:\n%s", utilities.ReadFile(t, path))
 	}
 }
 
 func TestInstallImportsTheGuideIntoAnExistingClaudeFile(t *testing.T) {
 	root := newBareRepository(t)
-	utils.WriteFile(t, root, "CLAUDE.md", "# My rules\n")
+	utilities.WriteFile(t, root, "CLAUDE.md", "# My rules\n")
 
 	runInstall(t, root)
 
-	text := utils.ReadFile(t, filepath.Join(root, "CLAUDE.md"))
+	text := utilities.ReadFile(t, filepath.Join(root, "CLAUDE.md"))
 	if !strings.HasPrefix(text, "# My rules\n") ||
 		!strings.Contains(text, "@AGENTS.md") {
 		t.Errorf("CLAUDE.md = %q", text)
@@ -94,7 +95,8 @@ func TestInstallImportsTheGuideIntoAnExistingClaudeFile(t *testing.T) {
 
 	runInstall(t, root, "--uninstall")
 
-	if utils.ReadFile(t, filepath.Join(root, "CLAUDE.md")) != "# My rules\n" {
+	restored := utilities.ReadFile(t, filepath.Join(root, "CLAUDE.md"))
+	if restored != "# My rules\n" {
 		t.Error("CLAUDE.md was not restored")
 	}
 }
@@ -128,7 +130,7 @@ func TestInstallSkipsWhatTheFlagsLeaveOut(t *testing.T) {
 func TestInstallReportsTheMomentClaudeCodeCannotCover(t *testing.T) {
 	root := newBareRepository(t)
 
-	result := utils.Beacon(t, root, "install", "--json", "--dry-run")
+	result := utilities.Beacon(t, root, "install", "--json", "--dry-run")
 
 	var data struct {
 		Agents []struct {

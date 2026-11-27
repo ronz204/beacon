@@ -1,4 +1,4 @@
-package e2e_test
+package integration_test
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ronz204/beacon/testing/utils"
+	"github.com/ronz204/beacon/testing/utilities"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 func storedPayload(t *testing.T, root, id string) map[string]any {
 	t.Helper()
 
-	result := utils.Beacon(t, root, "get", id, "--json")
+	result := utilities.Beacon(t, root, "get", id, "--json")
 
 	var data map[string]any
 	decodeData(t, result.Stdout, &data)
@@ -69,16 +69,16 @@ func record(
 	t *testing.T,
 	root, actor, payload string,
 	flags ...string,
-) utils.Result {
+) utilities.Result {
 	t.Helper()
 
 	args := append([]string{"record", "--json"}, flags...)
 	args = append(args, "-")
 
-	return utils.BeaconWith(
+	return utilities.BeaconWith(
 		t,
 		root,
-		utils.Options{Stdin: payload, Actor: actor},
+		utilities.Options{Stdin: payload, Actor: actor},
 		args...,
 	)
 }
@@ -94,9 +94,9 @@ func weakenedLockout(t *testing.T, root string) string {
 }
 
 func TestRecordOfAnUnchangedRecordTouchesNothing(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	path := filepath.Join(root, filepath.FromSlash(capabilityPath))
-	before := utils.ReadFile(t, path)
+	before := utilities.ReadFile(t, path)
 	payload := jsonOf(t, storedPayload(t, root, "bc-7f3a"))
 
 	result := record(t, root, sampleAgent, payload)
@@ -110,15 +110,15 @@ func TestRecordOfAnUnchangedRecordTouchesNothing(t *testing.T) {
 	if result.Code != 0 || !data.Unchanged || data.Saved {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
-	if utils.ReadFile(t, path) != before {
+	if utilities.ReadFile(t, path) != before {
 		t.Fatal("the file changed")
 	}
 }
 
 func TestRecordBlocksAWeakenedPromiseWithoutAYes(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	path := filepath.Join(root, filepath.FromSlash(capabilityPath))
-	before := utils.ReadFile(t, path)
+	before := utilities.ReadFile(t, path)
 
 	result := record(t, root, sampleAgent, weakenedLockout(t, root))
 
@@ -132,7 +132,7 @@ func TestRecordBlocksAWeakenedPromiseWithoutAYes(t *testing.T) {
 	if !hintContains(envelope.Hint, "--approve") {
 		t.Fatalf("hint = %v", envelope.Hint)
 	}
-	if utils.ReadFile(t, path) != before {
+	if utilities.ReadFile(t, path) != before {
 		t.Fatal("the file changed without a yes")
 	}
 
@@ -158,12 +158,12 @@ func TestRecordBlocksAWeakenedPromiseWithoutAYes(t *testing.T) {
 }
 
 func TestRecordWithApproveStampsThePersonAndTheAgent(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	payload := weakenedLockout(t, root)
 
 	result := record(t, root, sampleAgent, payload, "--approve")
 
-	text := utils.ReadFile(t, filepath.Join(root, capabilityPath))
+	text := utilities.ReadFile(t, filepath.Join(root, capabilityPath))
 	if result.Code != 0 {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
@@ -177,12 +177,12 @@ func TestRecordWithApproveStampsThePersonAndTheAgent(t *testing.T) {
 }
 
 func TestRecordByAPersonStampsThemWithoutVia(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	payload := weakenedLockout(t, root)
 
 	result := record(t, root, "human:sam", payload, "--approve")
 
-	text := utils.ReadFile(t, filepath.Join(root, capabilityPath))
+	text := utilities.ReadFile(t, filepath.Join(root, capabilityPath))
 	if result.Code != 0 || !strings.Contains(text, `by: "human:sam"`) {
 		t.Fatalf("code = %d, text:\n%s", result.Code, text)
 	}
@@ -193,8 +193,8 @@ func TestRecordByAPersonStampsThemWithoutVia(t *testing.T) {
 }
 
 func TestRecordByAnAgentNeedsTheGitName(t *testing.T) {
-	root := utils.NewRepository(t)
-	utils.Git(t, root, "config", "user.name", "")
+	root := utilities.NewRepository(t)
+	utilities.Git(t, root, "config", "user.name", "")
 	payload := weakenedLockout(t, root)
 
 	result := record(t, root, sampleAgent, payload, "--approve")
@@ -209,7 +209,7 @@ func TestRecordByAnAgentNeedsTheGitName(t *testing.T) {
 }
 
 func TestRecordAcceptsANewProposedPromiseWithoutAYes(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	payload := storedPayload(t, root, "bc-7f3a")
 	record := payload["record"].(map[string]any)
 	record["promises"] = append(record["promises"].([]any), map[string]any{
@@ -218,21 +218,21 @@ func TestRecordAcceptsANewProposedPromiseWithoutAYes(t *testing.T) {
 		"status": "proposed",
 	})
 
-	result := utils.BeaconWith(
+	result := utilities.BeaconWith(
 		t,
 		root,
-		utils.Options{Stdin: jsonOf(t, payload), Actor: sampleAgent},
+		utilities.Options{Stdin: jsonOf(t, payload), Actor: sampleAgent},
 		"record", "--json", "-",
 	)
 
-	text := utils.ReadFile(t, filepath.Join(root, capabilityPath))
+	text := utilities.ReadFile(t, filepath.Join(root, capabilityPath))
 	if result.Code != 0 || !strings.Contains(text, "neutral message") {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
 }
 
 func TestRecordGivesTheWritingGuideWhenItCreatesAPromise(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	payload := storedPayload(t, root, "bc-7f3a")
 	body := payload["record"].(map[string]any)
 	body["promises"] = append(body["promises"].([]any), map[string]any{
@@ -254,7 +254,7 @@ func TestRecordGivesTheWritingGuideWhenItCreatesAPromise(t *testing.T) {
 }
 
 func TestRecordOmitsTheGuideWhenNoPromiseIsCreated(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	payload := storedPayload(t, root, "bc-7f3a")
 	body := payload["record"].(map[string]any)
 	body["name"] = "Sign in"
@@ -267,15 +267,15 @@ func TestRecordOmitsTheGuideWhenNoPromiseIsCreated(t *testing.T) {
 }
 
 func TestRecordRejectsAnOmittedPromise(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	payload := storedPayload(t, root, "bc-7f3a")
 	record := payload["record"].(map[string]any)
 	record["promises"] = record["promises"].([]any)[:1]
 
-	result := utils.BeaconWith(
+	result := utilities.BeaconWith(
 		t,
 		root,
-		utils.Options{Stdin: jsonOf(t, payload), Actor: sampleAgent},
+		utilities.Options{Stdin: jsonOf(t, payload), Actor: sampleAgent},
 		"record", "--json", "-",
 	)
 
@@ -289,7 +289,7 @@ func TestRecordRejectsAnOmittedPromise(t *testing.T) {
 }
 
 func TestRecordRejectsAnUnknownRecord(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	payload := storedPayload(t, root, "bc-a1b2")
 	payload["record"].(map[string]any)["id"] = "bc-ffff"
 
@@ -302,7 +302,7 @@ func TestRecordRejectsAnUnknownRecord(t *testing.T) {
 }
 
 func TestRecordRejectsAnInvalidPayload(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
 	result := record(t, root, sampleAgent, `{"type":"question","record":{}}`)
 
@@ -313,9 +313,9 @@ func TestRecordRejectsAnInvalidPayload(t *testing.T) {
 }
 
 func TestRecordRequiresTheStdinMarker(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
-	result := utils.Beacon(t, root, "record", "payload.json")
+	result := utilities.Beacon(t, root, "record", "payload.json")
 
 	if result.Code != 1 || !strings.Contains(result.Stderr, "stdin") {
 		t.Fatalf("code = %d, stderr = %s", result.Code, result.Stderr)
@@ -333,12 +333,12 @@ const changedConfig = `{"type":"config","record":{"schema":1,` +
 	`"agents":["claude-code","codex","cursor"]}}`
 
 func TestRecordOfChangedRunnersAsksThenStampsTheConfig(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
 	blocked := record(t, root, sampleAgent, changedConfig)
 	approved := record(t, root, sampleAgent, changedConfig, "--approve")
 
-	text := utils.ReadFile(t, filepath.Join(root, configPath))
+	text := utilities.ReadFile(t, filepath.Join(root, configPath))
 	if blocked.Code != 2 || approved.Code != 0 {
 		t.Fatalf("blocked = %+v, approved = %+v", blocked, approved)
 	}
@@ -351,20 +351,20 @@ func TestRecordOfChangedRunnersAsksThenStampsTheConfig(t *testing.T) {
 func TestRecordApproveOfAnUnchangedRecordWithNothingPendingTouchesNothing(
 	t *testing.T,
 ) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	path := filepath.Join(root, filepath.FromSlash(capabilityPath))
-	before := utils.ReadFile(t, path)
+	before := utilities.ReadFile(t, path)
 	payload := jsonOf(t, storedPayload(t, root, "bc-7f3a"))
 
 	result := record(t, root, sampleAgent, payload, "--approve")
 
-	if result.Code != 0 || utils.ReadFile(t, path) != before {
+	if result.Code != 0 || utilities.ReadFile(t, path) != before {
 		t.Fatalf("result = %+v", result)
 	}
 }
 
 func TestApprovalRequiredListsTheChangesWithLowercaseKeys(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
 	result := record(t, root, sampleAgent, weakenedLockout(t, root))
 

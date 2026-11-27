@@ -1,4 +1,4 @@
-package utils
+package utilities
 
 import (
 	"bytes"
@@ -38,7 +38,7 @@ func RunSuite(m *testing.M) int {
 	}
 
 	runnerPath = filepath.Join(directory, "fakerunner"+executableSuffix())
-	err = buildBinary(runnerPath, "./testing/testdata/fakerunner")
+	err = buildBinary(runnerPath, "./testing/utilities/fakerunner")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1

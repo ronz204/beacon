@@ -1,4 +1,4 @@
-package e2e_test
+package integration_test
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ronz204/beacon/testing/utils"
+	"github.com/ronz204/beacon/testing/utilities"
 )
 
 const (
@@ -19,19 +19,21 @@ func closeRecord(
 	t *testing.T,
 	root, actor, id string,
 	flags ...string,
-) utils.Result {
+) utilities.Result {
 	t.Helper()
 
 	args := append([]string{"close", id, "--json"}, flags...)
 
-	return utils.BeaconWith(t, root, utils.Options{Actor: actor}, args...)
+	options := utilities.Options{Actor: actor}
+
+	return utilities.BeaconWith(t, root, options, args...)
 }
 
 func closeWithReason(
 	t *testing.T,
 	root, id string,
 	flags ...string,
-) utils.Result {
+) utilities.Result {
 	t.Helper()
 
 	flags = append([]string{"--reason", closeReason}, flags...)
@@ -40,14 +42,14 @@ func closeWithReason(
 }
 
 func TestCloseArchivesAQuestionWithoutAskingForAYes(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
 	result := closeWithReason(t, root, "bc-e5f6")
 
 	var stored struct {
 		Archived bool `json:"archived"`
 	}
-	got := utils.Beacon(t, root, "get", "bc-e5f6", "--json")
+	got := utilities.Beacon(t, root, "get", "bc-e5f6", "--json")
 	decodeData(t, got.Stdout, &stored)
 
 	if result.Code != 0 || !stored.Archived {
@@ -59,7 +61,7 @@ func TestCloseArchivesAQuestionWithoutAskingForAYes(t *testing.T) {
 }
 
 func TestCloseNeedsAReason(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
 	result := closeRecord(t, root, sampleAgent, "bc-e5f6")
 
@@ -73,9 +75,9 @@ func TestCloseNeedsAReason(t *testing.T) {
 }
 
 func TestCloseOfAnActivePromiseAsksThenStampsTheArchiveLine(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	path := filepath.Join(root, filepath.FromSlash(capabilityPath))
-	before := utils.ReadFile(t, path)
+	before := utilities.ReadFile(t, path)
 
 	blocked := closeWithReason(t, root, "bc-c3d4")
 
@@ -90,7 +92,7 @@ func TestCloseOfAnActivePromiseAsksThenStampsTheArchiveLine(t *testing.T) {
 	}
 	decodeError(t, blocked.Stdout, &asked)
 
-	if blocked.Code != 2 || utils.ReadFile(t, path) != before {
+	if blocked.Code != 2 || utilities.ReadFile(t, path) != before {
 		t.Fatalf("blocked = %+v", blocked)
 	}
 	change := asked.Details.Changes[0]
@@ -103,17 +105,17 @@ func TestCloseOfAnActivePromiseAsksThenStampsTheArchiveLine(t *testing.T) {
 
 	approved := closeWithReason(t, root, "bc-c3d4", "--approve")
 
-	stored := utils.Beacon(t, root, "get", "bc-c3d4", "--json")
+	stored := utilities.Beacon(t, root, "get", "bc-c3d4", "--json")
 	if approved.Code != 0 || !strings.Contains(stored.Stdout, "human:jane") {
 		t.Fatalf("approved = %+v, stored = %s", approved, stored.Stdout)
 	}
-	if strings.Contains(utils.ReadFile(t, path), "bc-c3d4") {
+	if strings.Contains(utilities.ReadFile(t, path), "bc-c3d4") {
 		t.Fatal("the promise is still in its capability")
 	}
 }
 
 func TestCloseRefusesAGuideAndHintsAtDeletingIt(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
 	result := closeWithReason(t, root, "bc-0a9b")
 
@@ -130,7 +132,7 @@ func TestCloseRefusesAGuideAndHintsAtDeletingIt(t *testing.T) {
 }
 
 func TestCloseRefusesATaskWithOpenSubtasks(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
 	result := closeWithReason(t, root, "bc-91cd.1")
 
@@ -144,7 +146,7 @@ func TestCloseRefusesATaskWithOpenSubtasks(t *testing.T) {
 }
 
 func TestCloseOfAnUnknownRecordHintsAtFind(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
 	result := closeWithReason(t, root, "bc-ffff")
 
@@ -155,11 +157,11 @@ func TestCloseOfAnUnknownRecordHintsAtFind(t *testing.T) {
 }
 
 func TestCloseOfACapabilityStampsOneLineThatCoversItsPromises(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
 	blocked := closeWithReason(t, root, "bc-7f3a")
 	approved := closeWithReason(t, root, "bc-7f3a", "--approve")
-	doctor := utils.Beacon(t, root, "doctor", "--json")
+	doctor := utilities.Beacon(t, root, "doctor", "--json")
 
 	var asked struct {
 		Details struct {

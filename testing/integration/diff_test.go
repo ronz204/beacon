@@ -1,11 +1,11 @@
-package e2e_test
+package integration_test
 
 import (
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/ronz204/beacon/testing/utils"
+	"github.com/ronz204/beacon/testing/utilities"
 )
 
 type diffData struct {
@@ -39,8 +39,8 @@ func editByHand(t *testing.T, root, from, to string) {
 	t.Helper()
 
 	path := filepath.Join(root, filepath.FromSlash(capabilityPath))
-	utils.WriteFile(t, root, capabilityPath, strings.Replace(
-		utils.ReadFile(t, path),
+	utilities.WriteFile(t, root, capabilityPath, strings.Replace(
+		utilities.ReadFile(t, path),
 		from,
 		to,
 		1,
@@ -60,9 +60,9 @@ func entryFor(data diffData, id string) (diffEntry, bool) {
 }
 
 func TestDiffOfACleanRepositoryHasNothing(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
-	result := utils.Beacon(t, root, "diff", "--json")
+	result := utilities.Beacon(t, root, "diff", "--json")
 
 	data := decodeDiff(t, result.Stdout)
 	if result.Code != 0 || len(data.Levels) != 0 || len(data.Pending) != 0 {
@@ -71,10 +71,10 @@ func TestDiffOfACleanRepositoryHasNothing(t *testing.T) {
 }
 
 func TestDiffShowsAHandEditedPromiseAsPending(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	editByHand(t, root, "After 5 failed", "After 10 failed")
 
-	result := utils.Beacon(t, root, "diff", "--json")
+	result := utilities.Beacon(t, root, "diff", "--json")
 
 	data := decodeDiff(t, result.Stdout)
 	envelope := parseRead(t, result.Stdout)
@@ -94,10 +94,10 @@ func TestDiffShowsAHandEditedPromiseAsPending(t *testing.T) {
 }
 
 func TestDiffTreatsATypoAsMaintenance(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	editByHand(t, root, "locks for 15 minutes.", "locks for 15 minutes!!")
 
-	data := decodeDiff(t, utils.Beacon(t, root, "diff", "--json").Stdout)
+	data := decodeDiff(t, utilities.Beacon(t, root, "diff", "--json").Stdout)
 
 	entry, found := entryFor(data, "bc-c3d4")
 	if found && entry.NeedsYes {
@@ -109,15 +109,16 @@ func TestDiffTreatsATypoAsMaintenance(t *testing.T) {
 }
 
 func TestRecordApproveResolvesAHandEditedPromise(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	editByHand(t, root, "After 5 failed", "After 10 failed")
 	payload := jsonOf(t, storedPayload(t, root, "bc-7f3a"))
 
 	silent := record(t, root, sampleAgent, payload)
-	again := utils.Beacon(t, root, "diff", "--json")
+	again := utilities.Beacon(t, root, "diff", "--json")
 	stillPending := decodeDiff(t, again.Stdout)
 	approved := record(t, root, sampleAgent, payload, "--approve")
-	resolved := decodeDiff(t, utils.Beacon(t, root, "diff", "--json").Stdout)
+	latest := utilities.Beacon(t, root, "diff", "--json")
+	resolved := decodeDiff(t, latest.Stdout)
 
 	if silent.Code != 0 || len(stillPending.Pending) != 1 {
 		t.Fatalf("silent = %+v, pending = %+v", silent, stillPending)
@@ -133,10 +134,10 @@ func TestRecordApproveResolvesAHandEditedPromise(t *testing.T) {
 }
 
 func TestDiffSeesTheStampOfAClosedPromise(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	closed := closeWithReason(t, root, "bc-c3d4", "--approve")
 
-	data := decodeDiff(t, utils.Beacon(t, root, "diff", "--json").Stdout)
+	data := decodeDiff(t, utilities.Beacon(t, root, "diff", "--json").Stdout)
 
 	entry, found := entryFor(data, "bc-c3d4")
 	if closed.Code != 0 || !found || !entry.Approved {
@@ -148,14 +149,14 @@ func TestDiffSeesTheStampOfAClosedPromise(t *testing.T) {
 }
 
 func TestDiffSinceListsCommittedChanges(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	editByHand(t, root, "After 5 failed", "After 10 failed")
-	utils.Git(t, root, "commit", "-q", "-am", "weaken the lockout")
+	utilities.Git(t, root, "commit", "-q", "-am", "weaken the lockout")
 
-	current := decodeDiff(t, utils.Beacon(t, root, "diff", "--json").Stdout)
+	current := decodeDiff(t, utilities.Beacon(t, root, "diff", "--json").Stdout)
 	since := decodeDiff(
 		t,
-		utils.Beacon(t, root, "diff", "--since", "HEAD~1", "--json").Stdout,
+		utilities.Beacon(t, root, "diff", "--since", "HEAD~1", "--json").Stdout,
 	)
 
 	if len(current.Pending) != 0 {
@@ -167,20 +168,21 @@ func TestDiffSinceListsCommittedChanges(t *testing.T) {
 }
 
 func TestBaselineCaptureNeedsAYesUntilARunnerPromiseIsApproved(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	path := filepath.Join(root, filepath.FromSlash(capabilityPath))
-	utils.WriteFile(t, root, capabilityPath, utils.ReadFile(t, path)+
+	utilities.WriteFile(t, root, capabilityPath, utilities.ReadFile(t, path)+
 		"  - id: bc-d7a8\n"+
 		"    text: The sign-in screen has no visual regressions.\n"+
 		"    check: {runner: visual, target: home}\n"+
 		"    status: proposed\n")
-	utils.Git(t, root, "commit", "-q", "-am", "add a visual promise")
-	utils.WriteFile(t, root, "tests/auth/login-snapshots/home.png", "png")
+	utilities.Git(t, root, "commit", "-q", "-am", "add a visual promise")
+	utilities.WriteFile(t, root, "tests/auth/login-snapshots/home.png", "png")
 
-	pending := decodeDiff(t, utils.Beacon(t, root, "diff", "--json").Stdout)
+	pending := decodeDiff(t, utilities.Beacon(t, root, "diff", "--json").Stdout)
 	payload := jsonOf(t, storedPayload(t, root, "bc-7f3a"))
 	approved := record(t, root, sampleAgent, payload, "--approve")
-	resolved := decodeDiff(t, utils.Beacon(t, root, "diff", "--json").Stdout)
+	latest := utilities.Beacon(t, root, "diff", "--json")
+	resolved := decodeDiff(t, latest.Stdout)
 
 	if len(pending.Pending) != 1 || pending.Pending[0].Target != "baseline" {
 		t.Fatalf("pending = %+v", pending.Pending)
@@ -191,17 +193,17 @@ func TestBaselineCaptureNeedsAYesUntilARunnerPromiseIsApproved(t *testing.T) {
 }
 
 func TestSecondApprovalOfTheSameDayStillResolvesThePending(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	first := record(t, root, sampleAgent, weakenedLockout(t, root), "--approve")
-	utils.Git(t, root, "commit", "-q", "-am", "approve the first weakening")
+	utilities.Git(t, root, "commit", "-q", "-am", "approve the first weakening")
 
 	payload := storedPayload(t, root, "bc-7f3a")
 	promise := promiseOf(payload, "bc-c3d4")
 	promise["text"] = "After 20 failed attempts the account locks."
 	second := record(t, root, sampleAgent, jsonOf(t, payload), "--approve")
 
-	data := decodeDiff(t, utils.Beacon(t, root, "diff", "--json").Stdout)
-	text := utils.ReadFile(t, filepath.Join(root, capabilityPath))
+	data := decodeDiff(t, utilities.Beacon(t, root, "diff", "--json").Stdout)
+	text := utilities.ReadFile(t, filepath.Join(root, capabilityPath))
 
 	if first.Code != 0 || second.Code != 0 {
 		t.Fatalf("first = %+v, second = %+v", first, second)

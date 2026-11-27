@@ -1,4 +1,4 @@
-package e2e_test
+package integration_test
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ronz204/beacon/testing/utils"
+	"github.com/ronz204/beacon/testing/utilities"
 )
 
 const (
@@ -18,14 +18,14 @@ const (
 func commitAll(t *testing.T, root, message string) {
 	t.Helper()
 
-	utils.Git(t, root, "add", "-A")
-	utils.Git(t, root, "commit", "-q", "-m", message)
+	utilities.Git(t, root, "add", "-A")
+	utilities.Git(t, root, "commit", "-q", "-m", message)
 }
 
 func pendingIDs(t *testing.T, root string) []string {
 	t.Helper()
 
-	result := utils.Beacon(t, root, "diff", "--json")
+	result := utilities.Beacon(t, root, "diff", "--json")
 
 	var ids []string
 	for _, entry := range decodeDiff(t, result.Stdout).Pending {
@@ -38,7 +38,7 @@ func pendingIDs(t *testing.T, root string) []string {
 func entryIDs(t *testing.T, root string) []string {
 	t.Helper()
 
-	result := utils.Beacon(t, root, "diff", "--json")
+	result := utilities.Beacon(t, root, "diff", "--json")
 
 	var ids []string
 	for _, level := range decodeDiff(t, result.Stdout).Levels {
@@ -51,14 +51,14 @@ func entryIDs(t *testing.T, root string) []string {
 }
 
 func TestBranchDiffShowsOnlyThePromiseTheBranchChanged(t *testing.T) {
-	root := utils.NewRepository(t)
-	utils.Git(t, root, "switch", "-q", "-c", "feat/lockout")
+	root := utilities.NewRepository(t)
+	utilities.Git(t, root, "switch", "-q", "-c", "feat/lockout")
 	editByHand(t, root, lockoutFrom, "After 10 failed")
 	commitAll(t, root, "weaken the lockout on the branch")
-	utils.Git(t, root, "switch", "-q", "main")
+	utilities.Git(t, root, "switch", "-q", "main")
 	editByHand(t, root, mobileFrom, tabletText)
 	commitAll(t, root, "main changes another promise")
-	utils.Git(t, root, "switch", "-q", "feat/lockout")
+	utilities.Git(t, root, "switch", "-q", "feat/lockout")
 
 	ids := entryIDs(t, root)
 
@@ -68,17 +68,17 @@ func TestBranchDiffShowsOnlyThePromiseTheBranchChanged(t *testing.T) {
 }
 
 func TestRebasedBranchDoesNotInheritMainsApprovedChange(t *testing.T) {
-	root := utils.NewRepository(t)
-	utils.Git(t, root, "switch", "-q", "-c", "feat/mobile")
+	root := utilities.NewRepository(t)
+	utilities.Git(t, root, "switch", "-q", "-c", "feat/mobile")
 	editByHand(t, root, mobileFrom, tabletText)
 	commitAll(t, root, "change the mobile promise on the branch")
-	utils.Git(t, root, "switch", "-q", "main")
+	utilities.Git(t, root, "switch", "-q", "main")
 	weakened := weakenedLockout(t, root)
 	approved := record(t, root, sampleAgent, weakened, "--approve")
 	commitAll(t, root, "main weakens the lockout with a yes")
-	utils.Git(t, root, "switch", "-q", "feat/mobile")
+	utilities.Git(t, root, "switch", "-q", "feat/mobile")
 
-	rebased, err := utils.GitTry(t, root, "rebase", "main")
+	rebased, err := utilities.GitTry(t, root, "rebase", "main")
 
 	if approved.Code != 0 || err != nil {
 		t.Fatalf("approved = %+v, rebase = %s", approved, rebased)
@@ -98,15 +98,15 @@ func TestRebasedBranchDoesNotInheritMainsApprovedChange(t *testing.T) {
 func conflictedRepository(t *testing.T) (string, string) {
 	t.Helper()
 
-	root := utils.NewRepository(t)
-	utils.Git(t, root, "switch", "-q", "-c", "feat/lockout")
+	root := utilities.NewRepository(t)
+	utilities.Git(t, root, "switch", "-q", "-c", "feat/lockout")
 	editByHand(t, root, lockoutFrom, "After 10 failed")
 	commitAll(t, root, "one side")
-	utils.Git(t, root, "switch", "-q", "main")
+	utilities.Git(t, root, "switch", "-q", "main")
 	editByHand(t, root, lockoutFrom, "After 20 failed")
 	commitAll(t, root, "the other side")
 
-	merged, err := utils.GitTry(t, root, "merge", "feat/lockout")
+	merged, err := utilities.GitTry(t, root, "merge", "feat/lockout")
 	if err == nil {
 		t.Fatalf("both sides changed the same promise: %s", merged)
 	}
@@ -117,7 +117,7 @@ func conflictedRepository(t *testing.T) (string, string) {
 func TestDoctorReportsAGitConflictOnTheSamePromise(t *testing.T) {
 	root, merged := conflictedRepository(t)
 
-	result := utils.Beacon(t, root, "doctor", "--json")
+	result := utilities.Beacon(t, root, "doctor", "--json")
 
 	envelope := parseRead(t, result.Stdout)
 	if !strings.Contains(merged, "CONFLICT") {
@@ -138,10 +138,10 @@ func TestDoctorReportsAGitConflictOnTheSamePromise(t *testing.T) {
 
 func TestDoctorPassesOnceTheConflictIsResolved(t *testing.T) {
 	root, _ := conflictedRepository(t)
-	utils.Git(t, root, "checkout", "--ours", capabilityPath)
+	utilities.Git(t, root, "checkout", "--ours", capabilityPath)
 	commitAll(t, root, "resolve the conflict")
 
-	result := utils.Beacon(t, root, "doctor", "--json")
+	result := utilities.Beacon(t, root, "doctor", "--json")
 
 	if result.Code != 0 {
 		t.Fatalf("doctor = %+v", result)
@@ -160,12 +160,12 @@ func closeTaskOnMain(t *testing.T, root string) {
 }
 
 func TestOldBranchCannotClaimATaskMainAlreadyClosed(t *testing.T) {
-	root := utils.NewRepository(t)
-	utils.Git(t, root, "switch", "-q", "-c", "feat/old")
-	utils.Git(t, root, "switch", "-q", "main")
+	root := utilities.NewRepository(t)
+	utilities.Git(t, root, "switch", "-q", "-c", "feat/old")
+	utilities.Git(t, root, "switch", "-q", "main")
 	closeTaskOnMain(t, root)
-	utils.Git(t, root, "switch", "-q", "feat/old")
-	utils.Git(t, root, "merge", "-q", "main")
+	utilities.Git(t, root, "switch", "-q", "feat/old")
+	utilities.Git(t, root, "merge", "-q", "main")
 
 	result := claim(t, root)
 
@@ -177,24 +177,24 @@ func TestOldBranchCannotClaimATaskMainAlreadyClosed(t *testing.T) {
 		t.Fatalf("hint = %v", envelope.Hint)
 	}
 
-	shown := utils.Beacon(t, root, "get", claimedTask, "--json")
+	shown := utilities.Beacon(t, root, "get", claimedTask, "--json")
 	if !strings.Contains(shown.Stdout, `"archived":true`) {
 		t.Fatalf("the closed task must be readable: %s", shown.Stdout)
 	}
 }
 
 func TestOldBranchThatClaimedBeforeMergingGetsAVisibleConflict(t *testing.T) {
-	root := utils.NewRepository(t)
-	utils.Git(t, root, "switch", "-q", "-c", "feat/old")
+	root := utilities.NewRepository(t)
+	utilities.Git(t, root, "switch", "-q", "-c", "feat/old")
 	if claimed := claim(t, root); claimed.Code != 0 {
 		t.Fatalf("an old branch still sees the task open: %+v", claimed)
 	}
 	commitAll(t, root, "claim on the old branch")
-	utils.Git(t, root, "switch", "-q", "main")
+	utilities.Git(t, root, "switch", "-q", "main")
 	closeTaskOnMain(t, root)
-	utils.Git(t, root, "switch", "-q", "feat/old")
+	utilities.Git(t, root, "switch", "-q", "feat/old")
 
-	merged, err := utils.GitTry(t, root, "merge", "main")
+	merged, err := utilities.GitTry(t, root, "merge", "main")
 
 	if err == nil || !strings.Contains(merged, "CONFLICT") {
 		t.Fatalf("closing and claiming the same task must conflict: %s", merged)
@@ -206,21 +206,21 @@ func TestOldBranchThatClaimedBeforeMergingGetsAVisibleConflict(t *testing.T) {
 }
 
 func TestSinceAuditsAnUnapprovedChangeTheBranchInherited(t *testing.T) {
-	root := utils.NewRepository(t)
-	origin, err := utils.GitTry(t, root, "rev-parse", "HEAD")
+	root := utilities.NewRepository(t)
+	origin, err := utilities.GitTry(t, root, "rev-parse", "HEAD")
 	if err != nil {
 		t.Fatal(origin)
 	}
 
-	utils.Git(t, root, "switch", "-q", "-c", "feat/audit")
-	utils.Git(t, root, "switch", "-q", "main")
+	utilities.Git(t, root, "switch", "-q", "-c", "feat/audit")
+	utilities.Git(t, root, "switch", "-q", "main")
 	editByHand(t, root, lockoutFrom, "After 10 failed")
 	commitAll(t, root, "main weakens the lockout without a yes")
-	utils.Git(t, root, "switch", "-q", "feat/audit")
-	utils.Git(t, root, "rebase", "-q", "main")
+	utilities.Git(t, root, "switch", "-q", "feat/audit")
+	utilities.Git(t, root, "rebase", "-q", "main")
 
 	inherited := pendingIDs(t, root)
-	audited := decodeDiff(t, utils.Beacon(
+	audited := decodeDiff(t, utilities.Beacon(
 		t,
 		root,
 		"diff", "--since", strings.TrimSpace(origin), "--json",
@@ -235,16 +235,16 @@ func TestSinceAuditsAnUnapprovedChangeTheBranchInherited(t *testing.T) {
 }
 
 func TestDoctorHintsAtGitattributesForCRLFRecords(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	path := filepath.Join(root, filepath.FromSlash(capabilityPath))
-	text := strings.ReplaceAll(utils.ReadFile(t, path), "\n", "\r\n")
+	text := strings.ReplaceAll(utilities.ReadFile(t, path), "\n", "\r\n")
 	if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	result := utils.Beacon(t, root, "doctor", "--json")
-	fixed := utils.Beacon(t, root, "fmt")
-	again := utils.Beacon(t, root, "doctor")
+	result := utilities.Beacon(t, root, "doctor", "--json")
+	fixed := utilities.Beacon(t, root, "fmt")
+	again := utilities.Beacon(t, root, "doctor")
 
 	envelope := parseRead(t, result.Stdout)
 	finding := envelope.Error.Details.Findings[0]

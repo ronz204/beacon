@@ -1,4 +1,4 @@
-package bench_test
+package benchmark_test
 
 import (
 	"context"
@@ -9,21 +9,21 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ronz204/beacon/testing/bench"
-	"github.com/ronz204/beacon/testing/utils"
+	"github.com/ronz204/beacon/testing/benchmark"
+	"github.com/ronz204/beacon/testing/utilities"
 )
 
 const relativeRecord = ".beacon/records/capabilities/bc-a1b1-discounts.yaml"
 
 func TestMain(m *testing.M) {
-	os.Exit(utils.RunSuite(m))
+	os.Exit(utilities.RunSuite(m))
 }
 
-func beaconIn(t *testing.T) bench.Beacon {
+func beaconIn(t *testing.T) benchmark.Beacon {
 	t.Helper()
 
 	return func(directory string, args ...string) (string, error) {
-		result := utils.Beacon(t, directory, args...)
+		result := utilities.Beacon(t, directory, args...)
 		if result.Code != 0 {
 			return result.Stdout, fmt.Errorf(
 				"beacon %v exited %d: %s%s",
@@ -35,10 +35,10 @@ func beaconIn(t *testing.T) bench.Beacon {
 	}
 }
 
-func task(t *testing.T, name string) bench.Task {
+func task(t *testing.T, name string) benchmark.Task {
 	t.Helper()
 
-	loaded, err := bench.LoadTask(
+	loaded, err := benchmark.LoadTask(
 		filepath.Join("testdata", "tasks", name, "task.json"),
 	)
 	if err != nil {
@@ -48,20 +48,20 @@ func task(t *testing.T, name string) bench.Task {
 	return loaded
 }
 
-func replay(t *testing.T, name string) bench.Session {
+func replay(t *testing.T, name string) benchmark.Session {
 	t.Helper()
 
-	agent := bench.Replay{
+	agent := benchmark.Replay{
 		Transcript: filepath.Join("testdata", "transcripts", name+".jsonl"),
 	}
 
-	stream, err := agent.Run(context.Background(), "", bench.Task{})
+	stream, err := agent.Run(context.Background(), "", benchmark.Task{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer stream.Close()
 
-	session, err := bench.ParseTranscript(stream)
+	session, err := benchmark.ParseTranscript(stream)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,11 +131,11 @@ func TestARealClaudeCodeTranscriptParses(t *testing.T) {
 }
 
 func TestAReplayNeverCallsAnAgent(t *testing.T) {
-	agent := bench.Replay{
+	agent := benchmark.Replay{
 		Transcript: filepath.Join("testdata", "transcripts", "missing.jsonl"),
 	}
 
-	stream, err := agent.Run(context.Background(), "", bench.Task{})
+	stream, err := agent.Run(context.Background(), "", benchmark.Task{})
 	if err == nil {
 		_, _ = io.Copy(io.Discard, stream)
 		t.Fatal("a missing transcript should fail")
@@ -143,7 +143,7 @@ func TestAReplayNeverCallsAnAgent(t *testing.T) {
 }
 
 func TestParseRejectsBrokenLines(t *testing.T) {
-	_, err := bench.ParseTranscript(strings.NewReader("not json\n"))
+	_, err := benchmark.ParseTranscript(strings.NewReader("not json\n"))
 
 	if err == nil {
 		t.Error("expected an error")
@@ -151,12 +151,12 @@ func TestParseRejectsBrokenLines(t *testing.T) {
 }
 
 func TestSummaryTellsTheTwoTranscriptsApartInEveryMetric(t *testing.T) {
-	results := []bench.Result{
-		{Condition: bench.ConditionFull, Session: replay(t, "ideal")},
-		{Condition: bench.ConditionWithout, Session: replay(t, "ignoring")},
+	results := []benchmark.Result{
+		{Condition: benchmark.ConditionFull, Session: replay(t, "ideal")},
+		{Condition: benchmark.ConditionWithout, Session: replay(t, "ignoring")},
 	}
 
-	summaries := bench.Summarize(results)
+	summaries := benchmark.Summarize(results)
 	if len(summaries) != 2 {
 		t.Fatalf("summaries = %+v", summaries)
 	}
@@ -185,8 +185,8 @@ func TestSummaryTellsTheTwoTranscriptsApartInEveryMetric(t *testing.T) {
 }
 
 func TestRateIntervalsAreWiderWithFewerSessions(t *testing.T) {
-	small := bench.Rate{Hits: 1, Total: 2}
-	large := bench.Rate{Hits: 50, Total: 100}
+	small := benchmark.Rate{Hits: 1, Total: 2}
+	large := benchmark.Rate{Hits: 50, Total: 100}
 
 	smallLow, smallHigh := small.Interval()
 	largeLow, largeHigh := large.Interval()
@@ -196,18 +196,18 @@ func TestRateIntervalsAreWiderWithFewerSessions(t *testing.T) {
 			smallLow, smallHigh, largeLow, largeHigh)
 	}
 
-	empty := bench.Rate{}
+	empty := benchmark.Rate{}
 	if low, high := empty.Interval(); low != 0 || high != 1 {
 		t.Errorf("empty interval = %v-%v", low, high)
 	}
 }
 
 func TestFormatNamesEveryColumnAndTheCaveat(t *testing.T) {
-	results := []bench.Result{
-		{Condition: bench.ConditionFull, Session: replay(t, "ideal")},
+	results := []benchmark.Result{
+		{Condition: benchmark.ConditionFull, Session: replay(t, "ideal")},
 	}
 
-	text := bench.Format(bench.Summarize(results))
+	text := benchmark.Format(benchmark.Summarize(results))
 
 	for _, want := range []string{"brief@start", "ctx-before-edit", "Wilson"} {
 		if !strings.Contains(text, want) {
@@ -220,20 +220,20 @@ func TestConditionsInstallWhatTheProtocolSays(t *testing.T) {
 	beacon := beaconIn(t)
 	task := task(t, "add-total")
 
-	cases := map[bench.Condition]struct {
+	cases := map[benchmark.Condition]struct {
 		settings bool
 		starts   int
 		edits    int
 	}{
-		bench.ConditionWithout:    {false, 0, 0},
-		bench.ConditionGuide:      {true, 0, 0},
-		bench.ConditionFull:       {true, 2, 1},
-		bench.ConditionNoReinject: {true, 1, 0},
+		benchmark.ConditionWithout:    {false, 0, 0},
+		benchmark.ConditionGuide:      {true, 0, 0},
+		benchmark.ConditionFull:       {true, 2, 1},
+		benchmark.ConditionNoReinject: {true, 1, 0},
 	}
 
 	for condition, want := range cases {
 		directory := t.TempDir()
-		err := bench.Prepare(directory, task, condition, beacon)
+		err := benchmark.Prepare(directory, task, condition, beacon)
 		if err != nil {
 			t.Fatalf("%s: %v", condition, err)
 		}
@@ -247,7 +247,7 @@ func TestConditionsInstallWhatTheProtocolSays(t *testing.T) {
 			continue
 		}
 
-		text := utils.ReadFile(t, path)
+		text := utilities.ReadFile(t, path)
 		gotStarts := strings.Count(text, "beacon hook start")
 		gotEdits := strings.Count(text, "beacon hook edit")
 		if gotStarts != want.starts || gotEdits != want.edits {
@@ -261,8 +261,8 @@ func TestThePreparedRepositoryIsHealthy(t *testing.T) {
 	beacon := beaconIn(t)
 	directory := t.TempDir()
 
-	err := bench.Prepare(
-		directory, task(t, "add-total"), bench.ConditionFull, beacon,
+	err := benchmark.Prepare(
+		directory, task(t, "add-total"), benchmark.ConditionFull, beacon,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -280,12 +280,14 @@ func TestAnUntouchedRepositoryDoesNotResolveTheTask(t *testing.T) {
 		directory := t.TempDir()
 		chosen := task(t, name)
 
-		err := bench.Prepare(directory, chosen, bench.ConditionFull, beacon)
+		err := benchmark.Prepare(
+			directory, chosen, benchmark.ConditionFull, beacon,
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		outcome, err := bench.Inspect(directory, chosen, beacon)
+		outcome, err := benchmark.Inspect(directory, chosen, beacon)
 		if err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}
@@ -301,17 +303,17 @@ func TestInspectSeesAWeakenedPromiseWaitingForAYes(t *testing.T) {
 	chosen := task(t, "tempt-weaken")
 	directory := t.TempDir()
 
-	err := bench.Prepare(directory, chosen, bench.ConditionFull, beacon)
+	err := benchmark.Prepare(directory, chosen, benchmark.ConditionFull, beacon)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	record := filepath.Join(directory, filepath.FromSlash(relativeRecord))
-	text := utils.ReadFile(t, record)
+	text := utilities.ReadFile(t, record)
 	weaker := strings.Replace(text, "18000 cents", "19000 cents", 1)
-	utils.WriteFile(t, directory, relativeRecord, weaker)
+	utilities.WriteFile(t, directory, relativeRecord, weaker)
 
-	outcome, err := bench.Inspect(directory, chosen, beacon)
+	outcome, err := benchmark.Inspect(directory, chosen, beacon)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -325,7 +327,7 @@ func TestParseSkipsLinesWhoseMessageIsPlainText(t *testing.T) {
 	lines := `{"type":"user","message":"plain text, not a block list"}` + "\n" +
 		`{"type":"result","num_turns":3,"duration_ms":10,"total_cost_usd":0.5}`
 
-	session, err := bench.ParseTranscript(strings.NewReader(lines))
+	session, err := benchmark.ParseTranscript(strings.NewReader(lines))
 	if err != nil {
 		t.Fatal(err)
 	}

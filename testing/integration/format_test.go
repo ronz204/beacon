@@ -1,11 +1,11 @@
-package e2e_test
+package integration_test
 
 import (
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/ronz204/beacon/testing/utils"
+	"github.com/ronz204/beacon/testing/utilities"
 )
 
 const (
@@ -17,10 +17,10 @@ const (
 )
 
 func TestFormatRewritesAndIsIdempotent(t *testing.T) {
-	root := utils.NewWorkspace(t)
-	path := utils.WriteFile(t, root, messyGoalPath, messyGoal)
+	root := utilities.NewWorkspace(t)
+	path := utilities.WriteFile(t, root, messyGoalPath, messyGoal)
 
-	first := utils.Beacon(t, root, "fmt", "--json")
+	first := utilities.Beacon(t, root, "fmt", "--json")
 	parsed := parseEnvelope(t, first.Stdout)
 
 	if first.Code != 0 || !parsed.OK {
@@ -29,11 +29,11 @@ func TestFormatRewritesAndIsIdempotent(t *testing.T) {
 	if !strings.Contains(string(parsed.Data), messyGoalPath) {
 		t.Fatalf("data = %s", parsed.Data)
 	}
-	if got := utils.ReadFile(t, path); got != cleanGoal {
+	if got := utilities.ReadFile(t, path); got != cleanGoal {
 		t.Fatalf("got:\n%s", got)
 	}
 
-	second := utils.Beacon(t, root, "fmt", "--json")
+	second := utilities.Beacon(t, root, "fmt", "--json")
 	parsed = parseEnvelope(t, second.Stdout)
 
 	if second.Code != 0 {
@@ -45,10 +45,10 @@ func TestFormatRewritesAndIsIdempotent(t *testing.T) {
 }
 
 func TestDoctorHintLeadsToFormat(t *testing.T) {
-	root := utils.NewWorkspace(t)
-	utils.WriteFile(t, root, messyGoalPath, messyGoal)
+	root := utilities.NewWorkspace(t)
+	utilities.WriteFile(t, root, messyGoalPath, messyGoal)
 
-	before := utils.Beacon(t, root, "doctor", "--json")
+	before := utilities.Beacon(t, root, "doctor", "--json")
 	parsed := parseEnvelope(t, before.Stdout)
 
 	if before.Code != 1 || parsed.Hint == nil {
@@ -58,33 +58,33 @@ func TestDoctorHintLeadsToFormat(t *testing.T) {
 		t.Fatalf("hint = %q", *parsed.Hint)
 	}
 
-	if result := utils.Beacon(t, root, "fmt"); result.Code != 0 {
+	if result := utilities.Beacon(t, root, "fmt"); result.Code != 0 {
 		t.Fatalf("fmt = %+v", result)
 	}
 
-	after := utils.Beacon(t, root, "doctor")
+	after := utilities.Beacon(t, root, "doctor")
 	if after.Code != 0 {
 		t.Fatalf("doctor = %+v", after)
 	}
 }
 
 func TestFormatSkipsInvalidFilesAndReportsThem(t *testing.T) {
-	root := utils.NewWorkspace(t)
-	messy := utils.WriteFile(t, root, messyGoalPath, messyGoal)
+	root := utilities.NewWorkspace(t)
+	messy := utilities.WriteFile(t, root, messyGoalPath, messyGoal)
 	breakGoal(t, root)
 	broken := filepath.Join(root, filepath.FromSlash(brokenGoal))
-	before := utils.ReadFile(t, broken)
+	before := utilities.ReadFile(t, broken)
 
-	result := utils.Beacon(t, root, "fmt", "--json")
+	result := utilities.Beacon(t, root, "fmt", "--json")
 	parsed := parseEnvelope(t, result.Stdout)
 
 	if result.Code != 1 || parsed.Error == nil {
 		t.Fatalf("result = %+v", result)
 	}
-	if got := utils.ReadFile(t, broken); got != before {
+	if got := utilities.ReadFile(t, broken); got != before {
 		t.Fatalf("invalid file changed:\n%s", got)
 	}
-	if got := utils.ReadFile(t, messy); got != cleanGoal {
+	if got := utilities.ReadFile(t, messy); got != cleanGoal {
 		t.Fatalf("valid file was not formatted:\n%s", got)
 	}
 
@@ -95,10 +95,10 @@ func TestFormatSkipsInvalidFilesAndReportsThem(t *testing.T) {
 }
 
 func TestFormatTextReportsChanges(t *testing.T) {
-	root := utils.NewWorkspace(t)
-	utils.WriteFile(t, root, messyGoalPath, messyGoal)
+	root := utilities.NewWorkspace(t)
+	utilities.WriteFile(t, root, messyGoalPath, messyGoal)
 
-	result := utils.Beacon(t, root, "fmt")
+	result := utilities.Beacon(t, root, "fmt")
 
 	if result.Code != 0 {
 		t.Fatalf("result = %+v", result)

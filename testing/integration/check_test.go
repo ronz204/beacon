@@ -1,4 +1,4 @@
-package e2e_test
+package integration_test
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ronz204/beacon/testing/utils"
+	"github.com/ronz204/beacon/testing/utilities"
 )
 
 const (
@@ -40,27 +40,27 @@ type checkData struct {
 func repositoryWithRunner(t *testing.T) string {
 	t.Helper()
 
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	config := filepath.Join(root, filepath.FromSlash(configPath))
-	utils.WriteFile(t, root, configPath, strings.Replace(
-		utils.ReadFile(t, config),
+	utilities.WriteFile(t, root, configPath, strings.Replace(
+		utilities.ReadFile(t, config),
 		"runners:\n",
-		"runners:\n  fake:\n    run: ["+quoted(utils.FakeRunner())+
+		"runners:\n  fake:\n    run: ["+quoted(utilities.FakeRunner())+
 			", \"{target}\"]\n",
 		1,
 	))
 
 	capability := filepath.Join(root, filepath.FromSlash(capabilityPath))
 	text := strings.Replace(
-		utils.ReadFile(t, capability),
+		utilities.ReadFile(t, capability),
 		"check: {runner: test-node, pkg: api, target: auth/lockout}",
 		"check: {runner: fake, target: pass}",
 		1,
 	)
-	utils.WriteFile(t, root, capabilityPath, text+failingBlock)
+	utilities.WriteFile(t, root, capabilityPath, text+failingBlock)
 
-	utils.Git(t, root, "add", "-A")
-	utils.Git(t, root, "commit", "-q", "-m", "add the fake runner")
+	utilities.Git(t, root, "add", "-A")
+	utilities.Git(t, root, "commit", "-q", "-m", "add the fake runner")
 
 	return root
 }
@@ -81,7 +81,7 @@ func decodeCheck(t *testing.T, text string) checkData {
 func TestCheckRunsEveryPromiseAndBlocksOnARed(t *testing.T) {
 	root := repositoryWithRunner(t)
 
-	result := utils.Beacon(t, root, "check", "bc-7f3a", "--json")
+	result := utilities.Beacon(t, root, "check", "bc-7f3a", "--json")
 
 	data := decodeCheck(t, result.Stdout)
 	envelope := parseRead(t, result.Stdout)
@@ -107,7 +107,7 @@ func TestCheckRunsEveryPromiseAndBlocksOnARed(t *testing.T) {
 func TestCheckBlockedHintNamesThePromiseAndForbidsEditingIt(t *testing.T) {
 	root := repositoryWithRunner(t)
 
-	result := utils.Beacon(t, root, "check", "bc-7f3a", "--json")
+	result := utilities.Beacon(t, root, "check", "bc-7f3a", "--json")
 
 	envelope := parseRead(t, result.Stdout)
 	if !hintContains(envelope.Hint, failingPromise) {
@@ -127,7 +127,7 @@ func TestCheckBlockedHintNamesThePromiseAndForbidsEditingIt(t *testing.T) {
 func TestCheckKeepsTheOutputOfAFailedInvocation(t *testing.T) {
 	root := repositoryWithRunner(t)
 
-	result := utils.Beacon(t, root, "check", "bc-7f3a", "--json")
+	result := utilities.Beacon(t, root, "check", "bc-7f3a", "--json")
 
 	var failedOutput string
 	for _, invocation := range decodeCheck(t, result.Stdout).Invocations {
@@ -144,7 +144,7 @@ func TestCheckKeepsTheOutputOfAFailedInvocation(t *testing.T) {
 func TestCheckStreamsTheRunnerOutputToStderrInTextMode(t *testing.T) {
 	root := repositoryWithRunner(t)
 
-	result := utils.Beacon(t, root, "check", "bc-7f3a")
+	result := utilities.Beacon(t, root, "check", "bc-7f3a")
 
 	if !strings.Contains(result.Stderr, "assertion failed") {
 		t.Fatalf("stderr = %q", result.Stderr)
@@ -158,22 +158,22 @@ func makePassing(t *testing.T, root string) {
 	t.Helper()
 
 	path := filepath.Join(root, filepath.FromSlash(capabilityPath))
-	utils.WriteFile(t, root, capabilityPath, strings.Replace(
-		utils.ReadFile(t, path),
+	utilities.WriteFile(t, root, capabilityPath, strings.Replace(
+		utilities.ReadFile(t, path),
 		"target: fail",
 		"target: pass",
 		1,
 	))
-	utils.Git(t, root, "commit", "-q", "-am", "make it pass")
+	utilities.Git(t, root, "commit", "-q", "-am", "make it pass")
 }
 
 func TestCheckWithoutArgumentsOnlyRunsTheTouchedCapabilities(t *testing.T) {
 	root := repositoryWithRunner(t)
 	makePassing(t, root)
 
-	idle := utils.Beacon(t, root, "check", "--json")
-	utils.WriteFile(t, root, "src/auth/login.go", "package auth\n")
-	busy := utils.Beacon(t, root, "check", "--json")
+	idle := utilities.Beacon(t, root, "check", "--json")
+	utilities.WriteFile(t, root, "src/auth/login.go", "package auth\n")
+	busy := utilities.Beacon(t, root, "check", "--json")
 
 	idleData := decodeCheck(t, idle.Stdout)
 	busyData := decodeCheck(t, busy.Stdout)
@@ -191,9 +191,9 @@ func TestCheckWithoutArgumentsOnlyRunsTheTouchedCapabilities(t *testing.T) {
 func TestCheckRightAfterRunningShowsNoDrift(t *testing.T) {
 	root := repositoryWithRunner(t)
 	makePassing(t, root)
-	utils.WriteFile(t, root, "src/auth/login.go", "package auth\n")
+	utilities.WriteFile(t, root, "src/auth/login.go", "package auth\n")
 
-	result := utils.Beacon(t, root, "check", "bc-7f3a", "--json")
+	result := utilities.Beacon(t, root, "check", "bc-7f3a", "--json")
 
 	for _, promise := range decodeCheck(t, result.Stdout).Promises {
 		if promise.Drifted || promise.State != "holds" {
@@ -201,8 +201,12 @@ func TestCheckRightAfterRunningShowsNoDrift(t *testing.T) {
 		}
 	}
 
-	utils.WriteFile(t, root, "src/auth/login.go", "package auth // edited\n")
-	context := utils.Beacon(t, root, "context", "src/auth/login.go", "--json")
+	utilities.WriteFile(
+		t, root, "src/auth/login.go", "package auth // edited\n",
+	)
+	context := utilities.Beacon(
+		t, root, "context", "src/auth/login.go", "--json",
+	)
 	if !strings.Contains(context.Stdout, `"drifted":true`) {
 		t.Fatalf("editing after the check must drift: %s", context.Stdout)
 	}
@@ -211,7 +215,7 @@ func TestCheckRightAfterRunningShowsNoDrift(t *testing.T) {
 func TestCheckOfAnUnknownCapabilityHintsAtFind(t *testing.T) {
 	root := repositoryWithRunner(t)
 
-	result := utils.Beacon(t, root, "check", "bc-ffff", "--json")
+	result := utilities.Beacon(t, root, "check", "bc-ffff", "--json")
 
 	envelope := parseRead(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "capability_missing" {
@@ -222,14 +226,14 @@ func TestCheckOfAnUnknownCapabilityHintsAtFind(t *testing.T) {
 func TestCheckFailsBeforeRunningWhenARunnerIsMissing(t *testing.T) {
 	root := repositoryWithRunner(t)
 	path := filepath.Join(root, filepath.FromSlash(capabilityPath))
-	utils.WriteFile(t, root, capabilityPath, strings.Replace(
-		utils.ReadFile(t, path),
+	utilities.WriteFile(t, root, capabilityPath, strings.Replace(
+		utilities.ReadFile(t, path),
 		"runner: fake, target: pass",
 		"runner: ghost, target: pass",
 		1,
 	))
 
-	result := utils.Beacon(t, root, "check", "bc-7f3a", "--json")
+	result := utilities.Beacon(t, root, "check", "bc-7f3a", "--json")
 
 	envelope := parseRead(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "runner_missing" {
@@ -244,22 +248,22 @@ func TestCheckWithAMissingProgramLeavesThePromiseUnverified(t *testing.T) {
 	root := repositoryWithRunner(t)
 	makePassing(t, root)
 	config := filepath.Join(root, filepath.FromSlash(configPath))
-	utils.WriteFile(t, root, configPath, strings.Replace(
-		utils.ReadFile(t, config),
+	utilities.WriteFile(t, root, configPath, strings.Replace(
+		utilities.ReadFile(t, config),
 		"runners:\n",
 		"runners:\n  absent:\n    run: [not-installed-program-xyz, "+
 			"\"{target}\"]\n",
 		1,
 	))
 	path := filepath.Join(root, filepath.FromSlash(capabilityPath))
-	utils.WriteFile(t, root, capabilityPath, strings.Replace(
-		utils.ReadFile(t, path),
+	utilities.WriteFile(t, root, capabilityPath, strings.Replace(
+		utilities.ReadFile(t, path),
 		"runner: fake, target: pass",
 		"runner: absent, target: pass",
 		1,
 	))
 
-	result := utils.Beacon(t, root, "check", "bc-7f3a", "--json")
+	result := utilities.Beacon(t, root, "check", "bc-7f3a", "--json")
 
 	envelope := parseRead(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "runner_unavailable" {
@@ -275,11 +279,11 @@ func TestCheckWithAMissingProgramLeavesThePromiseUnverified(t *testing.T) {
 
 func TestCheckNeedsABaseWhenTheRepositoryHasNone(t *testing.T) {
 	root := repositoryWithRunner(t)
-	utils.Git(t, root, "branch", "-m", "trunk")
+	utilities.Git(t, root, "branch", "-m", "trunk")
 
-	missing := utils.Beacon(t, root, "check", "--json")
-	forced := utils.Beacon(t, root, "check", "--base", "trunk", "--json")
-	option := utils.Beacon(t, root, "check", "--base=-x", "--json")
+	missing := utilities.Beacon(t, root, "check", "--json")
+	forced := utilities.Beacon(t, root, "check", "--base", "trunk", "--json")
+	option := utilities.Beacon(t, root, "check", "--base=-x", "--json")
 
 	var failureEnvelope struct {
 		Error struct {

@@ -1,4 +1,4 @@
-package e2e_test
+package integration_test
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ronz204/beacon/testing/utils"
+	"github.com/ronz204/beacon/testing/utilities"
 )
 
 const brokenGoal = ".beacon/records/goals/bc-0001-frictionless-payments.yaml"
@@ -38,7 +38,7 @@ type envelope struct {
 }
 
 func TestMain(m *testing.M) {
-	os.Exit(utils.RunSuite(m))
+	os.Exit(utilities.RunSuite(m))
 }
 
 func parseEnvelope(t *testing.T, text string) envelope {
@@ -60,18 +60,18 @@ func breakGoal(t *testing.T, root string) {
 
 	path := filepath.Join(root, filepath.FromSlash(brokenGoal))
 	text := strings.Replace(
-		utils.ReadFile(t, path),
+		utilities.ReadFile(t, path),
 		"status: active",
 		"status: paused",
 		1,
 	)
-	utils.WriteFile(t, root, brokenGoal, text)
+	utilities.WriteFile(t, root, brokenGoal, text)
 }
 
 func TestDoctorPassesOnValidProject(t *testing.T) {
-	root := utils.NewWorkspace(t)
+	root := utilities.NewWorkspace(t)
 
-	result := utils.Beacon(t, root, "doctor")
+	result := utilities.Beacon(t, root, "doctor")
 
 	if result.Code != 0 {
 		t.Fatalf("code = %d, stderr = %s", result.Code, result.Stderr)
@@ -82,9 +82,9 @@ func TestDoctorPassesOnValidProject(t *testing.T) {
 }
 
 func TestDoctorJSONUsesTheEnvelope(t *testing.T) {
-	root := utils.NewWorkspace(t)
+	root := utilities.NewWorkspace(t)
 
-	result := utils.Beacon(t, root, "doctor", "--json")
+	result := utilities.Beacon(t, root, "doctor", "--json")
 	parsed := parseEnvelope(t, result.Stdout)
 
 	if result.Code != 0 || !parsed.OK {
@@ -96,13 +96,13 @@ func TestDoctorJSONUsesTheEnvelope(t *testing.T) {
 }
 
 func TestDoctorFindsTheProjectFromASubfolder(t *testing.T) {
-	root := utils.NewWorkspace(t)
+	root := utilities.NewWorkspace(t)
 	nested := filepath.Join(root, "src", "auth")
 	if err := os.MkdirAll(nested, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
-	result := utils.Beacon(t, nested, "doctor")
+	result := utilities.Beacon(t, nested, "doctor")
 
 	if result.Code != 0 {
 		t.Fatalf("code = %d, stderr = %s", result.Code, result.Stderr)
@@ -110,10 +110,10 @@ func TestDoctorFindsTheProjectFromASubfolder(t *testing.T) {
 }
 
 func TestDoctorReportsInvalidRecord(t *testing.T) {
-	root := utils.NewWorkspace(t)
+	root := utilities.NewWorkspace(t)
 	breakGoal(t, root)
 
-	result := utils.Beacon(t, root, "doctor", "--json")
+	result := utilities.Beacon(t, root, "doctor", "--json")
 	parsed := parseEnvelope(t, result.Stdout)
 
 	if result.Code != 1 || parsed.OK {
@@ -139,10 +139,10 @@ func TestDoctorReportsInvalidRecord(t *testing.T) {
 }
 
 func TestDoctorTextNamesFileAndLine(t *testing.T) {
-	root := utils.NewWorkspace(t)
+	root := utilities.NewWorkspace(t)
 	breakGoal(t, root)
 
-	result := utils.Beacon(t, root, "doctor")
+	result := utilities.Beacon(t, root, "doctor")
 
 	if result.Code != 1 {
 		t.Fatalf("code = %d", result.Code)
@@ -153,18 +153,18 @@ func TestDoctorTextNamesFileAndLine(t *testing.T) {
 }
 
 func TestDoctorReportsBrokenRelation(t *testing.T) {
-	root := utils.NewWorkspace(t)
+	root := utilities.NewWorkspace(t)
 	path := ".beacon/records/works/bc-91cd-migrate-to-postgres.yaml"
 	absolute := filepath.Join(root, filepath.FromSlash(path))
 	text := strings.Replace(
-		utils.ReadFile(t, absolute),
+		utilities.ReadFile(t, absolute),
 		"serves: bc-0001",
 		"serves: bc-ffff",
 		1,
 	)
-	utils.WriteFile(t, root, path, text)
+	utilities.WriteFile(t, root, path, text)
 
-	result := utils.Beacon(t, root, "doctor", "--json")
+	result := utilities.Beacon(t, root, "doctor", "--json")
 	parsed := parseEnvelope(t, result.Stdout)
 
 	if result.Code != 1 {
@@ -176,10 +176,10 @@ func TestDoctorReportsBrokenRelation(t *testing.T) {
 }
 
 func TestDoctorRejectsNewerSchema(t *testing.T) {
-	root := utils.NewWorkspace(t)
-	utils.WriteFile(t, root, ".beacon/config.yaml", "schema: 2\n")
+	root := utilities.NewWorkspace(t)
+	utilities.WriteFile(t, root, ".beacon/config.yaml", "schema: 2\n")
 
-	result := utils.Beacon(t, root, "doctor", "--json")
+	result := utilities.Beacon(t, root, "doctor", "--json")
 	parsed := parseEnvelope(t, result.Stdout)
 
 	if result.Code != 1 {
@@ -191,15 +191,15 @@ func TestDoctorRejectsNewerSchema(t *testing.T) {
 }
 
 func TestDoctorWarnsAboutLongGuideWithoutFailing(t *testing.T) {
-	root := utils.NewWorkspace(t)
-	utils.WriteFile(
+	root := utilities.NewWorkspace(t)
+	utilities.WriteFile(
 		t,
 		root,
 		".beacon/config.yaml",
 		"schema: 1\nlimits:\n  guide: 1\n",
 	)
 
-	result := utils.Beacon(t, root, "doctor", "--json")
+	result := utilities.Beacon(t, root, "doctor", "--json")
 	parsed := parseEnvelope(t, result.Stdout)
 
 	if result.Code != 0 || !parsed.OK {
@@ -213,7 +213,7 @@ func TestDoctorWarnsAboutLongGuideWithoutFailing(t *testing.T) {
 func TestCommandsFailOutsideAProject(t *testing.T) {
 	for _, command := range []string{"doctor", "fmt"} {
 		t.Run(command, func(t *testing.T) {
-			result := utils.Beacon(t, t.TempDir(), command, "--json")
+			result := utilities.Beacon(t, t.TempDir(), command, "--json")
 			parsed := parseEnvelope(t, result.Stdout)
 
 			if result.Code != 1 || parsed.Error == nil {
@@ -235,7 +235,7 @@ func TestUsageErrorsExitWithOne(t *testing.T) {
 
 	for _, args := range cases {
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
-			result := utils.Beacon(t, utils.NewWorkspace(t), args...)
+			result := utilities.Beacon(t, utilities.NewWorkspace(t), args...)
 			parsed := parseEnvelope(t, result.Stdout)
 
 			if result.Code != 1 || parsed.Error == nil {
@@ -249,13 +249,13 @@ func TestUsageErrorsExitWithOne(t *testing.T) {
 }
 
 func TestDoctorRemovesClaimsOfGoneBranches(t *testing.T) {
-	root := utils.NewWorkspace(t)
-	utils.Git(t, root, "init", "-q")
+	root := utilities.NewWorkspace(t)
+	utilities.Git(t, root, "init", "-q")
 	claims := `{"version":1,"claims":[{"task":"bc-91cd.1",` +
 		`"branch":"feat/gone","worktree":"/nowhere","day":"2026-11-24"}]}`
-	path := utils.WriteFile(t, root, ".git/beacon/claims.json", claims)
+	path := utilities.WriteFile(t, root, ".git/beacon/claims.json", claims)
 
-	result := utils.Beacon(t, root, "doctor", "--json")
+	result := utilities.Beacon(t, root, "doctor", "--json")
 	parsed := parseEnvelope(t, result.Stdout)
 
 	if result.Code != 0 || !parsed.OK {
@@ -264,7 +264,7 @@ func TestDoctorRemovesClaimsOfGoneBranches(t *testing.T) {
 	if !strings.Contains(string(parsed.Data), "claim_removed") {
 		t.Fatalf("data = %s", parsed.Data)
 	}
-	if strings.Contains(utils.ReadFile(t, path), "bc-91cd.1") {
+	if strings.Contains(utilities.ReadFile(t, path), "bc-91cd.1") {
 		t.Fatal("the claim should have been removed")
 	}
 }

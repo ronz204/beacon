@@ -1,4 +1,4 @@
-package e2e_test
+package integration_test
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ronz204/beacon/testing/utils"
+	"github.com/ronz204/beacon/testing/utilities"
 )
 
 type hookReply struct {
@@ -38,19 +38,19 @@ func editPayload(t *testing.T, root, tool, file string) string {
 	})
 }
 
-func runHook(t *testing.T, root, event, stdin string) utils.Result {
+func runHook(t *testing.T, root, event, stdin string) utilities.Result {
 	t.Helper()
 
-	return utils.BeaconWith(
+	return utilities.BeaconWith(
 		t,
 		root,
-		utils.Options{Stdin: stdin},
+		utilities.Options{Stdin: stdin},
 		"hook", event, "--agent", "claude-code",
 	)
 }
 
 func TestHookStartInjectsTheBrief(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	stdin := hookPayload(t, map[string]any{
 		"session_id": "sample-session",
 		"cwd":        root,
@@ -73,7 +73,7 @@ func TestHookStartInjectsTheBrief(t *testing.T) {
 }
 
 func TestHookEditInjectsOnlyTheFirstTimePerFile(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	file := filepath.Join(root, "src", "auth", "login.go")
 	stdin := editPayload(t, root, "Edit", file)
 
@@ -97,7 +97,7 @@ func TestHookEditInjectsOnlyTheFirstTimePerFile(t *testing.T) {
 }
 
 func TestHookEditIgnoresWhatIsNotAnEditInsideTheRepository(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	outside := filepath.Join(t.TempDir(), "other.go")
 	inside := filepath.Join(root, "src", "auth", "login.go")
 
@@ -131,26 +131,26 @@ func TestHookStaysSilentOutsideABeaconProject(t *testing.T) {
 }
 
 func TestHookNeverFailsTheSession(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	good := hookPayload(t, map[string]any{
 		"session_id": "sample-session",
 		"cwd":        root,
 	})
 
-	broken := utils.NewRepository(t)
-	utils.WriteFile(t, broken, ".beacon/config.yaml", "schema: [")
+	broken := utilities.NewRepository(t)
+	utilities.WriteFile(t, broken, ".beacon/config.yaml", "schema: [")
 	brokenState := hookPayload(t, map[string]any{
 		"session_id": "sample-session",
 		"cwd":        broken,
 	})
 
-	cases := map[string]utils.Result{
+	cases := map[string]utilities.Result{
 		"invalid json":  runHook(t, root, "start", "nope"),
 		"no session":    runHook(t, root, "start", `{"cwd":"x"}`),
 		"bad event":     runHook(t, root, "stop", good),
 		"invalid state": runHook(t, broken, "start", brokenState),
-		"unknown agent": utils.BeaconWith(
-			t, root, utils.Options{Stdin: good}, "hook", "start",
+		"unknown agent": utilities.BeaconWith(
+			t, root, utilities.Options{Stdin: good}, "hook", "start",
 			"--agent", "sample-agent",
 		),
 	}
@@ -166,14 +166,14 @@ func TestHookNeverFailsTheSession(t *testing.T) {
 }
 
 func TestHookCountsWhatItInjects(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	file := filepath.Join(root, "src", "auth", "login.go")
 	stdin := editPayload(t, root, "Edit", file)
 
 	runHook(t, root, "edit", stdin)
 	runHook(t, root, "edit", stdin)
 
-	data := utils.ReadFile(
+	data := utilities.ReadFile(
 		t, filepath.Join(root, ".git", "beacon", "metrics.json"),
 	)
 
@@ -196,7 +196,7 @@ func TestHookCountsWhatItInjects(t *testing.T) {
 }
 
 func TestAnApprovalCarriesTheAgentThatHookedTheSession(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 	start := hookPayload(t, map[string]any{
 		"session_id": "sample-session",
 		"cwd":        root,
@@ -206,27 +206,27 @@ func TestAnApprovalCarriesTheAgentThatHookedTheSession(t *testing.T) {
 	payload := weakenedLockout(t, root)
 	result := record(t, root, "", payload, "--approve")
 
-	text := utils.ReadFile(t, filepath.Join(root, capabilityPath))
+	text := utilities.ReadFile(t, filepath.Join(root, capabilityPath))
 	if result.Code != 0 || !strings.Contains(text, `via: "agent:claude-code"`) {
 		t.Fatalf("code %d, text:\n%s", result.Code, text)
 	}
 }
 
 func TestAnApprovalWithoutAHookedSessionIsFromAnUnknownAgent(t *testing.T) {
-	root := utils.NewRepository(t)
+	root := utilities.NewRepository(t)
 
 	payload := weakenedLockout(t, root)
 	result := record(t, root, "", payload, "--approve")
 
-	text := utils.ReadFile(t, filepath.Join(root, capabilityPath))
+	text := utilities.ReadFile(t, filepath.Join(root, capabilityPath))
 	if result.Code != 0 || !strings.Contains(text, `via: "agent:unknown"`) {
 		t.Fatalf("code %d, text:\n%s", result.Code, text)
 	}
 }
 
 func TestHookFindsTheProjectFromASubdirectory(t *testing.T) {
-	root := utils.NewRepository(t)
-	utils.WriteFile(t, root, "src/auth/login.go", "package auth")
+	root := utilities.NewRepository(t)
+	utilities.WriteFile(t, root, "src/auth/login.go", "package auth")
 	nested := filepath.Join(root, "src", "auth")
 	stdin := hookPayload(t, map[string]any{
 		"session_id": "sample-session",
