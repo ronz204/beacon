@@ -130,7 +130,7 @@ func TestInstallSkipsWhatTheFlagsLeaveOut(t *testing.T) {
 func TestInstallReportsTheMomentClaudeCodeCannotCover(t *testing.T) {
 	root := newBareRepository(t)
 
-	result := utilities.Beacon(t, root, "install", "--json", "--dry-run")
+	result := utilities.Beacon(t, root, "install", "--json", "--preview")
 
 	var data struct {
 		Agents []struct {

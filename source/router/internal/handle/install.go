@@ -27,7 +27,7 @@ const (
 var skipParts = []string{skipHooks, skipReinject, skipPrecommit}
 
 func Install(printer *output.Printer) *cobra.Command {
-	var dryRun, uninstall bool
+	var preview, uninstall bool
 	var skip []string
 	var ci string
 
@@ -39,7 +39,7 @@ func Install(printer *output.Printer) *cobra.Command {
 			command *cobra.Command,
 			_ []string,
 		) (output.Result, *output.Failure) {
-			options, failure := installOptions(dryRun, skip, ci)
+			options, failure := installOptions(preview, skip, ci)
 			if failure != nil {
 				return output.Result{}, failure
 			}
@@ -73,7 +73,7 @@ func Install(printer *output.Printer) *cobra.Command {
 	}
 
 	flags := command.Flags()
-	flags.BoolVar(&dryRun, "dry-run", false, "show the changes without writing")
+	flags.BoolVar(&preview, "preview", false, "show the changes without writing")
 	flags.BoolVar(&uninstall, "uninstall", false, "remove what install added")
 	flags.StringVar(&ci, "ci", "", "add the CI workflow of a platform: github")
 	flags.StringSliceVar(&skip, "skip", nil, "leave out hooks, reinject or precommit")
@@ -82,7 +82,7 @@ func Install(printer *output.Printer) *cobra.Command {
 }
 
 func installOptions(
-	dryRun bool,
+	preview bool,
 	skip []string,
 	ci string,
 ) (anchor.InstallOptions, *output.Failure) {
@@ -108,7 +108,7 @@ func installOptions(
 	hooks := !slices.Contains(skip, skipHooks)
 
 	return anchor.InstallOptions{
-		DryRun:    dryRun,
+		Preview:   preview,
 		Hooks:     hooks,
 		Reinject:  hooks && !slices.Contains(skip, skipReinject),
 		Precommit: !slices.Contains(skip, skipPrecommit),
@@ -127,14 +127,14 @@ func installHint(view anchor.InstallView) string {
 func installLines(view anchor.InstallView) []string {
 	var lines []string
 
-	if view.DryRun {
-		lines = append(lines, "dry run: nothing was written")
+	if view.Preview {
+		lines = append(lines, "preview: nothing was written")
 	}
 
 	for _, change := range view.Changes {
-		lines = append(lines, changeLine(view.DryRun, change))
+		lines = append(lines, changeLine(view.Preview, change))
 
-		if view.DryRun {
+		if view.Preview {
 			lines = append(lines, addedLines(change)...)
 		}
 	}
@@ -159,9 +159,9 @@ func installLines(view anchor.InstallView) []string {
 	return lines
 }
 
-func changeLine(dryRun bool, change anchor.ChangeView) string {
+func changeLine(preview bool, change anchor.ChangeView) string {
 	verb := change.Action
-	if dryRun {
+	if preview {
 		verb = "would " + verb
 	}
 

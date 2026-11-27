@@ -1,7 +1,7 @@
 package anchor
 
 type InstallOptions struct {
-	DryRun    bool
+	Preview   bool
 	Hooks     bool
 	Reinject  bool
 	Precommit bool
@@ -28,7 +28,7 @@ type KeptView struct {
 }
 
 type InstallView struct {
-	DryRun      bool         `json:"dryRun"`
+	Preview     bool         `json:"preview"`
 	Uninstall   bool         `json:"uninstall"`
 	Initialized bool         `json:"initialized"`
 	Changes     []ChangeView `json:"changes"`

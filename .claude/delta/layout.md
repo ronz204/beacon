@@ -177,7 +177,7 @@ Medida el 2026-11-27 con el binario real, un proceso por llamada, en el mismo re
 | `hook start` | 221 ms | Lo mismo que `brief` (207 ms) más leer el JSON, dar formato y escribir los contadores y el agente activo |
 | `hook edit`, primera vez en la sesión | 102 ms | `context --hook` (88 ms) más lo mismo de arriba |
 | `hook edit`, otra vez el mismo archivo | 89 ms | Sin nada nuevo que inyectar |
-| `install --dry-run` | 53 ms | No carga el estado de Beacon |
+| `install --preview` | 53 ms | No carga el estado de Beacon |
 
 Qué dicen los números:
 

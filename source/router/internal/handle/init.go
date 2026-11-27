@@ -21,7 +21,7 @@ const (
 )
 
 func Init(printer *output.Printer) *cobra.Command {
-	var dryRun bool
+	var preview bool
 
 	command := &cobra.Command{
 		Use:   "init",
@@ -39,7 +39,7 @@ func Init(printer *output.Printer) *cobra.Command {
 			view, err := spider.Init(
 				command.Context(),
 				directory,
-				dryRun,
+				preview,
 				func(project spider.Project) (string, error) {
 					return weaver.New(project).Author(command.Context())
 				},
@@ -56,7 +56,7 @@ func Init(printer *output.Printer) *cobra.Command {
 		}),
 	}
 
-	command.Flags().BoolVar(&dryRun, "dry-run", false, "show the plan only")
+	command.Flags().BoolVar(&preview, "preview", false, "show the plan only")
 
 	return command
 }
@@ -72,8 +72,8 @@ func initHint(view spider.InitView) string {
 func initLines(view spider.InitView) []string {
 	var lines []string
 
-	if view.DryRun {
-		lines = append(lines, "dry run: nothing was written")
+	if view.Preview {
+		lines = append(lines, "preview: nothing was written")
 	}
 
 	lines = append(lines, "stacks: "+stacksText(view.Scan.Stacks))
@@ -85,7 +85,7 @@ func initLines(view spider.InitView) []string {
 		))
 	}
 	for _, record := range view.Records {
-		lines = append(lines, initRecordLine(view.DryRun, record))
+		lines = append(lines, initRecordLine(view.Preview, record))
 	}
 	if view.Omitted > 0 {
 		lines = append(lines, fmt.Sprintf(
@@ -105,8 +105,8 @@ func stacksText(stacks []string) string {
 	return strings.Join(stacks, ", ")
 }
 
-func initRecordLine(dryRun bool, record spider.InitRecord) string {
-	if dryRun {
+func initRecordLine(preview bool, record spider.InitRecord) string {
+	if preview {
 		return fmt.Sprintf("would create %s: %s", record.Type, record.Text)
 	}
 

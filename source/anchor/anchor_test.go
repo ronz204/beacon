@@ -41,9 +41,9 @@ func exists(directory, name string) bool {
 	return !errors.Is(err, os.ErrNotExist)
 }
 
-func TestDryRunReportsTheFilesAndWritesNothing(t *testing.T) {
+func TestPreviewReportsTheFilesAndWritesNothing(t *testing.T) {
 	directory := newProject(t)
-	options := anchor.InstallOptions{DryRun: true, Hooks: true, Reinject: true}
+	options := anchor.InstallOptions{Preview: true, Hooks: true, Reinject: true}
 
 	view, err := newAnchor(t, directory).Install(context.Background(), options)
 	if err != nil {
@@ -54,7 +54,7 @@ func TestDryRunReportsTheFilesAndWritesNothing(t *testing.T) {
 		t.Fatalf("changes = %+v", view.Changes)
 	}
 	if exists(directory, "AGENTS.md") || exists(directory, ".gitattributes") {
-		t.Error("dry run created files")
+		t.Error("preview created files")
 	}
 }
 
@@ -181,18 +181,18 @@ func TestInstallReportsWhatTheOptionsSkip(t *testing.T) {
 		options anchor.InstallOptions
 		want    int
 	}{
-		{anchor.InstallOptions{DryRun: true, Precommit: true}, 2},
-		{anchor.InstallOptions{DryRun: true, Hooks: true, Precommit: true}, 1},
+		{anchor.InstallOptions{Preview: true, Precommit: true}, 2},
+		{anchor.InstallOptions{Preview: true, Hooks: true, Precommit: true}, 1},
 		{
 			anchor.InstallOptions{
-				DryRun:    true,
+				Preview:   true,
 				Hooks:     true,
 				Reinject:  true,
 				Precommit: true,
 			},
 			0,
 		},
-		{anchor.InstallOptions{DryRun: true, Hooks: true, Reinject: true}, 1},
+		{anchor.InstallOptions{Preview: true, Hooks: true, Reinject: true}, 1},
 	}
 
 	for _, c := range cases {
@@ -210,7 +210,7 @@ func TestInstallReportsWhatTheOptionsSkip(t *testing.T) {
 func TestInstallSaysWhetherTheProjectIsInitialized(t *testing.T) {
 	ctx := context.Background()
 	directory := newProject(t)
-	options := anchor.InstallOptions{DryRun: true, Hooks: true, Reinject: true}
+	options := anchor.InstallOptions{Preview: true, Hooks: true, Reinject: true}
 	tool := newAnchor(t, directory)
 
 	view, err := tool.Install(ctx, options)
