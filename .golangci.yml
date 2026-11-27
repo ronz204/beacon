@@ -1,0 +1,18 @@
+version: "2"
+
+linters:
+  settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - io.WriteString
+        - os.Remove
+        - os.RemoveAll
+        - (io.Closer).Close
+  exclusions:
+    rules:
+      - path: source/spider/internal/action/prefetch\.go
+        linters:
+          - errcheck

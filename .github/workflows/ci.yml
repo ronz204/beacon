@@ -24,6 +24,11 @@ jobs:
       - name: Modules are tidy
         run: go mod tidy -diff
       - run: go vet ./...
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.15
+      - name: Vulnerabilities
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
       - run: go test -count=1 ./...
 
   windows:
