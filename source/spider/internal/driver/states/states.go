@@ -228,8 +228,7 @@ func (s Store) write(name string, document any) error {
 }
 
 func (s Store) failure(name string, err error) error {
-	var located kernel.RecordFailure
-	if errors.As(err, &located) {
+	if _, ok := errors.AsType[kernel.RecordFailure](err); ok {
 		return err
 	}
 

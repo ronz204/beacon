@@ -1,5 +1,7 @@
 package deltas
 
+import "slices"
+
 func AssessRisk(
 	findings []Finding,
 	zones []Zone,
@@ -38,11 +40,5 @@ func hasWeakening(findings []Finding) bool {
 }
 
 func anyZone(zones []Zone, test func(Zone) bool) bool {
-	for _, zone := range zones {
-		if test(zone) {
-			return true
-		}
-	}
-
-	return false
+	return slices.ContainsFunc(zones, test)
 }

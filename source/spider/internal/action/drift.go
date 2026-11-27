@@ -5,6 +5,7 @@ import (
 	"errors"
 	"iter"
 	"maps"
+	"runtime"
 	"slices"
 	"sync"
 
@@ -96,8 +97,14 @@ func changedFiles(
 	var mutex sync.Mutex
 	var group sync.WaitGroup
 
+	slots := make(chan struct{}, runtime.NumCPU())
+
 	for commit := range commits {
+		slots <- struct{}{}
+
 		group.Go(func() {
+			defer func() { <-slots }()
+
 			files, err := reader.FilesChangedSince(ctx, commit)
 
 			mutex.Lock()

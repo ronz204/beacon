@@ -68,7 +68,7 @@ func (p Project) Config() (StoredRecord, error) {
 	}
 
 	return StoredRecord{
-		Record: Record{Type: document.Kind, Data: document.JSON},
-		File:   p.relative(file),
+		Type: document.Kind, Data: document.JSON,
+		File: p.relative(file),
 	}, nil
 }

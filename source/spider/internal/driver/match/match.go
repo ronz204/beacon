@@ -77,7 +77,7 @@ func expandBraces(glob string) []string {
 	tails := expandBraces(glob[closing+1:])
 
 	var expanded []string
-	for _, choice := range strings.Split(glob[opening+1:closing], ",") {
+	for choice := range strings.SplitSeq(glob[opening+1:closing], ",") {
 		for _, tail := range tails {
 			expanded = append(expanded, prefix+choice+tail)
 		}

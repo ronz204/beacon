@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -268,11 +269,5 @@ func resultText(raw json.RawMessage) string {
 }
 
 func contains(names []string, name string) bool {
-	for _, candidate := range names {
-		if candidate == name {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(names, name)
 }

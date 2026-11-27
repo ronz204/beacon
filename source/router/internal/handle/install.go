@@ -179,12 +179,12 @@ func addedLines(change anchor.ChangeView) []string {
 	}
 
 	known := map[string]bool{}
-	for _, line := range strings.Split(change.Before, "\n") {
+	for line := range strings.SplitSeq(change.Before, "\n") {
 		known[line] = true
 	}
 
 	var added []string
-	for _, line := range strings.Split(change.After, "\n") {
+	for line := range strings.SplitSeq(change.After, "\n") {
 		if !known[line] && line != "" {
 			added = append(added, "  + "+strings.TrimSuffix(line, "\r"))
 		}

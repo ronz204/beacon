@@ -292,6 +292,10 @@ func (r Repository) ConfigAt(
 	spec := revision + ":./" + configPath
 	_, err := system.Git(ctx, r.root, "cat-file", "-e", spec)
 	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, false, kernel.FailHistory(ctxErr)
+		}
+
 		return nil, false, nil
 	}
 
@@ -342,7 +346,7 @@ func (r Repository) git(ctx context.Context, args ...string) (string, error) {
 func parseCommits(output string) ([]memory.CodeCommit, error) {
 	var commits []memory.CodeCommit
 
-	for _, block := range strings.Split(output, commitMark) {
+	for block := range strings.SplitSeq(output, commitMark) {
 		blockLines := lines(block)
 		if len(blockLines) == 0 {
 			continue

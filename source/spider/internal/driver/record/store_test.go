@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/ronz204/beacon/source/kernel"
@@ -186,10 +187,8 @@ func TestStoreReportsInvalidFixtures(t *testing.T) {
 
 			failures := listFailures(record.NewStore(root), c.folder)
 
-			for _, failure := range failures {
-				if c.matches(failure) {
-					return
-				}
+			if slices.ContainsFunc(failures, c.matches) {
+				return
 			}
 			t.Fatalf("expected failure not found in %v", failures)
 		})

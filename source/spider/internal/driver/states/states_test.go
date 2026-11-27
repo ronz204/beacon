@@ -306,14 +306,12 @@ func TestConcurrentInjectionsLoseNoCount(t *testing.T) {
 
 	var group sync.WaitGroup
 	for range 20 {
-		group.Add(1)
-		go func() {
-			defer group.Done()
+		group.Go(func() {
 
 			if err := store.RecordInjection(ctx, id, "edit", 2); err != nil {
 				t.Error(err)
 			}
-		}()
+		})
 	}
 	group.Wait()
 
