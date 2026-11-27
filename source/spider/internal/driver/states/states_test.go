@@ -378,6 +378,27 @@ func TestTheActiveAgentIsThePersonsLastHookInThatWorktree(t *testing.T) {
 	}
 }
 
+func TestTheActiveAgentIsFoundThroughASymbolicLink(t *testing.T) {
+	store, _ := newStore(t)
+	ctx := context.Background()
+	now := moment(t, "2026-11-26T10:00:00Z")
+	target := t.TempDir()
+	link := filepath.Join(t.TempDir(), "link")
+	if err := os.Symlink(target, link); err != nil {
+		t.Skipf("symbolic links are not available: %v", err)
+	}
+
+	err := store.NoteAgent(ctx, link, "claude-code", "s1", now)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	agent, err := store.ActiveAgent(ctx, target, now)
+	if err != nil || agent != "claude-code" {
+		t.Errorf("agent %q, err %v", agent, err)
+	}
+}
+
 func TestTheActiveAgentExpiresAfterADay(t *testing.T) {
 	store, _ := newStore(t)
 	ctx := context.Background()
