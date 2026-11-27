@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
+
+const gitFolder = ".git"
 
 func Git(
 	ctx context.Context,
@@ -28,4 +32,23 @@ func Git(
 	}
 
 	return stdout.String(), nil
+}
+
+func GitCommonDir(ctx context.Context, root string) (string, error) {
+	own := filepath.Join(root, gitFolder)
+	if info, err := os.Stat(own); err == nil && info.IsDir() {
+		return own, nil
+	}
+
+	output, err := Git(ctx, root, "rev-parse", "--git-common-dir")
+	if err != nil {
+		return "", err
+	}
+
+	common := strings.TrimSpace(output)
+	if !filepath.IsAbs(common) {
+		common = filepath.Join(root, common)
+	}
+
+	return common, nil
 }

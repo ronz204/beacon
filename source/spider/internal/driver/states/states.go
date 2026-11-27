@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/ronz204/beacon/source/kernel"
@@ -18,7 +17,6 @@ import (
 )
 
 const (
-	gitFolder        = ".git"
 	stateFolder      = "beacon"
 	claimsFile       = "claims.json"
 	injectedFile     = "injected.json"
@@ -53,19 +51,9 @@ type sessionEntry struct {
 }
 
 func Open(ctx context.Context, root string) (Store, error) {
-	own := filepath.Join(root, gitFolder)
-	if info, err := os.Stat(own); err == nil && info.IsDir() {
-		return NewStore(filepath.Join(own, stateFolder))
-	}
-
-	output, err := system.Git(ctx, root, "rev-parse", "--git-common-dir")
+	common, err := system.GitCommonDir(ctx, root)
 	if err != nil {
 		return Store{}, kernel.FailHistory(err)
-	}
-
-	common := strings.TrimSpace(output)
-	if !filepath.IsAbs(common) {
-		common = filepath.Join(root, common)
 	}
 
 	return NewStore(filepath.Join(common, stateFolder))
