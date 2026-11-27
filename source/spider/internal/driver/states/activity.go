@@ -28,6 +28,8 @@ func (s Store) NoteAgent(
 	worktree, agent, session string,
 	now time.Time,
 ) error {
+	worktree = throughLinks(worktree)
+
 	var current activityDocument
 	if err := s.read(activityFile, &current); err != nil {
 		return err
@@ -75,7 +77,7 @@ func (s Store) ActiveAgent(
 		return "", err
 	}
 
-	entry := document.Worktrees[worktree]
+	entry := document.Worktrees[throughLinks(worktree)]
 
 	when, ok := parseMoment(entry.At)
 	if !ok || now.Sub(when) > activityWindow {
@@ -83,6 +85,15 @@ func (s Store) ActiveAgent(
 	}
 
 	return entry.Agent, nil
+}
+
+func throughLinks(path string) string {
+	resolved, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return path
+	}
+
+	return resolved
 }
 
 func isFresh(entry activityEntry, agent, session string, now time.Time) bool {

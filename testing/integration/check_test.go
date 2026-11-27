@@ -59,6 +59,10 @@ func repositoryWithRunner(t *testing.T) string {
 	)
 	utilities.WriteFile(t, root, capabilityPath, text+failingBlock)
 
+	if formatted := utilities.Beacon(t, root, "fmt"); formatted.Code != 0 {
+		t.Fatalf("fmt failed: %s", formatted.Stderr)
+	}
+
 	utilities.Git(t, root, "add", "-A")
 	utilities.Git(t, root, "commit", "-q", "-m", "add the fake runner")
 
