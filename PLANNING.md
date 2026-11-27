@@ -2,7 +2,7 @@
 
 Plan de ejecución de los packs descritos en `KETSET.md` (qué es y por qué) y en `.claude/delta/packs.md` (el diseño vigente). Aquí va el cómo, el orden y la verificación. Rama: `feat/add-skills-and-rules`.
 
-**Estado:** propuesta y plan aprobados por la persona dueña el 2026-11-27, con el nombre `packs`. D5 quedó en nivel 3 y los packs se redujeron a tres. Las preguntas abiertas de la sección 6 siguen abiertas. El paso K0 queda a medias (ver su fila). Los planes anteriores (Fases 1 a 4) están en el historial de git: `PLANNING.md` hasta el commit `7895362`.
+**Estado:** propuesta y plan aprobados por la persona dueña el 2026-11-27, con el nombre `packs`. D5 quedó en nivel 3 y los packs se redujeron a tres. K0 se cerró el mismo día y el siguiente paso es K1. Quedan dos preguntas abiertas (sección 6), y ninguna bloquea K1. Los planes anteriores (Fases 1 a 4) están en el historial de git: `PLANNING.md` hasta el commit `7895362`.
 
 ---
 
@@ -59,7 +59,7 @@ Sin agente en el renderizado, para que sea determinista e idempotente. Bibliotec
 
 ### D5. `packs:` en `config.yaml` es de nivel 3 (decidido)
 
-Una rule no ejecuta nada, pero decide qué recibe el agente, y la sección cambia pocas veces. Para `config.yaml` solo existen el nivel 1 y el 3 (el 2 es para promesas y decisiones nuevas), así que la propuesta inicial de nivel 2 no aplicaba. La regla mecánica de `deltas` ya se amplió en la KB. Cómo se sella el sí cuando la persona ejecuta `install` desde una terminal se resuelve en K2.
+Una rule no ejecuta nada, pero decide qué recibe el agente, y la sección cambia pocas veces. Para `config.yaml` solo existen el nivel 1 y el 3 (el 2 es para promesas y decisiones nuevas), así que la propuesta inicial de nivel 2 no aplicaba. La regla mecánica de `deltas` ya se amplió en la KB. Cuando una persona ejecuta `install` en una terminal, el comando es el sí y se sella a su nombre (`ledger`, Actor); sin terminal, un agente recibe el código 2 y pide el sí con `--approve`. Decidido el 2026-11-27.
 
 ### D6. `tailor` propone el binding; no escribe rules
 
@@ -77,7 +77,7 @@ Mismo criterio que P7. El mensaje es una línea con el nombre; el texto de la sk
 
 ### D9. Aceptación contra este repo
 
-Renderizar los packs con el binding de Beacon debe reproducir las seis rules actuales de `.claude/rules/`, salvo diferencias decididas y anotadas. Si no encajan, se mantienen aparte (pregunta abierta de la sección 6).
+Renderizar los packs con el binding de Beacon debe reproducir las seis rules actuales de `.claude/rules/`, salvo diferencias decididas y anotadas. Si alguna no encaja, esa se queda a mano. Decidido el 2026-11-27.
 
 ### D10. Primero solo Claude Code
 
@@ -90,6 +90,8 @@ El benchmark de fricción suma la condición E (C más `core`). La ablación de 
 ### D12. Un commit por paso, y los docs aparte
 
 Se sigue `git-commit-policy`: un commit por fase de trabajo, archivos agrupados por concern, sin `git add -A`. Los documentos de los packs, la KB y el código van en commits separados.
+
+**Excepción de rama:** por preferencia de la persona (2026-11-27), todo el plan va en `feat/add-skills-and-rules`, aunque `git-branch-policy` prefiere ramas cortas. Es una excepción anotada, no un cambio de la política.
 
 ### D13. Los archivos instalados llevan LF y `.gitattributes`
 
@@ -126,12 +128,12 @@ Cada paso deja el repositorio funcionando. El tamaño es relativo: S pequeño, M
 
 | Paso | Tamaño | Contenido | Verificación | Commit sugerido |
 |---|---|---|---|---|
-| **K0** | S | Aprobar `KETSET.md`, este plan y la KB (hecho el 2026-11-27, en dos commits). Pendiente: resolver las preguntas abiertas de la sección 6 | La persona dice sí (hecho para propuesta, plan y KB) | `docs(packs): record packs proposal and its plan` |
+| **K0** | S | Aprobar `KETSET.md`, este plan y la KB, y resolver las preguntas que bloqueaban (hecho el 2026-11-27) | La persona dice sí (hecho) | `docs(packs): record packs proposal and its plan` |
 | **K1** | L | Mecánica de instalación de rules y skills en Anchor, solo Claude Code: plantilla, instalar, `--preview`, `--uninstall`, copia de seguridad, prefijo `beacon-`, `--pack`, `--skip <pieza>` y las líneas de `.gitattributes` (D13). Con una rule y una skill mínimas de prueba | Pruebas de `install` con archivos de referencia; idempotencia; desinstalar borra solo lo idéntico; D14 | `feat(anchor): install pack rules and skills` |
-| **K2** | M | Sección `packs:` de `config.yaml` y detección de stack reutilizando el escaneo de `init`; cómo se sella el sí desde una terminal (D5) | Pruebas del esquema; `fmt` estable; un `packs:` inválido falla al cargar; un cambio sin sí se bloquea | `feat(anchor): add pack config and stack scan` |
+| **K2** | M | Sección `packs:` de `config.yaml` y detección de stack reutilizando el escaneo de `init`; el sello del sí desde una terminal y el código 2 sin ella (D5) | Pruebas del esquema; `fmt` estable; un `packs:` inválido falla al cargar; un cambio sin sí se bloquea | `feat(anchor): add pack config and stack scan` |
 | **K3** | M | Rules universales y paramétricas: `record`, `pledge`, `frugal`, `locale`, `vendor`, `commit`, `branch` | La prueba de D9 sobre las rules que ya existen; la prueba de nombres y topes (D2, D8) | `feat(anchor): add core and git pack rules` |
-| **K4** | M | Skills `elicit`, `ensure`, `finish`: las que ya tienen comandos que las respaldan | Una sesión real en el proyecto de pruebas por skill | `feat(anchor): add elicit ensure finish skills` |
-| **K5** | M | Skills `locate`, `digest`, `tailor` | Ídem; `tailor` produce un cambio de `config.yaml` que pasa por `record` | `feat(anchor): add locate digest tailor skills` |
+| **K4** | M | Skills `elicit`, `ensure`, `finish`: las que ya tienen comandos que las respaldan; `elicit` se escribe desde cero | Una sesión real en el proyecto de pruebas por skill | `feat(anchor): add elicit ensure finish skills` |
+| **K5** | M | Skills `locate`, `digest`, `tailor`; `digest` se escribe desde cero | Ídem; `tailor` produce un cambio de `config.yaml` que pasa por `record` | `feat(anchor): add locate digest tailor skills` |
 | **K6** | M | Skills `review`, `refute`, `divide` | Ídem | `feat(anchor): add review refute divide skills` |
 | **K7** | M | Señales que apuntan a skills en `brief`, `check` y `context`, y la comprobación en `doctor` (avisos de piezas editadas, rules omitidas y skills no instaladas) | Una prueba por mensaje: nombra una skill solo si está instalada (D7) | `feat(weaver): point signals to pack skills` |
 | **K8** | L | Rules ligadas al stack: `format`, `errors`, `secure`, `domain`; binding de Go; revisar la excepción de tamaño de `domain` | Renderizado contra `golang-style` y `domain-layer` (D9) | `feat(anchor): add go stack-bound pack rules` |
@@ -173,13 +175,10 @@ Cada paso deja el repositorio funcionando. El tamaño es relativo: S pequeño, M
 
 | Pregunta | Bloquea | Propuesta |
 |---|---|---|
-| Contenido de las skills de Delta | K4 y K5 (`elicit`, `digest`) | La persona las aporta |
-| Las rules de este repo, ¿salida de los packs? | K3 y K8 | Sí, con D9 como criterio |
-| Qué skills invoca el modelo | K4 | `ensure`, `locate` y `finish` |
-| Cómo se sella el sí de `install` desde una terminal | K2 | Se resuelve leyendo `ledger` y `deltas` |
+| Qué skills invoca el modelo | K4 | `ensure`, `locate` y `finish`; antes se verifica si desactivar la invocación quita la descripción del contexto |
 | Forma exacta de `packs:` | K2 | La de `packs.md`, ajustada al esquema |
 
-Resueltas el 2026-11-27: el nivel de `packs:` (3), los tres packs y la fase (4b).
+Resueltas el 2026-11-27: el nivel de `packs:` (3), los tres packs, la fase (4b), el sello del sí de `install` (ejecutarlo en una terminal es el sí), las skills `elicit` y `digest` (se escriben desde cero y la persona las ajusta si encuentra las de Delta), las rules de este repo como salida de los packs (D9) y trabajar todo en una sola rama.
 
 ## 7. Hitos
 

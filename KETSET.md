@@ -14,6 +14,10 @@
 | `packs:` en `config.yaml` | Nivel 3. Antes se propuso nivel 2, que no existe para configuración |
 | Fase | Propuesta: Fase 4b, entre la 4 y la 5 (`status`) |
 | Nombres | Rules y skills de seis letras; los packs, cortos |
+| Sello de `install` | Una persona en una terminal que ejecuta `install` ya da el sí; un agente sin terminal recibe el código 2 y pide `--approve` |
+| Skills de Delta | `elicit` y `digest` se escriben desde cero; la persona las ajusta si encuentra las antiguas |
+| Rules de este repo | Salen de los packs (criterio 9.4); la que no encaje se queda a mano |
+| Ramas | Todo el plan en `feat/add-skills-and-rules`, por preferencia de la persona |
 
 ---
 
@@ -97,7 +101,7 @@ Para quitar una pieza suelta: `--skip <pieza>`. **Ojo:** hoy `--skip` solo acept
 
 ## 7. Las skills (9)
 
-Las dos que se conocían de Delta reaparecen: la entrevista para dejar specs claros (`elicit`) y la de escritura técnica (`digest`). No se encontraron en el historial de git, así que su contenido hay que tomarlo de la memoria de la persona o de donde las guarde.
+Las dos que se conocían de Delta reaparecen: la entrevista para dejar specs claros (`elicit`) y la de escritura técnica (`digest`). No se encontraron en el historial de git; se escriben desde cero y la persona las ajusta si encuentra las antiguas.
 
 | Skill | Qué hace | Compuerta | Inspiración |
 |---|---|---|---|
@@ -228,13 +232,10 @@ Está en `PLANNING.md`: decisiones, pasos K0 a K12, verificación de cada uno y 
 
 ## 14. Preguntas abiertas
 
-1. **¿Qué contenían las skills de Delta?** Para `elicit` y `digest` conviene partir de ellas.
-2. **¿Las rules de este repo (para construir Beacon) pasan a ser la salida de los packs?** Mi propuesta: sí, con 9.4 como criterio. Si no encaja, se mantienen aparte.
-3. **¿Qué skills son invocables por el modelo?** Propuesta en la sección 7. Falta confirmar si desactivar la invocación del modelo quita también la descripción del contexto.
-4. **¿Cómo se sella el sí cuando la persona ejecuta `install` y cambia `packs:`?** Al ser nivel 3, hay que fijar en K2, con `ledger` y `deltas`, cómo se reconoce el sí de quien escribe el comando en una terminal.
-5. **¿Cuál es la forma exacta de `packs:`?** Se fija en K2.
+1. **¿Qué skills son invocables por el modelo?** Propuesta en la sección 7. Falta confirmar si desactivar la invocación del modelo quita también la descripción del contexto (se verifica en K4).
+2. **¿Cuál es la forma exacta de `packs:`?** Se fija en K2.
 
-Resueltas el 2026-11-27: el nivel de `packs:` (3), la agrupación en tres packs y la fase (4b).
+Resueltas el 2026-11-27: el nivel de `packs:` (3), la agrupación en tres packs, la fase (4b), el sello del sí de `install`, las skills de Delta (desde cero) y las rules de este repo como salida de los packs.
 
 ## 15. Fuera de alcance
 
