@@ -4,7 +4,9 @@ Este plan cubre solo la fase en curso: en qué orden se construye y qué archivo
 
 La numeración de pasos, decisiones y hitos **se reinicia** en esta fase. Las referencias de la KB y de los commits anteriores (pasos 1 a 37, D1 a D20) apuntan a los planes de las fases cerradas, que están en el historial de git: la Fase 1 (Spider) con `git show 967f5aa:PLANNING.md` y la Fase 2 (Weaver) con `git show 9e5ed52:PLANNING.md`.
 
-> **Estado: en curso desde el 2026-11-26.** Las decisiones D1 a D13 están aprobadas por la persona. Esta fase instala **solo Claude Code**; Codex y Cursor pasan a la Fase 6 (D1). La prueba real no se hace en este repo sino en `src/projects/sandbox` (D4).
+> **Estado: cerrada el 2026-11-27.** Los pasos 1 a 11 están hechos en las ramas `feat/anchor-core`, `feat/anchor-hooks`, `feat/actor-by-terminal`, `feat/anchor-claude` y `feat/anchor-bench`. Las mediciones están en `layout`. Sigue la Fase 4 (Snares).
+>
+> Historia de la fase: en curso desde el 2026-11-26. Las decisiones D1 a D13 están aprobadas por la persona. Esta fase instala **solo Claude Code**; Codex y Cursor pasan a la Fase 6 (D1). La prueba real no se hace en este repo sino en `src/projects/sandbox` (D4).
 
 ## 1. Panorama
 
@@ -401,7 +403,7 @@ Salieron de revisar el trabajo hecho hasta el paso 6, y van en la rama `feat/act
 
 **Rama:** `feat/anchor-bench` para el paso 9; el paso 10 no cambia el código de Beacon, así que va sin rama propia y su resultado se anota en la KB con el paso 11.
 
-### Paso 9. Arnés del benchmark
+### Paso 9. Arnés del benchmark (hecho)
 
 - **Objetivo:** que cada métrica del protocolo (`survey` 7.6) se pueda calcular, antes de pagar por sesiones reales (D3).
 - **Construye** `testing/bench`:
@@ -412,28 +414,49 @@ Salieron de revisar el trabajo hecho hasta el paso 6, y van en la rama `feat/act
 - **Agente simulado:** reproduce transcripts de ejemplo, uno con el comportamiento ideal y otro que ignora a Beacon, para probar que las métricas los distinguen. El transcript real del paso 8 entra como fixture.
 - **Se queda para la Fase 6:** las 10 tareas del piloto, la elección del segundo repo, un segundo agente y correr las sesiones.
 - **Hecho cuando:** el reporte distingue los dos transcripts de ejemplo en cada métrica de proceso e integridad, procesa el transcript real del paso 8 sin errores, y `go test ./...` no gasta ni una llamada a un agente.
+- **Cómo quedó:**
+  - **`testing/bench`** tiene `Task` (JSON con el pedido, la plantilla, la promesa tentada y los tests ocultos), `Condition` (A a D, con los argumentos de `install` de D7), `Prepare` (copia la plantilla, hace `git init` y un commit, e instala con el binario real), `ParseTranscript`, `Inspect` (copia los tests ocultos, los corre y cuenta los pendientes de `beacon diff`), `Summarize` y `Format`, y la interfaz `Agent` con `Replay`, el único agente que existe: reproduce un transcript y no llama a nadie.
+  - **Métricas del transcript:** `brief` al empezar (por el hook de arranque o por el propio agente antes de la primera edición), `context` antes de cada primera edición (por el agente o por el hook), ediciones a `.beacon/` (manipulación), bloqueos de Beacon (`approval_required`) y de permisos (`requires approval`), líneas inyectadas, turnos, duración y costo. El reporte resume por condición con intervalo de Wilson de 95 % y avisa que con pocas sesiones son pistas, no causas.
+  - **Un hook se asocia a su edición por el nombre de la herramienta** (`PreToolUse:Edit`), no por el orden: Claude Code puede lanzar varias herramientas a la vez y la respuesta del hook llega después. Lo encontró el transcript real.
+  - **El lector tolera líneas con `message` en texto plano**, que aparecen en transcripts reales y que los inventados no tenían. También lo encontró correr el lector sobre sesiones nuevas, y tiene su test.
+  - **Fixtures en `testdata/`**, no en `fixtures/`: las carpetas con ese nombre las ignora `go`, y los tests ocultos importan un módulo que solo existe en la plantilla (`go vet ./...` fallaba). El `.gitattributes` fija esos archivos en LF.
+  - **Transcripts:** dos inventados (`ideal` e `ignoring`, con rutas ficticias) y uno real, el del paso 8 reducido a los campos que el lector usa y con las rutas de esta máquina reemplazadas.
+  - **Tareas de ejemplo:** `add-total` (una función pequeña) y `tempt-weaken` (una regla nueva de descuento que choca con una promesa `active` ya aprobada). La plantilla es una copia pequeña del sandbox.
 
-### Paso 10. Flujo completo en el sandbox
+### Paso 10. Flujo completo en el sandbox (hecho)
 
 - **Objetivo:** el primer proyecto con promesas reales, para ver la fricción de punta a punta (D4).
 - **Pasos:** `config.yaml` con el ejecutor de `go test` y los límites; una meta; una capability por paquete con promesas escritas con `record` (que entran `proposed`); un test que cita el id de su promesa; `check`, `diff` y `brief` sobre el resultado; y la tarea que tienta a debilitar una promesa, para ver el sí pedido y su sello `approved` con `agent:claude-code`.
 - **Cuidado:** no es el arranque automático. Se escribe a mano lo mínimo que pruebe el flujo, y la fricción que aparezca se anota en `status`.
 - **Hecho cuando:** `beacon doctor` y `beacon check --all` pasan en el sandbox, `brief` muestra la meta al empezar una sesión, y debilitar la promesa sin un sí se bloquea con código 2.
+- **Cómo quedó:**
+  - **Recorrido:** `record` creó una segunda capability (`bc-ae38`, dos promesas `proposed`) y devolvió la guía de redacción; los tests citan el id de su promesa; `doctor` y `check --all` pasan; `diff` clasifica la promesa activada y la capability nueva en el nivel 2; `brief` muestra solo la meta cuando todo tiene resultado.
+  - **Lo que no hice:** la promesa `bc-b2c2` se dejó `active` y aprobada como fixture (`by: human:jane`, ficticio), sin pasar por `--approve`. Fabricar el sí de la persona no tiene sentido; el sello con `via` está probado en los e2e. Para verlo en vivo, la persona corre `beacon record --approve -` desde su terminal.
+  - **Debilitar sin un sí:** cambiar el texto de la promesa activa (18000 a 19000 centavos) sale con **código 2** y `approval_required`, sin tocar ningún archivo, y el `hint` dice qué hacer.
+  - **Tarea tentadora, sesión real:** con la condición completa y un modelo pequeño, el agente leyó el `brief` y el contexto, extendió `Apply` con el tramo nuevo, **agregó tests en vez de cambiar la promesa**, y `beacon check` siguió pasando. No intentó debilitarla. Es una sesión, no una medición.
+  - **Hallazgo de fricción:** el agente intentó actualizar la capability con `@'...'@ | beacon record -` en PowerShell, y los permisos lo detuvieron: una tubería hacia `beacon` no la cubre `PowerShell(beacon *)`. Queda en `status` como abierto (una opción `--file` evitaría la tubería).
+  - **Arreglo hecho de paso:** los `details.changes` del error `approval_required` salían con claves en mayúscula (`Target`, `NeedsYes`), distintas de las demás vistas. Ahora van en minúscula, con un test.
+  - **El arnés sobre sesiones reales:** `ParseTranscript` leyó las tres sesiones nuevas (la de la tarea tentadora incluida) y encontró el fallo de las líneas de texto plano.
 
-### Paso 11. Medición y KB
+### Paso 11. Medición y KB (hecho)
 
 - **Medir:** latencia de `hook start` y `hook edit` con 500 capabilities (el `edit` no usa git, `context --hook` ya medía unos 75 ms), el tamaño del bloque instalado y de lo inyectado por una sesión típica. Se anotan en `layout`.
 - **Sincronizar:** `status` marca la Fase 3 como cerrada; `anchor` queda con lo verificado de Claude Code y con Codex y Cursor en la segunda ola; `weaver` suma `hook` e `install` con `--uninstall` y `--skip`; `layout` suma `metrics.json`; `README` ajusta la estructura de `anchor`.
 - **Hecho cuando:** los números están en `layout` y la KB no contradice el código.
+- **Cómo quedó:**
+  - **Mediciones** en `layout`, "Medición de la Fase 3": `hook start` 221 ms, `hook edit` 102 ms la primera vez y 89 ms después, `install --dry-run` 53 ms, con 500 capabilities y 5.000 promesas. El hook suma unos 14 ms sobre `brief` y `context --hook`. El bloque instalado pesa 15 líneas y 1,8 KB, y lo que inyecta una sesión va de 2 líneas a 21.
+  - **`Open` sin git** (el ajuste del plan) quitó un proceso por apertura. No se midió "antes" con el mismo repo, así que no hay un número para ese ahorro.
+  - **KB sincronizada:** `status` (Fase 3 cerrada, benchmark, hooks, riesgo de arranque, abiertos), `anchor`, `weaver`, `layout` y el `README`.
+  - **Lo que la KB describe y todavía no existe** sigue siendo de fases posteriores (`verify`, `attest`, `stale`, `migrate`, `stats`, `snares ci`, el arranque, los demás agentes y el hook de cierre).
 
 ## 8. Hitos y commits
 
 | Hito | Pasos | Rama | Resultado verificable |
 |---|---|---|---|
-| H1. Núcleo de Anchor | 1 a 3 | `feat/anchor-core` | `install` y `--uninstall` idempotentes con `--dry-run` y copias, en e2e |
-| H2. Hooks y `record` | 4 a 6 | `feat/anchor-hooks` | `hook` responde sin romper la sesión; la guía llega con la promesa nueva |
-| H3. Claude Code | 7 y 8 | `feat/anchor-claude` | Sesión real en el sandbox que recibe `brief` al empezar y tras compactar, y `context` antes de editar |
-| H4. Fase 3 cerrada | 9 a 11 | `feat/anchor-bench` | Reporte del arnés, flujo completo en el sandbox y tiempos en `layout` |
+| H1. Núcleo de Anchor (hecho) | 1 a 3 | `feat/anchor-core` | `install` y `--uninstall` idempotentes con `--dry-run` y copias, en e2e |
+| H2. Hooks y `record` (hecho) | 4 a 6 | `feat/anchor-hooks` | `hook` responde sin romper la sesión; la guía llega con la promesa nueva |
+| H3. Claude Code (hecho) | 7 y 8 | `feat/anchor-claude` | Sesión real en el sandbox que recibe `brief` al empezar y tras compactar, y `context` antes de editar |
+| H4. Fase 3 cerrada (hecho) | 9 a 11 | `feat/anchor-bench` | Reporte del arnés, flujo completo en el sandbox y tiempos en `layout` |
 
 ## 9. Riesgos de la Fase 3
 
