@@ -50,7 +50,7 @@ func TestDryRunReportsTheFilesAndWritesNothing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(view.Changes) != 2 || view.Changes[0].Action != "create" {
+	if len(view.Changes) != 4 || view.Changes[0].Action != "create" {
 		t.Fatalf("changes = %+v", view.Changes)
 	}
 	if exists(directory, "AGENTS.md") || exists(directory, ".gitattributes") {
@@ -101,10 +101,14 @@ func TestUninstallRestoresExistingFilesAndDeletesCreatedOnes(t *testing.T) {
 	if err != nil || string(restored) != "# Mine\n" {
 		t.Errorf("AGENTS.md = %q, err %v", restored, err)
 	}
-	if exists(directory, ".gitattributes") {
-		t.Error(".gitattributes should have been deleted")
+	for _, created := range []string{
+		".gitattributes", "CLAUDE.md", ".claude/settings.json",
+	} {
+		if exists(directory, created) {
+			t.Errorf("%s should have been deleted", created)
+		}
 	}
-	if !view.Uninstall || len(view.Changes) != 2 {
+	if !view.Uninstall || len(view.Changes) != 4 {
 		t.Errorf("view = %+v", view)
 	}
 }

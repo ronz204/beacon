@@ -364,7 +364,7 @@ Salieron de revisar el trabajo hecho hasta el paso 6, y van en la rama `feat/act
 
 **Rama:** `feat/anchor-claude`, desde `main` con el Bloque 2 fusionado.
 
-### Paso 7. Adaptador de Claude Code
+### Paso 7. Adaptador de Claude Code (hecho)
 
 - **Objetivo:** que los cuatro momentos de `anchor` queden cubiertos en Claude Code.
 - **Verificación (hecha el 2026-11-26, en `anchor`):** `SessionStart` con matcher `startup|resume|compact`, `PreToolUse` con `Edit|Write` (sin `MultiEdit`), salida por `hookSpecificOutput.additionalContext` sin `permissionDecision`, ruta absoluta con barras invertidas en Windows, permiso `Bash(beacon *)`. Viene de resúmenes de la documentación, así que el paso 8 lo confirma en vivo. **Quedan por probar:** si `env` llega a los hooks, qué hace el stdout de `Stop`, y si `beacon` se resuelve por el `PATH` bajo Git Bash. El hook de `edit` normaliza la ruta con `\` a la raíz del repo (paso 4).
@@ -373,13 +373,29 @@ Salieron de revisar el trabajo hecho hasta el paso 6, y van en la rama `feat/act
   - `.claude/settings.json`: permiso `Bash(beacon *)` y los hooks `start` y `edit` (D6, D11); `stop` solo si el paso 8 lo confirma. Respeta lo que el archivo ya tiene.
   - `ParseHook` y `RenderHook` completos.
 - **Hecho cuando:** sobre un repo temporal con un `settings.json` existente, `install` conserva sus permisos, agrega los de Beacon y `--uninstall` deja el archivo como estaba; `hook` responde en el formato que Claude Code espera; y un `record --approve` sin terminal, después de un `hook start` de Claude Code, sella `by: human:<user.name>` y `via: agent:claude-code`.
+- **Cómo quedó:**
+  - **Siempre se instala el adaptador de Claude Code:** con un solo agente soportado (D1) no hay nada que detectar. La detección por archivos (`.claude/`, `CLAUDE.md`) se retoma en la Fase 6, cuando haya más de un adaptador.
+  - **`claude.Agent`** implementa `Agent` y `Hooker` en el mismo tipo. Declara tres momentos (`start`, `compact` y `edit`) y el resumen de `install` informa `stop` como el que no cubre.
+  - **Archivos:** `CLAUDE.md` con el bloque que importa `@AGENTS.md`, y `.claude/settings.json` con (a) los permisos `Bash(beacon *)` y `PowerShell(beacon *)` (parte `permission`), (b) `SessionStart` con matcher `startup|resume` (parte `hooks`), y (c) `SessionStart` con matcher `clear|compact` y `PreToolUse` con `Edit|Write` (parte `reinject`). `--skip hooks` deja solo los permisos y `--skip reinject` solo el hook de arranque.
+  - **`clear`** se sumó a la reinyección tras compactar, porque `/clear` también borra el `brief` del contexto.
+  - **Los hooks llaman a `beacon hook <evento> --agent claude-code`** con tope de 30 segundos (arranque) y 10 (edición).
+  - **`PowerShell(beacon *)` salió del paso 8:** ver abajo.
 
-### Paso 8. Prueba con una sesión real en el sandbox
+### Paso 8. Prueba con una sesión real en el sandbox (hecho)
 
 - **Objetivo:** confirmar lo que los tests no pueden: que el agente recibe lo inyectado.
 - **Prepara el sandbox (D12):** el módulo Go con dos paquetes con tests, `git init` y un commit inicial. Se instala el binario con `go install ./cmd/beacon`.
 - **Pasos:** `beacon install` en el sandbox (primero con `--dry-run`), un registro de ejemplo, y una sesión de Claude Code que comprueba que (a) el `brief` aparece al empezar, (b) reaparece tras `/compact`, (c) `context` llega antes de la primera edición de un archivo y no se repite, (d) el hook funciona desde un subdirectorio y en Windows.
 - **Hecho cuando:** los cuatro casos pasan, o lo que falla queda corregido o anotado en `anchor` con su causa. El resultado se escribe en la KB, no solo en el commit, y el transcript de la sesión se guarda como fixture del paso 9.
+- **Cómo quedó:** se corrieron sesiones reales de Claude Code 2.1.321 en `src/projects/sandbox` con `claude -p --include-hook-events --output-format stream-json`, en modo no interactivo y con un modelo pequeño (unos 0,005 dólares por sesión). No es una sesión interactiva: lo que depende de una persona (confirmaciones, `Stop` en la interfaz) no se vio.
+  - **Sandbox (D12):** módulo Go `sandbox` con los paquetes `discount` y `mailcheck`, un commit inicial y `go install ./cmd/beacon` para que `beacon` esté en el `PATH`. Los registros del sandbox (una meta y una capability con una promesa `proposed`) **se escribieron como fixtures a mano y se commitearon**, no con `record`: la meta pide un sí (nivel 3) y no quise fabricar uno. El paso 10 recorre ese camino de verdad.
+  - **(a) Arranque, confirmado:** el hook `SessionStart:startup` entregó el `brief` y el modelo lo citó. Al reanudar con `--resume`, `SessionStart:resume` entregó el `brief` actualizado.
+  - **(b) Compactación, confirmada:** `/compact` sobre una sesión reanudada disparó `SessionStart:compact` y volvió a inyectar el `brief`. (En Git Bash hubo que exportar `MSYS_NO_PATHCONV=1`, porque convierte `/compact` en una ruta.)
+  - **(c) Antes de editar, confirmado:** el hook `PreToolUse:Edit` entregó el contexto de la capability y el modelo lo citó. El agente corrió `beacon brief`, `beacon context` y `beacon check` por sí solo, siguiendo el bloque de guía. `metrics.json` registró las cuentas.
+  - **(d) Windows y `PATH`, confirmado:** `beacon` se resuelve por el `PATH` en los hooks. **Un directorio de arranque distinto no:** una sesión iniciada dentro de `discount/` no cargó los hooks, porque Claude Code toma `.claude/settings.json` del directorio donde arranca. No es un fallo de Beacon, pero se anota en `anchor`.
+  - **Hallazgo que cambió el paso 7:** en Windows el agente ejecuta los comandos con la herramienta `PowerShell`, no con `Bash`, y `Bash(beacon *)` no la cubre: los comandos de Beacon quedaron esperando una aprobación. Se agregó `PowerShell(beacon *)`, y un `install` sobre el sandbox ya instalado solo sumó esa línea (idempotencia). Un comando compuesto (`beacon brief; otro`) sigue pidiendo permiso por cada parte, como dice la documentación.
+  - **No se probó:** `Stop`. Dispara al terminar cada respuesta, no solo la sesión; por eso no hay hook de cierre (paso 4). Tampoco se probó `env`, que D13 dejó de necesitar.
+  - **Fixture del paso 9:** los transcripts quedaron en el directorio temporal de la sesión; llevan rutas de esta máquina y se limpian al convertirlos en fixtures.
 
 ## 7. Bloque 4: benchmark y banco de pruebas
 
