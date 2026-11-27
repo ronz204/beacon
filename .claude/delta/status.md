@@ -79,9 +79,9 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 **No queda nada de diseño abierto.** Las propuestas R1 a R9 que salieron de la investigación del 2026-11-22 se aprobaron ese mismo día y ya están aplicadas en los archivos de arriba (`survey` las llama "propuestas": ese texto es el de la fecha de la investigación). Lo que sigue son detalles de implementación que se resuelven al construir cada fase:
 
 - Qué hook sirve en Codex, Cursor y los demás agentes para reinyectar antes de editar y tras compactar (R1). En Claude Code está resuelto y confirmado (`anchor`).
-- **Pasar el payload de `record` sin tubería.** En Windows el agente usa PowerShell y escribe `@'...'@ | beacon record -`, que la regla `PowerShell(beacon *)` no cubre y pide permiso cada vez. Una opción `record --file <ruta>` (o leer de un archivo temporal) lo evitaría. Se decide con la fricción del benchmark.
+- **Pasar el payload de `record` sin tubería.** En Windows el agente usa PowerShell y escribe `@'...'@ | beacon record -`, que la regla `PowerShell(beacon *)` no cubre y pide permiso cada vez. Una opción `record --file <ruta>` (o leer de un archivo temporal) lo evitaría. Se decide con la fricción del benchmark. **Decidido el 2026-11-27: `record --file <ruta>` entra en la Fase 4.**
 - Si el hook de cierre (`Stop`) puede ser útil sin ser ruido: dispara al terminar cada respuesta (Fase 4, con `attest`).
-- El nombre y el comportamiento exactos del evento `merge_group` de GitHub (`snares`).
+- Los campos del payload de `merge_group` de GitHub (`base_sha`, `base_ref`): el evento y sus reglas están verificados, el payload no (`snares`).
 - Si el nivel 3 de las capturas base resulta demasiado ruidoso; se mide en la fricción y se afina el `baseline`.
 
 ## Diferido
@@ -134,6 +134,6 @@ Sin recorte de producto; el orden sigue las dependencias. El plan detallado de l
 | 1 | **Cerrada el 2026-11-23. Spider:** esquema (con `nongoals`, `rejected` y `evidence`), parser YAML estricto, `fmt`, ids, grafo en memoria, validación, `doctor`, globs |
 | 2 | **Cerrada el 2026-11-26. Weaver (CLI):** `--json` con el sobre uniforme y códigos 0, 1 y 2; `brief`, `status`, `context` con `--hook`, `get`, `find`, `ready`, `record` con stdin y `--approve`, `close` con archivo, `claim` con claim local, `check` con ejecutores y `results.json`, y `diff` con niveles (incluidas las capturas base) y pendientes de sí; ramas largas probadas y tiempos medidos |
 | 3 | **Cerrada el 2026-11-27. Anchor sobre el CLI, solo Claude Code:** guía del método, `beacon hook` con reinyección (arranque, tras compactar y antes de editar), permisos, y el nombre del agente en el sello por terminal y actividad de los hooks; `beacon install` con `--dry-run`, `--uninstall`, `--skip` y copias; guía de redacción de promesas en `record`; contadores de inyección; arnés del benchmark (`testing/benchmark`); probado con sesiones reales de Claude Code 2.1.321 en `src/projects/sandbox` |
-| 4 | **Snares:** pre-commit, `beacon snares ci` y plantilla de GitHub Actions (con `merge_group`); arranque, `attest` con `--evidence`, `verify`; ejecutores de ejemplo para UI |
+| 4 | **Por empezar el 2026-11-27 (plan en `PLANNING.md`). Snares y lo que falta de Weaver:** `record --file`, `attest` con `--evidence`, `verify` con riesgo y paquete de revisión; `beacon snares pre-commit` (lo instala `install`) y `beacon snares ci` con la plantilla de GitHub Actions (`install --ci github`, con `merge_group`); `beacon init` con escaneo de Go, Bun, Node y Python; ejemplos de UI; Beacon en su propio repo |
 | 5 | Frescura de guides, `stale` |
 | 6 | Segunda ola de agentes (Codex y Cursor entre ellos), `stats`, correr el benchmark de fricción; usar Beacon en su propio repo si el arranque ya existe |

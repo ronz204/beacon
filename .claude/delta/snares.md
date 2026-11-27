@@ -28,7 +28,8 @@ Hay cambios que fusionan limpio en git pero dejan el proyecto roto: una persona 
 
 - La plantilla de GitHub Actions escucha `pull_request` y también `merge_group`, el evento de la **cola de merge**, para que `beacon snares ci` corra sobre el commit ya fusionado antes de que llegue a la rama principal.
 - En ese evento la base de la comparación es la que trae el propio evento, no la punta de la rama del PR.
-- La cola de merge es opcional en GitHub: sin ella, el evento no se dispara y la plantilla sigue funcionando para PRs. **El nombre y el comportamiento exactos del evento se verifican al escribir la plantilla** (viene de mi conocimiento de GitHub, no de una fuente consultada).
+- La cola de merge es opcional en GitHub: sin ella, el evento no se dispara y la plantilla sigue funcionando para PRs.
+- **Verificado el 2026-11-27 en la documentación de GitHub:** el evento se llama `merge_group`, su único tipo es `checks_requested`, `GITHUB_SHA` es el SHA del grupo, y el workflow debe incluir `merge_group` para que los checks requeridos reporten. **Sin confirmar:** los campos del payload (`base_sha`, `base_ref`, `head_sha`) y el formato de `GITHUB_REF` no aparecen en las páginas leídas; `snares ci` cae a `git merge-base` si la base llega vacía.
 
 ## Equipos
 
