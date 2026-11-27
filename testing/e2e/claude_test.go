@@ -58,7 +58,7 @@ func TestInstallKeepsWhatClaudeSettingsAlreadyHad(t *testing.T) {
 	}
 
 	allow := strings.Join(parsed.Permissions.Allow, ",")
-	if allow != "Bash(go test *),Bash(beacon *)" {
+	if allow != "Bash(go test *),Bash(beacon *),PowerShell(beacon *)" {
 		t.Errorf("allow = %q", allow)
 	}
 	starts := len(parsed.Hooks["SessionStart"])
@@ -119,7 +119,7 @@ func TestInstallSkipsWhatTheFlagsLeaveOut(t *testing.T) {
 			len(parsed.Hooks["PreToolUse"]) != c.edit {
 			t.Errorf("args %v: hooks = %+v", c.args, parsed.Hooks)
 		}
-		if len(parsed.Permissions.Allow) != 1 {
+		if len(parsed.Permissions.Allow) != 2 {
 			t.Errorf("args %v: allow = %v", c.args, parsed.Permissions.Allow)
 		}
 	}

@@ -12,7 +12,6 @@ const (
 	importBegin  = "<!-- BEGIN BEACON (managed block: do not edit inside) -->"
 	importBlock  = importBegin + "\n@AGENTS.md\n<!-- END BEACON -->"
 	settingsPath = ".claude/settings.json"
-	permission   = "Bash(beacon *)"
 
 	startMatcher    = "startup|resume"
 	reinjectMatcher = "clear|compact"
@@ -20,6 +19,8 @@ const (
 	startTimeout    = 30
 	editTimeout     = 10
 )
+
+var shellTools = []string{"Bash", "PowerShell"}
 
 func (Agent) Moments() []agents.Moment {
 	return []agents.Moment{
@@ -37,9 +38,7 @@ func (Agent) Contribute(
 		return agents.Contribution{}, err
 	}
 
-	allow, err := blocks.ParseEntry(
-		blocks.EntryAppend, permission, "permissions", "allow",
-	)
+	allow, err := permissionEntries()
 	if err != nil {
 		return agents.Contribution{}, err
 	}
@@ -53,7 +52,7 @@ func (Agent) Contribute(
 		Entries: []agents.EntryFile{{
 			Path:    settingsPath,
 			Part:    agents.PartPermission,
-			Entries: []blocks.Entry{allow},
+			Entries: allow,
 		}},
 	}
 
@@ -61,6 +60,25 @@ func (Agent) Contribute(
 	contribution.Entries = append(contribution.Entries, files...)
 
 	return contribution, err
+}
+
+func permissionEntries() ([]blocks.Entry, error) {
+	var entries []blocks.Entry
+
+	for _, tool := range shellTools {
+		rule := tool + "(beacon *)"
+
+		entry, err := blocks.ParseEntry(
+			blocks.EntryAppend, rule, "permissions", "allow",
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		entries = append(entries, entry)
+	}
+
+	return entries, nil
 }
 
 func hookFiles(options agents.Options) ([]agents.EntryFile, error) {

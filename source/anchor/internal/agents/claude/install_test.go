@@ -62,7 +62,8 @@ func matchers(parsed settings, event string) []string {
 func TestFullInstallCoversStartCompactAndEdit(t *testing.T) {
 	parsed := installed(t, agents.Options{Hooks: true, Reinject: true})
 
-	if !slices.Equal(parsed.Permissions.Allow, []string{"Bash(beacon *)"}) {
+	wantAllow := []string{"Bash(beacon *)", "PowerShell(beacon *)"}
+	if !slices.Equal(parsed.Permissions.Allow, wantAllow) {
 		t.Errorf("allow = %v", parsed.Permissions.Allow)
 	}
 
@@ -117,7 +118,7 @@ func TestWithoutHooksOnlyThePermissionRemains(t *testing.T) {
 	if len(parsed.Hooks) != 0 {
 		t.Errorf("hooks = %+v", parsed.Hooks)
 	}
-	if len(parsed.Permissions.Allow) != 1 {
+	if len(parsed.Permissions.Allow) != 2 {
 		t.Errorf("allow = %v", parsed.Permissions.Allow)
 	}
 }
