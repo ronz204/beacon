@@ -81,7 +81,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 - Qué hook sirve en Codex, Cursor y los demás agentes para reinyectar antes de editar y tras compactar (R1). En Claude Code está resuelto y confirmado (`anchor`).
 - **Pasar el payload de `record` sin tubería.** En Windows el agente usa PowerShell y escribe `@'...'@ | beacon record -`, que la regla `PowerShell(beacon *)` no cubre y pide permiso cada vez. Una opción `record --file <ruta>` (o leer de un archivo temporal) lo evitaría. Se decide con la fricción del benchmark. **Decidido el 2026-11-27: `record --file <ruta>` entra en la Fase 4.**
 - Si el hook de cierre (`Stop`) puede ser útil sin ser ruido: dispara al terminar cada respuesta (Fase 4, con `attest`).
-- El nombre y el comportamiento exactos del evento `merge_group` de GitHub (`snares`).
+- Los campos del payload de `merge_group` de GitHub (`base_sha`, `base_ref`): el evento y sus reglas están verificados, el payload no (`snares`).
 - Si el nivel 3 de las capturas base resulta demasiado ruidoso; se mide en la fricción y se afina el `baseline`.
 
 ## Diferido
