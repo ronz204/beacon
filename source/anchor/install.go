@@ -53,7 +53,7 @@ func (a Anchor) Uninstall(
 	options InstallOptions,
 ) (InstallView, error) {
 	everything := InstallOptions{
-		DryRun:    options.DryRun,
+		Preview:   options.Preview,
 		Hooks:     true,
 		Reinject:  true,
 		Precommit: true,
@@ -79,7 +79,7 @@ func (a Anchor) finish(
 	plan action.Plan,
 	options InstallOptions,
 ) (InstallView, error) {
-	if !options.DryRun {
+	if !options.Preview {
 		applier := action.Applier{
 			Files: a.files,
 			Stamp: time.Now().Format(files.StampLayout),
@@ -94,7 +94,7 @@ func (a Anchor) finish(
 		return InstallView{}, err
 	}
 
-	view := viewOf(plan, options.DryRun)
+	view := viewOf(plan, options.Preview)
 	view.Initialized = initialized
 
 	return view, nil
@@ -149,9 +149,9 @@ func versionedHook(path string) bool {
 	return !filepath.IsAbs(path) && !strings.HasPrefix(path, ".git/")
 }
 
-func viewOf(plan action.Plan, dryRun bool) InstallView {
+func viewOf(plan action.Plan, preview bool) InstallView {
 	view := InstallView{
-		DryRun:  dryRun,
+		Preview: preview,
 		Changes: []ChangeView{},
 		Agents:  []AgentView{},
 		Skipped: []string{},

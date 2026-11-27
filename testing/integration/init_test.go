@@ -9,8 +9,8 @@ import (
 )
 
 type initData struct {
-	DryRun bool `json:"dryRun"`
-	Scan   struct {
+	Preview bool `json:"preview"`
+	Scan    struct {
 		Stacks  []string `json:"stacks"`
 		Runners []struct {
 			Name string   `json:"name"`
@@ -116,16 +116,16 @@ func TestInitProposesRunnersThatEnterWithAYes(t *testing.T) {
 	}
 }
 
-func TestInitDryRunChangesNothing(t *testing.T) {
+func TestInitPreviewChangesNothing(t *testing.T) {
 	root := goRepository(t, "source/billing")
 
-	result, data := runInit(t, root, "--dry-run")
+	result, data := runInit(t, root, "--preview")
 
-	if result.Code != 0 || !data.DryRun || len(data.Records) == 0 {
+	if result.Code != 0 || !data.Preview || len(data.Records) == 0 {
 		t.Fatalf("code %d, data %+v", result.Code, data)
 	}
 	if present(root, ".beacon") {
-		t.Error("dry run wrote .beacon")
+		t.Error("preview wrote .beacon")
 	}
 }
 

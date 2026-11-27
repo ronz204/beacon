@@ -29,7 +29,7 @@ type InitRecord struct {
 }
 
 type InitView struct {
-	DryRun   bool         `json:"dryRun"`
+	Preview  bool         `json:"preview"`
 	Config   string       `json:"config"`
 	Scan     ScanView     `json:"scan"`
 	Records  []InitRecord `json:"records"`
@@ -42,7 +42,7 @@ type Author func(project Project) (string, error)
 func Init(
 	ctx context.Context,
 	directory string,
-	dryRun bool,
+	preview bool,
 	author Author,
 ) (InitView, error) {
 	root, err := filepath.Abs(directory)
@@ -61,7 +61,7 @@ func Init(
 
 	planned, omitted := plannedRecords(found)
 	view := InitView{
-		DryRun:   dryRun,
+		Preview:  preview,
 		Config:   path.Join(stateFolder, configName),
 		Scan:     found,
 		Omitted:  omitted,
@@ -69,7 +69,7 @@ func Init(
 		Records:  make([]InitRecord, 0, len(planned)),
 	}
 
-	if dryRun {
+	if preview {
 		for _, item := range planned {
 			view.Records = append(view.Records, item.view)
 		}

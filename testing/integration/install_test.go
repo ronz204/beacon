@@ -9,7 +9,7 @@ import (
 )
 
 type installData struct {
-	DryRun      bool `json:"dryRun"`
+	Preview     bool `json:"preview"`
 	Uninstall   bool `json:"uninstall"`
 	Initialized bool `json:"initialized"`
 	Changes     []struct {
@@ -38,16 +38,16 @@ func runInstall(t *testing.T, root string, args ...string) installData {
 	return data
 }
 
-func TestInstallDryRunListsTheFilesAndWritesNothing(t *testing.T) {
+func TestInstallPreviewListsTheFilesAndWritesNothing(t *testing.T) {
 	root := newBareRepository(t)
 
-	data := runInstall(t, root, "--dry-run")
+	data := runInstall(t, root, "--preview")
 
-	if !data.DryRun || len(data.Changes) != 5 {
+	if !data.Preview || len(data.Changes) != 5 {
 		t.Fatalf("data = %+v", data)
 	}
 	if present(root, "AGENTS.md") || present(root, ".gitattributes") {
-		t.Error("dry run wrote files")
+		t.Error("preview wrote files")
 	}
 }
 
@@ -116,7 +116,7 @@ func TestInstallKeepsACopyOfWhatItChanges(t *testing.T) {
 func TestInstallSkipHooksReportsWhatItLeftOut(t *testing.T) {
 	root := newBareRepository(t)
 
-	data := runInstall(t, root, "--dry-run", "--skip", "hooks")
+	data := runInstall(t, root, "--preview", "--skip", "hooks")
 
 	if len(data.Skipped) != 2 {
 		t.Errorf("skipped = %v", data.Skipped)
@@ -136,7 +136,7 @@ func TestInstallRejectsAnUnknownSkipPart(t *testing.T) {
 func TestInstallPointsToTheNextStepWithoutBeacon(t *testing.T) {
 	root := newBareRepository(t)
 
-	result := utilities.Beacon(t, root, "install", "--json", "--dry-run")
+	result := utilities.Beacon(t, root, "install", "--json", "--preview")
 	envelope := parseEnvelope(t, result.Stdout)
 
 	if !hintContains(envelope.Hint, ".beacon/config.yaml") {
@@ -144,7 +144,7 @@ func TestInstallPointsToTheNextStepWithoutBeacon(t *testing.T) {
 	}
 
 	initialized := utilities.NewRepository(t)
-	result = utilities.Beacon(t, initialized, "install", "--json", "--dry-run")
+	result = utilities.Beacon(t, initialized, "install", "--json", "--preview")
 
 	if parseEnvelope(t, result.Stdout).Hint != nil {
 		t.Error("an initialized project should not get the hint")
@@ -159,13 +159,13 @@ func TestInstallOutsideAGitRepositoryFails(t *testing.T) {
 	}
 }
 
-func TestInstallDryRunTextNamesTheFilesAndTheirLines(t *testing.T) {
+func TestInstallPreviewTextNamesTheFilesAndTheirLines(t *testing.T) {
 	root := newBareRepository(t)
 
-	result := utilities.Beacon(t, root, "install", "--dry-run")
+	result := utilities.Beacon(t, root, "install", "--preview")
 
 	for _, want := range []string{
-		"dry run: nothing was written",
+		"preview: nothing was written",
 		"would create AGENTS.md (guide)",
 		"would create .gitattributes (attributes)",
 		"  + .beacon/** text eol=lf",
