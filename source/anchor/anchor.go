@@ -17,7 +17,6 @@ const (
 	actionCreate = "create"
 	actionUpdate = "update"
 	actionDelete = "delete"
-	stampLayout  = "20060102T150405"
 	binaryName   = "beacon"
 	configPath   = ".beacon/config.yaml"
 
@@ -142,7 +141,7 @@ func (a Anchor) finish(
 	if !options.DryRun {
 		applier := action.Applier{
 			Files: a.files,
-			Stamp: time.Now().Format(stampLayout),
+			Stamp: time.Now().Format(files.StampLayout),
 		}
 		if err := applier.Apply(ctx, plan); err != nil {
 			return InstallView{}, err

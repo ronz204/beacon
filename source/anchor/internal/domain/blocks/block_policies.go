@@ -66,6 +66,34 @@ func Remove(text string, block Block) (string, RemovalStatus, error) {
 	return before + text[found.end:], RemovalRemoved, nil
 }
 
+func Covers(text string, block Block) bool {
+	if _, found, err := locate(text, block); found || err != nil {
+		return false
+	}
+
+	inner := strings.Split(block.value, "\n")
+	inner = inner[1 : len(inner)-1]
+
+	present := map[string]bool{}
+	for _, line := range strings.Split(text, "\n") {
+		present[strings.TrimSuffix(line, "\r")] = true
+	}
+
+	required := 0
+	for _, line := range inner {
+		if line == "" {
+			continue
+		}
+
+		required++
+		if !present[line] {
+			return false
+		}
+	}
+
+	return required > 0
+}
+
 func trimSeparator(before string) string {
 	for _, newline := range []string{"\r\n", "\n"} {
 		if strings.HasSuffix(before, newline+newline) {

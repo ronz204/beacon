@@ -176,3 +176,34 @@ func TestInstallOutsideAGitRepositoryFails(t *testing.T) {
 		t.Errorf("exit %d: %s", result.Code, result.Stdout)
 	}
 }
+
+func TestInstallDryRunTextNamesTheFilesAndTheirLines(t *testing.T) {
+	root := newBareRepository(t)
+
+	result := utils.Beacon(t, root, "install", "--dry-run")
+
+	for _, want := range []string{
+		"dry run: nothing was written",
+		"would create AGENTS.md (guide)",
+		"would create .gitattributes (attributes)",
+		"  + .beacon/** text eol=lf",
+		"hint: create .beacon/config.yaml with schema: 1",
+	} {
+		if !strings.Contains(result.Stdout, want) {
+			t.Errorf("missing %q in:\n%s", want, result.Stdout)
+		}
+	}
+}
+
+func TestInstallDoesNotDuplicateTheLineEndingRuleWrittenByHand(t *testing.T) {
+	root := newBareRepository(t)
+	utils.WriteFile(t, root, ".gitattributes", ".beacon/** text eol=lf\n")
+
+	data := runInstall(t, root)
+
+	for _, change := range data.Changes {
+		if change.Path == ".gitattributes" {
+			t.Errorf(".gitattributes should be left alone: %+v", change)
+		}
+	}
+}

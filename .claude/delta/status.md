@@ -32,7 +32,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Relaciones | Campos tipados (`implements`, `blocks`, `parent`, `supersedes`, `serves`, `origin`, `refers`), sin lista genérica | `ledger` |
 | Jerarquía de tareas | `parent` apunta siempre al work raíz y la tarea padre sale del id; sin huérfanas, bloqueo heredado, trabajo en las hojas y sin `done` antes que las hijas | `ledger` |
 | Globs | Estilo doublestar (`*`, `**`, `?`, `{a,b}`), desde la raíz del repo y sin negaciones; las llaves se expanden antes de comparar, con un máximo de 64 combinaciones | `ledger` |
-| Actor | `BEACON_ACTOR` (lo pone Anchor) o `human:<user.name de git>`; `approved: {by, at, via}`. Es un marcado, no una prueba | `ledger`, `deltas` |
+| Actor | Persona en una terminal: `human:<user.name de git>`. Sin terminal: `via` es `agent:<nombre>` del último hook del worktree (24 h) o `agent:unknown`; `BEACON_ACTOR` es un override opcional que nadie instala; `approved: {by, at, via}`. Decidido el 2026-11-26. Es un marcado, no una prueba | `ledger`, `deltas` |
 | `config.yaml` | Claves: `schema`, `runners` (con `baseline` opcional en los visuales), `review`, `limits` (`guide`, `brief`, `hook`), `agents`. Nivel 3 solo para `runners` y `schema` | `ledger`, `deltas` |
 | Carga en memoria | Validada con benchmark en Go: 500 archivos en unos 100 ms, 5.000 en unos 0,5 a 0,8 s | `layout` |
 | Consultas a git | En lote (una por commit base y una de frescura), nunca una por promesa; de 5 a 60 ms | `layout`, `spider` |
@@ -131,7 +131,7 @@ Sin recorte de producto; el orden sigue las dependencias. El plan detallado de l
 | 0 | **Cerrada:** nombre, benchmarks de carga y de git, esquema, guía del método, decisiones de interfaz y las propuestas de la investigación |
 | 1 | **Cerrada el 2026-11-23. Spider:** esquema (con `nongoals`, `rejected` y `evidence`), parser YAML estricto, `fmt`, ids, grafo en memoria, validación, `doctor`, globs |
 | 2 | **Cerrada el 2026-11-26. Weaver (CLI):** `--json` con el sobre uniforme y códigos 0, 1 y 2; `brief`, `status`, `context` con `--hook`, `get`, `find`, `ready`, `record` con stdin y `--approve`, `close` con archivo, `claim` con claim local, `check` con ejecutores y `results.json`, y `diff` con niveles (incluidas las capturas base) y pendientes de sí; ramas largas probadas y tiempos medidos |
-| 3 | **En curso desde el 2026-11-26. Anchor sobre el CLI, solo Claude Code:** guía del método, `beacon hook` con reinyección, permisos y marca del actor; `beacon install` con `--dry-run`, `--uninstall` y copias; guía de redacción de promesas; arnés del benchmark; prueba real en `src/projects/sandbox` (plan en `PLANNING.md`) |
+| 3 | **En curso desde el 2026-11-26. Anchor sobre el CLI, solo Claude Code:** guía del método, `beacon hook` con reinyección y permisos; `beacon install` con `--dry-run`, `--uninstall` y copias; guía de redacción de promesas; arnés del benchmark; prueba real en `src/projects/sandbox` (plan en `PLANNING.md`) |
 | 4 | **Snares:** pre-commit, `beacon snares ci` y plantilla de GitHub Actions (con `merge_group`); arranque, `attest` con `--evidence`, `verify`; ejecutores de ejemplo para UI |
 | 5 | Frescura de guides, `stale` |
 | 6 | Segunda ola de agentes (Codex y Cursor entre ellos), `stats`, correr el benchmark de fricción; usar Beacon en su propio repo si el arranque ya existe |

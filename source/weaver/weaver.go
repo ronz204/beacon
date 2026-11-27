@@ -124,7 +124,7 @@ type Weaver struct {
 func New(project spider.Project) Weaver {
 	today, _ := kernel.CalendarDateOf(time.Now())
 	records := facade.NewRecords(project)
-	who := identity.Git{}
+	who := identity.Git{ActiveAgent: project.ActiveAgent}
 
 	differ := action.Differ{
 		Changes: facade.NewChanges(project),

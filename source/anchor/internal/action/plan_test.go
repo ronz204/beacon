@@ -261,3 +261,36 @@ func TestWithdrawKeepsASettingsFileThatHasOtherContent(t *testing.T) {
 		t.Errorf("settings = %q", files.Texts[".claude/settings.json"])
 	}
 }
+
+func TestPlanSkipsABlockWhoseLinesAreAlreadyThere(t *testing.T) {
+	files := double.NewFiles(map[string]string{})
+	planner := newPlanner(t, files, sampleAgent{})
+	planner.Shared.Blocks = append(planner.Shared.Blocks, agents.BlockFile{
+		Path:  ".gitattributes",
+		Part:  agents.PartAttributes,
+		Block: mustBlockOf(t, "# BEGIN BEACON\nrule\n# END BEACON"),
+	})
+	files.Texts[".gitattributes"] = "*.go text\nrule\n"
+
+	plan, err := planner.Plan(context.Background(), agents.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, change := range plan.Changes {
+		if change.Path == ".gitattributes" {
+			t.Errorf("planned a change to %+v", change)
+		}
+	}
+}
+
+func mustBlockOf(t *testing.T, raw string) blocks.Block {
+	t.Helper()
+
+	block, err := blocks.ParseBlock(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return block
+}

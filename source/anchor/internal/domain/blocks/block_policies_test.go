@@ -165,3 +165,21 @@ func TestHashStyleBlocksRoundTrip(t *testing.T) {
 		t.Errorf("got %q (%s)", got, status)
 	}
 }
+
+func TestCoversRecognizesTheSameLinesWrittenByHand(t *testing.T) {
+	block := mustBlock(t, "# BEGIN BEACON\nrule\n# END BEACON")
+
+	cases := map[string]bool{
+		"*.go text\nrule\n":                    true,
+		"rule\r\n":                             true,
+		"*.go text\n":                          false,
+		"":                                     false,
+		"# BEGIN BEACON\nrule\n# END BEACON\n": false,
+	}
+
+	for text, want := range cases {
+		if got := blocks.Covers(text, block); got != want {
+			t.Errorf("Covers(%q) = %v, want %v", text, got, want)
+		}
+	}
+}

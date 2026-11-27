@@ -6,8 +6,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/ronz204/beacon/source/kernel"
 	"github.com/ronz204/beacon/source/spider/internal/domain/agenda"
@@ -341,5 +343,113 @@ func TestOldMetricsSessionsArePruned(t *testing.T) {
 	metrics := readMetrics(t, directory)
 	if _, kept := metrics.Sessions["old"]; kept || len(metrics.Sessions) != 1 {
 		t.Errorf("sessions = %+v", metrics.Sessions)
+	}
+}
+
+func moment(t *testing.T, text string) time.Time {
+	t.Helper()
+
+	when, err := time.Parse(time.RFC3339, text)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return when
+}
+
+func TestTheActiveAgentIsThePersonsLastHookInThatWorktree(t *testing.T) {
+	store, _ := newStore(t)
+	ctx := context.Background()
+	now := moment(t, "2026-11-26T10:00:00Z")
+
+	err := store.NoteAgent(ctx, "/work/a", "claude-code", "s1", now)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	agent, err := store.ActiveAgent(ctx, "/work/a", now.Add(time.Hour))
+	if err != nil || agent != "claude-code" {
+		t.Errorf("agent %q, err %v", agent, err)
+	}
+
+	agent, err = store.ActiveAgent(ctx, "/work/b", now)
+	if err != nil || agent != "" {
+		t.Errorf("other worktree: agent %q, err %v", agent, err)
+	}
+}
+
+func TestTheActiveAgentExpiresAfterADay(t *testing.T) {
+	store, _ := newStore(t)
+	ctx := context.Background()
+	now := moment(t, "2026-11-26T10:00:00Z")
+
+	err := store.NoteAgent(ctx, "/work/a", "claude-code", "s1", now)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	agent, err := store.ActiveAgent(ctx, "/work/a", now.Add(25*time.Hour))
+	if err != nil || agent != "" {
+		t.Errorf("agent %q, err %v", agent, err)
+	}
+}
+
+func TestNotingTheSameSessionTwiceDoesNotRewriteTheFile(t *testing.T) {
+	store, directory := newStore(t)
+	ctx := context.Background()
+	now := moment(t, "2026-11-26T10:00:00Z")
+	path := filepath.Join(directory, "activity.json")
+
+	err := store.NoteAgent(ctx, "/w", "claude-code", "s1", now)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	first, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	later := now.Add(time.Minute)
+	err = store.NoteAgent(ctx, "/w", "claude-code", "s1", later)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	second, err := os.ReadFile(path)
+	if err != nil || string(first) != string(second) {
+		t.Errorf("file was rewritten: %s vs %s", first, second)
+	}
+
+	err = store.NoteAgent(ctx, "/w", "claude-code", "s2", later)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	third, err := os.ReadFile(path)
+	if err != nil || string(first) == string(third) {
+		t.Errorf("a new session should be written: %s", third)
+	}
+}
+
+func TestOldWorktreeActivityIsPruned(t *testing.T) {
+	store, directory := newStore(t)
+	ctx := context.Background()
+	old := `{"version":1,"worktrees":{"/gone":{"agent":"claude-code",` +
+		`"session":"s0","at":"2020-01-01T00:00:00Z"}}}`
+
+	path := filepath.Join(directory, "activity.json")
+	if err := os.WriteFile(path, []byte(old), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	now := moment(t, "2026-11-26T10:00:00Z")
+	if err := store.NoteAgent(ctx, "/w", "claude-code", "s1", now); err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil || strings.Contains(string(data), "/gone") {
+		t.Errorf("old entry survived: %s", data)
 	}
 }

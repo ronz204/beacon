@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/ronz204/beacon/source/anchor/internal/action"
 	"github.com/ronz204/beacon/source/anchor/internal/driver/files"
@@ -80,5 +81,37 @@ func TestPathsOutsideTheRepoAreRejected(t *testing.T) {
 		if !errors.As(err, &failure) || failure.Code != action.FilePathInvalid {
 			t.Errorf("path %q: err = %v", path, err)
 		}
+	}
+}
+
+func TestBackupsOlderThanThirtyDaysArePruned(t *testing.T) {
+	ctx := context.Background()
+	repo, directory := newRepo(t)
+	backups := filepath.Join(directory, ".git", "beacon", "backups")
+
+	for _, name := range []string{"20200101T000000", "notes"} {
+		folder := filepath.Join(backups, name)
+		if err := os.MkdirAll(folder, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	fresh := time.Now().Format(files.StampLayout)
+	if err := repo.Backup(ctx, fresh, "CLAUDE.md", "old"); err != nil {
+		t.Fatal(err)
+	}
+
+	entries, err := os.ReadDir(backups)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var names []string
+	for _, entry := range entries {
+		names = append(names, entry.Name())
+	}
+
+	if len(names) != 2 || names[0] != fresh || names[1] != "notes" {
+		t.Errorf("backups = %v", names)
 	}
 }

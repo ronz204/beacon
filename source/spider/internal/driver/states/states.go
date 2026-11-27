@@ -18,6 +18,7 @@ import (
 )
 
 const (
+	gitFolder        = ".git"
 	stateFolder      = "beacon"
 	claimsFile       = "claims.json"
 	injectedFile     = "injected.json"
@@ -52,6 +53,11 @@ type sessionEntry struct {
 }
 
 func Open(ctx context.Context, root string) (Store, error) {
+	own := filepath.Join(root, gitFolder)
+	if info, err := os.Stat(own); err == nil && info.IsDir() {
+		return NewStore(filepath.Join(own, stateFolder))
+	}
+
 	output, err := system.Git(ctx, root, "rev-parse", "--git-common-dir")
 	if err != nil {
 		return Store{}, kernel.FailHistory(err)

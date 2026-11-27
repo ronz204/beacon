@@ -7,7 +7,7 @@ Adaptadores que instalan Beacon en cada agente. Son **transporte opaco**: no tom
 1. **Bloque de guía del método:** unas 20 líneas en inglés (`survey`, E2), siete reglas (ver abajo).
 2. **Hooks** donde el agente los soporte (ver "Hooks y reinyección"). Son recordatorio, no garantía (`design`).
 3. **Permiso para `beacon`:** la regla que evita que el agente pida aprobación en cada comando.
-4. **Marca del actor:** hace que los comandos del agente corran con `BEACON_ACTOR=agent:<nombre>` (por hook o por la configuración del agente, donde lo permita). Es un marcado, no una prueba (`ledger`, `deltas`).
+4. **Nombre del agente para el sello:** no se instala nada. Cada `beacon hook` anota qué agente corrió en el worktree y el binario lo usa como `via` cuando el sí llega sin terminal (`ledger`, sección Actor). Es un marcado, no una prueba (`deltas`).
 5. **Comandos** nativos si el agente los admite.
 
 ## Hooks y reinyección
@@ -77,7 +77,7 @@ When Beacon blocks something, its message says exactly what to do. Follow it.
 | Gemini CLI | `GEMINI.md` (configurable) | Hooks desde v0.26 |
 | Copilot | `.github/copilot-instructions.md` | — |
 
-Las capacidades de cada agente cambian rápido: verificar contra su documentación al implementar cada adaptador, incluido su mecanismo de permisos (paso 3 de "Qué instala"), cómo pasar `BEACON_ACTOR` a sus comandos (paso 4) y qué eventos de hook existen (sección "Hooks y reinyección"). Además, el bloque de guía se prueba **agente por agente**, porque el cumplimiento de las mismas instrucciones varía entre agentes (`survey`, E8).
+Las capacidades de cada agente cambian rápido: verificar contra su documentación al implementar cada adaptador, incluido su mecanismo de permisos (paso 3 de "Qué instala") y qué eventos de hook existen (sección "Hooks y reinyección"). Además, el bloque de guía se prueba **agente por agente**, porque el cumplimiento de las mismas instrucciones varía entre agentes (`survey`, E8).
 
 ### Hooks de Codex
 
@@ -100,7 +100,7 @@ Verificado el 2026-11-26 leyendo la documentación (code.claude.com/docs/en/hook
 - **Cómo se agrega contexto:** en `SessionStart`, texto plano por stdout o `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "..."}}`, con tope de 10.000 caracteres. En `PreToolUse`, `hookSpecificOutput` con `hookEventName: "PreToolUse"` y `additionalContext`; para no tocar el permiso de la edición, **no** se envía `permissionDecision`, porque `allow` se salta la confirmación.
 - **Códigos de salida:** 0 con stdout vacío no decide nada y la herramienta sigue su flujo normal. El 2 bloquea. Cualquier otro código es un error que no bloquea. Es lo que apoya la regla de que un hook nunca falla la sesión (`PLANNING.md`, D5).
 - **Cierre:** `Stop` entrega `stop_hook_active` y `last_assistant_message`; con `stop_hook_active` verdadero hay que salir sin hacer nada, para no encadenar continuaciones. Se puede dar guía sin forzar continuar con `additionalContext`. **Sin confirmar:** si el stdout plano de `Stop` llega al modelo o a la persona.
-- **Marca del actor:** la clave `env` de `settings.json` se lee directamente del archivo. La página no dice que quede limitada a los comandos de `Bash`, ni que la hereden los hooks: **a probar**. Los valores son literales, sin expandir `~` ni `$HOME`.
+- **Actor:** no se usa la clave `env` de `settings.json`; el nombre del agente sale de su propio hook (`--agent claude-code`).
 - **Permiso:** `Bash(beacon *)` (con espacio antes del `*`) permite `beacon` y sus subcomandos, y no `beaconx`. No permite un comando compuesto (`beacon x && otro`), que pide permiso por cada parte.
 - **Windows:** el `command` corre con Git Bash si está instalado y, si no, con PowerShell. Que un `beacon` sin ruta se resuelva por el `PATH` con Git Bash **no está confirmado**. El directorio de trabajo del hook sigue al de Claude y no necesariamente a la raíz del proyecto; `$CLAUDE_PROJECT_DIR` la da.
 - **Instrucciones:** Claude Code lee `AGENTS.md` por sí solo desde la v2.1.277, pero solo cuando no existe ningún `CLAUDE.md`. Con uno, solo lee ese, y `@AGENTS.md` dentro de él lo importa (hasta cuatro saltos; se ignora dentro de bloques de código). Por eso la instalación crea `CLAUDE.md` con el import, y el hook de inicio no repite el bloque de guía.

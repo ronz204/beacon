@@ -4,13 +4,13 @@ Este plan cubre solo la fase en curso: en qué orden se construye y qué archivo
 
 La numeración de pasos, decisiones y hitos **se reinicia** en esta fase. Las referencias de la KB y de los commits anteriores (pasos 1 a 37, D1 a D20) apuntan a los planes de las fases cerradas, que están en el historial de git: la Fase 1 (Spider) con `git show 967f5aa:PLANNING.md` y la Fase 2 (Weaver) con `git show 9e5ed52:PLANNING.md`.
 
-> **Estado: en curso desde el 2026-11-26.** Las decisiones D1 a D11 están aprobadas por la persona. Esta fase instala **solo Claude Code**; Codex y Cursor pasan a la Fase 6 (D1). La prueba real no se hace en este repo sino en `src/projects/sandbox` (D4).
+> **Estado: en curso desde el 2026-11-26.** Las decisiones D1 a D13 están aprobadas por la persona. Esta fase instala **solo Claude Code**; Codex y Cursor pasan a la Fase 6 (D1). La prueba real no se hace en este repo sino en `src/projects/sandbox` (D4).
 
 ## 1. Panorama
 
 ### Qué es Anchor
 
-Anchor es lo que instala Beacon en cada agente de código: la guía del método, los hooks que reinyectan el estado, el permiso para `beacon` y la marca del actor. Es **transporte opaco**: no decide nada. Toda decisión (qué inyectar, qué nivel tiene un cambio, qué promesa se cumple) vive en el binario (`anchor`, `weaver`).
+Anchor es lo que instala Beacon en cada agente de código: la guía del método, los hooks que reinyectan el estado y el permiso para `beacon`. Es **transporte opaco**: no decide nada. Toda decisión (qué inyectar, qué nivel tiene un cambio, qué promesa se cumple) vive en el binario (`anchor`, `weaver`).
 
 El riesgo central del proyecto es que el agente no llame a las herramientas (`status`). Anchor es la respuesta a ese riesgo, y por eso esta fase termina midiendo, no solo instalando.
 
@@ -18,7 +18,7 @@ El riesgo central del proyecto es que el agente no llame a las herramientas (`st
 |---|---|
 | Qué instala, hooks, reinyección, agentes, bloque de guía | `.claude/delta/anchor.md` |
 | Guía de redacción de promesas | `.claude/delta/pledge.md` |
-| `BEACON_ACTOR` y `approved` | `.claude/delta/ledger.md`, `.claude/delta/deltas.md` |
+| Actor y `approved` | `.claude/delta/ledger.md`, `.claude/delta/deltas.md` |
 | Estado local (`injected.json`, `backups/`) | `.claude/delta/layout.md` |
 | Evidencia sobre obediencia y contexto (E2, E7, E8) y protocolo del benchmark | `.claude/delta/survey.md` |
 | Comandos y sobre `--json` | `.claude/delta/weaver.md` |
@@ -29,7 +29,7 @@ El riesgo central del proyecto es que el agente no llame a las herramientas (`st
 
 | Qué | Cómo queda al cerrar la fase |
 |---|---|
-| `beacon install [--dry-run]` | Instala en Claude Code el bloque de guía, los hooks, el permiso y la marca del actor, con copia de seguridad y resumen |
+| `beacon install [--dry-run]` | Instala en Claude Code el bloque de guía, los hooks y el permiso, con copia de seguridad y resumen |
 | `beacon install --uninstall` | Quita solo lo que coincide byte a byte con lo instalado (D6) |
 | `beacon hook <evento>` | Lee el JSON que Claude Code entrega al hook y responde en su formato (D2) |
 | Guía de redacción en `record` | Al proponer una promesa, la respuesta trae la guía de `pledge` (D8) |
@@ -80,7 +80,7 @@ action/*                   plan, apply, uninstall, hook
 
 ## 2. Decisiones
 
-Todas aprobadas por la persona. D1 a D4 el 2026-11-26 (con el ajuste de alcance del mismo día) y D5 a D12 el mismo día, al revisar el plan.
+Todas aprobadas por la persona. D1 a D4 el 2026-11-26 (con el ajuste de alcance del mismo día) y D5 a D13 el mismo día, al revisar el plan y durante los pasos 5 y 6.
 
 ### D1. Solo Claude Code entra en la Fase 3
 
@@ -161,6 +161,14 @@ Todas aprobadas por la persona. D1 a D4 el 2026-11-26 (con el ajuste de alcance 
 - **Binario:** `go install ./cmd/beacon` deja `beacon` en `~/go/bin`, que ya está en el `PATH`. Se reinstala tras cada cambio, y es lo que hará un usuario real. Los hooks llaman a `beacon` por nombre.
 - **Por qué:** un proyecto con tests reales ejercita `check`, `record` y los pendientes de sí, que un repo vacío no puede.
 - **Afecta a:** pasos 8 y 10.
+
+### D13. El actor se decide por la terminal, sin variables de entorno
+
+- **Decisión:** si la salida estándar es una terminal interactiva, el actor es la persona (`human:<user.name>`, sin `via`). Si no lo es, el sí lo transmite un agente: `by` sigue siendo la persona y `via` es `agent:<nombre>`, donde el nombre es el del agente cuyo `beacon hook` corrió por último en este worktree en las últimas 24 horas (`.git/beacon/activity.json`), o `agent:unknown`.
+- **Por qué:** `install` no necesita escribir ninguna variable, no depende de qué agente la propaga a sus comandos ni de si el agente la hereda a los hooks (no estaba confirmado), y sirve igual para los agentes de la Fase 6. Ante la duda, el error es conservador: un sí dudoso queda marcado como transmitido.
+- **Límites:** un `!beacon ...` de la persona dentro de la sesión del agente se sella como transmitido; dos agentes a la vez en el mismo worktree pueden dar el nombre del otro; redirigir la salida a `NUL` en Windows parece una terminal. Es un marcado, no una prueba (`deltas`).
+- **`BEACON_ACTOR`** sigue existiendo como override opcional (CI, tests e2e que no pueden abrir una terminal), pero Anchor no lo instala ni lo menciona.
+- **Afecta a:** pasos 4 y 7 (ya no hay `env` en `settings.json`).
 
 ## 3. Estructura objetivo
 
@@ -342,6 +350,16 @@ cmd/beacon → router → anchor.go → action → domain/blocks → kernel
   - `data.guidance` trae seis líneas en inglés tomadas de `pledge`: resultado observable, entradas y salidas concretas, una cosa por promesa, bordes y permisos como promesas propias, la forma EARS opcional, y que una promesa `proposed` se puede reescribir sin pedir sí hasta que se active. Sin promesa nueva, la clave no aparece. En texto sale como `writing a promise:` y una línea `-` por regla.
   - La coincidencia con `pledge` se revisó a mano: ningún test compara los textos, porque `pledge` está en español y la guía en inglés (P7).
 
+### Ajustes entre los pasos 6 y 7 (hechos)
+
+Salieron de revisar el trabajo hecho hasta el paso 6, y van en la rama `feat/actor-by-terminal`.
+
+- **Actor por terminal (D13):** `identity.Git` decide por la terminal y por `ActiveAgent`; `Project.NoteAgent` y `Project.ActiveAgent` guardan y leen `activity.json` (`hook` lo escribe, y no reescribe el archivo si la misma sesión sigue fresca, 10 minutos). Los tests e2e que sellan como persona o como agente usan `BEACON_ACTOR`, porque no abren una terminal.
+- **`Open` sin git:** si `.git` es una carpeta, el estado local se abre sin lanzar `git rev-parse`. Con eso `hook` abre el estado tres veces sin pagar tres procesos; el paso 11 mide el resultado.
+- **`.gitattributes` sin duplicar:** `blocks.Covers` reconoce un bloque cuyas líneas ya están escritas a mano y el plan no lo agrega.
+- **Copias con vencimiento:** `Backup` borra las carpetas de `backups/` de más de 30 días; las que no tienen forma de fecha se respetan.
+- **Prueba del texto de `install`:** un e2e fija las líneas de `--dry-run` en modo texto.
+
 ## 6. Bloque 3: Claude Code
 
 **Rama:** `feat/anchor-claude`, desde `main` con el Bloque 2 fusionado.
@@ -352,9 +370,9 @@ cmd/beacon → router → anchor.go → action → domain/blocks → kernel
 - **Verificación (hecha el 2026-11-26, en `anchor`):** `SessionStart` con matcher `startup|resume|compact`, `PreToolUse` con `Edit|Write` (sin `MultiEdit`), salida por `hookSpecificOutput.additionalContext` sin `permissionDecision`, ruta absoluta con barras invertidas en Windows, permiso `Bash(beacon *)`. Viene de resúmenes de la documentación, así que el paso 8 lo confirma en vivo. **Quedan por probar:** si `env` llega a los hooks, qué hace el stdout de `Stop`, y si `beacon` se resuelve por el `PATH` bajo Git Bash. El hook de `edit` normaliza la ruta con `\` a la raíz del repo (paso 4).
 - **Construye** (`agents/claude`):
   - `CLAUDE.md` con una línea `@AGENTS.md` en un bloque gestionado (D6); el bloque de guía va en `AGENTS.md`.
-  - `.claude/settings.json`: permiso `Bash(beacon *)`, `BEACON_ACTOR=agent:claude-code` en `env`, y los hooks `start` y `edit` (D6, D11); `stop` solo si el paso 8 lo confirma. Respeta lo que el archivo ya tiene.
+  - `.claude/settings.json`: permiso `Bash(beacon *)` y los hooks `start` y `edit` (D6, D11); `stop` solo si el paso 8 lo confirma. Respeta lo que el archivo ya tiene.
   - `ParseHook` y `RenderHook` completos.
-- **Hecho cuando:** sobre un repo temporal con un `settings.json` existente, `install` conserva sus permisos, agrega los de Beacon y `--uninstall` deja el archivo como estaba; `hook` responde en el formato que Claude Code espera; y un comando de Beacon corrido con `BEACON_ACTOR` pone `agent:claude-code` en `approved.by` y `human:<user.name>` en `via`.
+- **Hecho cuando:** sobre un repo temporal con un `settings.json` existente, `install` conserva sus permisos, agrega los de Beacon y `--uninstall` deja el archivo como estaba; `hook` responde en el formato que Claude Code espera; y un `record --approve` sin terminal, después de un `hook start` de Claude Code, sella `by: human:<user.name>` y `via: agent:claude-code`.
 
 ### Paso 8. Prueba con una sesión real en el sandbox
 
@@ -413,7 +431,7 @@ cmd/beacon → router → anchor.go → action → domain/blocks → kernel
 | `beacon` no está en el `PATH` del agente y los hooks fallan en silencio | `install` lo detecta y lo avisa; en el sandbox se instala con `go install` (D12) |
 | Windows: rutas, `CRLF` y `PATH` distintos | Rutas convertidas a la raíz del repo en `hook`, `.gitattributes` con `eol=lf`, y la prueba real del paso 8 corre en Windows |
 | El contrato `Agent` queda a medida de Claude Code y obliga a reescribirlo en la Fase 6 | D11 y D6 fijan lo común (momentos, bloque en `AGENTS.md`, entradas por valor); la Fase 6 revisa el contrato con su primer adaptador nuevo |
-| `BEACON_ACTOR` en la configuración del proyecto marca también los comandos que escribe la persona dentro de esa sesión | Es un marcado, no una prueba (`deltas`); la garantía real es la review del PR. Se anota si la fricción lo muestra |
+| Un `!beacon ...` que la persona escribe dentro de la sesión del agente se sella como transmitido, y dos agentes a la vez en un worktree pueden confundir el nombre (D13) | Cae del lado conservador y es un marcado, no una prueba (`deltas`); la garantía real es la review del PR. Se anota si la fricción lo muestra |
 | El sandbox es un solo proyecto pequeño y no representa un repo real | Se asume: es un banco de pruebas, no una medición. El benchmark de la Fase 6 usa dos repos (`survey`) |
 | El arnés mide algo que el benchmark real no puede obtener | Se prueba con el transcript real del paso 8 como fixture, no solo con los inventados |
 | Sobreingeniería (`status`) | Los flags de `install` se limitan a `--dry-run`, `--uninstall` y `--skip` (D7); no se agregan opciones sin un caso del benchmark |
