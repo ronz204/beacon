@@ -37,6 +37,7 @@ type Signal struct {
 
 type PromiseState struct {
 	ID      string
+	Text    string
 	State   string
 	Drifted bool
 }

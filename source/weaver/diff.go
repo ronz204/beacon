@@ -23,6 +23,7 @@ func (w Weaver) Diff(
 func diffView(result action.DiffResult) DiffView {
 	view := DiffView{
 		Revision: result.Revision,
+		Risk:     riskView(result.Risk),
 		Levels:   []LevelView{},
 		Pending:  entryViews(result.Pending),
 	}

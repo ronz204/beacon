@@ -32,6 +32,7 @@ func New(project spider.Project) Weaver {
 	differ := action.Differ{
 		Changes: facade.NewChanges(project),
 		Base:    branch.Git{},
+		Zones:   facade.NewZones(project),
 	}
 
 	return Weaver{

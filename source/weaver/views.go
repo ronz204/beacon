@@ -110,10 +110,37 @@ type LevelView struct {
 	Changes []EntryView `json:"changes"`
 }
 
+type RiskView struct {
+	Level   string   `json:"level"`
+	Reasons []string `json:"reasons"`
+}
+
 type DiffView struct {
 	Revision string      `json:"revision"`
+	Risk     RiskView    `json:"risk"`
 	Levels   []LevelView `json:"levels"`
 	Pending  []EntryView `json:"pending"`
+}
+
+type ReviewPromiseView struct {
+	ID         string `json:"id"`
+	Capability string `json:"capability"`
+	Text       string `json:"text"`
+	State      string `json:"state"`
+	Drifted    bool   `json:"drifted"`
+}
+
+type ReviewView struct {
+	Promises []ReviewPromiseView `json:"promises"`
+	Changes  []EntryView         `json:"changes"`
+	Rules    []string            `json:"rules"`
+}
+
+type VerifyView struct {
+	Revision string      `json:"revision"`
+	Risk     RiskView    `json:"risk"`
+	Check    CheckView   `json:"check"`
+	Review   *ReviewView `json:"review,omitempty"`
 }
 
 type Summary struct {

@@ -19,6 +19,7 @@ type CheckInput struct {
 type PromiseReport struct {
 	ID         string
 	Capability string
+	Text       string
 	Status     string
 	Reason     string
 	State      string
@@ -140,6 +141,7 @@ func promiseReports(
 			reports = append(reports, PromiseReport{
 				ID:         id,
 				Capability: owners[id],
+				Text:       states[id].Text,
 				Status:     invocation.Status,
 				Reason:     invocation.Reason,
 				State:      states[id].State,

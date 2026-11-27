@@ -90,6 +90,7 @@ func (c Checks) Analyze(ctx context.Context) (action.Analysis, error) {
 	for _, promise := range view.Promises {
 		analysis.Promises = append(analysis.Promises, action.PromiseState{
 			ID:      promise.ID,
+			Text:    promise.Text,
 			State:   promise.State,
 			Drifted: promise.Drifted,
 		})
