@@ -377,7 +377,7 @@ cmd/beacon → router → snares.go → action → weaver.go → spider.go
 
 **Rama:** `feat/spider-init`, desde `main` con el Bloque 2 fusionado.
 
-### Paso 8. El escaneo mecánico
+### Paso 8. El escaneo mecánico (hecho)
 
 - **Objetivo:** saber qué hay en un repo sin inventar nada (D6).
 - **Verificado el 2026-11-27** con Bun 1.3.14 y Python 3.14 en esta máquina (se anota en `method`):
@@ -387,19 +387,29 @@ cmd/beacon → router → snares.go → action → weaver.go → spider.go
 - **Construye:** `driver/scan` y `Scan` en Spider: detecta Go (`go.mod`), Bun (`bun.lock`, `bunfig.toml`, `package.json`), Node (`pnpm-lock.yaml`, `yarn.lock`, `package-lock.json`) y Python (`pyproject.toml`, `requirements.txt`); los paquetes de un monorepo (workspaces o módulos); el comando de test de cada uno como **ejecutor propuesto**; y las carpetas candidatas a capability, por tamaño.
 - **Cuidado:** solo lee; no escribe nada. Ignora `node_modules`, `.git`, `vendor`, `dist` y las carpetas ocultas.
 - **Hecho cuando:** en repos temporales de cada ecosistema, el escaneo devuelve el stack, los ejecutores y los candidatos esperados; un repo sin ninguno devuelve la lista vacía con un `hint`; y un monorepo mixto detecta los dos stacks.
+- **Cómo quedó:**
+  - `spider.Scan(carpeta)` devuelve stacks, paquetes, ejecutores propuestos y carpetas candidatas. Mira hasta 3 niveles, ignora `node_modules`, `vendor`, `dist`, `build`, `target`, `__pycache__` y las carpetas ocultas, y solo lee.
+  - **Qué marca cada stack:** `go.mod` (Go); `bun.lock`, `bun.lockb` o `bunfig.toml` (Bun); `pnpm-lock.yaml`, `yarn.lock` o `package-lock.json` (Node, y el ejecutor sale de ese gestor); `pyproject.toml` o `requirements.txt` (Python). Un `package.json` sin ningún lockfile cuenta como Bun, pero solo en la raíz.
+  - **Paquetes y candidatas:** los paquetes de un workspace salen de `package.json` o `pnpm-workspace.yaml` (globs de un nivel, con `package.json`). Las candidatas son los workspaces o, si no hay, las carpetas de primer nivel; `src`, `source`, `internal`, `pkg`, `packages`, `apps`, `lib`, `services`, `modules` y `cmd` se abren un nivel. Se ordenan por archivos de código y se omiten `docs`, `test`, `tests`, `testing`, `scripts`, `assets`, `public`, `examples` y `fixtures`.
 
-### Paso 9. `beacon init`
+### Paso 9. `beacon init` (hecho)
 
 - **Objetivo:** dejar el repo listo para preguntar, con valor desde la primera sesión (D6, D7, D18).
 - **Construye:** `Init` en Spider y `beacon init [--dry-run]`: escribe `config.yaml` con `schema: 1`, la `question` de la meta, y una capability sin promesas con su `question` por candidato (tope de 10 y una pregunta resumen del resto); muestra los ejecutores propuestos y el comando para aprobarlos (`record --approve` de tipo `config`); falla con `project_exists` si ya hay `.beacon/`.
 - **Cuidado:** `init` no instala nada de agentes (`install`) y no escribe `agents`. Los registros usan el actor de siempre (Fase 3, D13).
 - **Hecho cuando:** `init` en un repo temporal deja `doctor` en verde, el `brief` ya muestra las preguntas abiertas, los ejecutores propuestos entran con `record --approve`, y `--dry-run` no cambia ningún byte.
+- **Cómo quedó:**
+  - `spider.Init(contexto, carpeta, dryRun, autor)` falla con `project_exists` si ya hay `.beacon/`, escribe `config.yaml` (`schema: 1`) y crea los registros con `Prepare` y `Save`, igual que `record`. El autor sale de `Weaver.Author`, que usa la misma identidad que `record`. Si algo falla a medio camino, borra el `.beacon/` que acababa de crear.
+  - **Qué escribe:** una `question` de la meta, y por candidata (tope de 10) una capability con `paths: [<carpeta>/**]`, `promises: []` y su `question`; el resto de carpetas va en una sola pregunta. La capability exige `promises` (aunque sea vacía), y `intent` es `Code in <carpeta>; its purpose is an open question.`
+  - **Los ejecutores propuestos** salen en `data.proposal`, ya como payload de `config`, para pasarlo a `record --approve --file`. Sin ningún stack, `init` lo dice en el `hint` y no propone nada.
+  - **Cambio necesario:** `brief` solo mostraba una pregunta si bloqueaba algo, así que las de `init` no aparecían. Ahora lista cada pregunta abierta que no bloquee nada (`Open question <id>: <texto>`, sección `question`), después de los chequeos y antes de las guides.
 
-### Paso 10. Guía y ejemplos de UI
+### Paso 10. Guía y ejemplos de UI (hecho)
 
 - **Objetivo:** que el agente conozca lo nuevo y que la UI tenga ejemplos (D16, D17).
 - **Construye:** el bloque de guía con las dos frases de D16 (y su test de tamaño); los ejecutores de ejemplo `test-e2e` y `visual` con su `baseline`, con Bun como principal, en `ledger` y en el `README`; y la regla de qué cuenta como `observed` y qué pide `attest`, en `pledge`.
 - **Hecho cuando:** el bloque sigue por debajo de 30 líneas, un `install` sobre un repo ya instalado solo reemplaza el bloque de guía, y la KB no contradice los comandos nuevos.
+- **Cómo quedó:** la regla 4 recomienda `record --file <ruta>` y la regla 7 pide preguntar por las promesas manuales con `beacon attest` (15 líneas, con un test que exige menos de 30). Los ejemplos `test-e2e` y `visual` con Bun están en `ledger` y en el `README`, y `pledge` dice qué cuenta como `observed` y qué pide `attest`. La copia de la guía en `anchor.md` quedó igual que el asset. El resto de la KB (`weaver`, `status`, `method`) se sincroniza en el paso 12.
 
 ## 7. Bloque 4: uso propio y cierre
 
