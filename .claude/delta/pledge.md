@@ -56,6 +56,8 @@ Cuánta evidencia respalda una promesa, sin disfrazarla de más:
 
 - "No verificado" **nunca** pasa por "cumple".
 - La evidencia de un agente (capturas, navegación) se registra como **`observed`**: se muestra, pero **nunca cuenta como Holds**. Sirve para que la persona confirme rápido, no para reemplazarla.
+- **Qué cuenta como `observed`:** todo lo que el agente deja por su cuenta: una captura, un video, una navegación o el registro de sus propias pruebas. `beacon attest --evidence` solo guarda la referencia; la atestación afirma que una persona dijo sí (con `via` si lo transmitió el agente), y la evidencia no lo reemplaza.
+- **Qué pide `attest`:** una pregunta de sí o no, de una en una, por cada promesa manual cuyo código cambió. No repite las que ya están atestiguadas y sin deriva.
 - Una promesa automática que todavía no se corrió en este clon es **Unverified** con la razón `not-run-here`. No es un quinto estado: es un detalle del mismo (ver abajo).
 
 ## Promesas manuales y de UI
