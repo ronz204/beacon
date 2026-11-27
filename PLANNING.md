@@ -279,15 +279,16 @@ cmd/beacon → router → snares.go → action → weaver.go → spider.go
 
 ## 4. Bloque 1: atestar y verificar
 
-**Rama:** `feat/weaver-attest`, desde `main` actualizado. **Forma de trabajo:** primero el test que falla, luego el código mínimo, y al final `go test -count=1 ./...` en verde (los tests de integración se corren sin caché).
+**Rama:** `feat/weaver-attest`, desde `main` actualizado (en la práctica, desde la rama del plan, que aún no estaba fusionada). **Forma de trabajo:** primero el test que falla, luego el código mínimo, y al final `go test -count=1 ./...` en verde (los tests de integración se corren sin caché).
 
-### Paso 1. `record --file`
+### Paso 1. `record --file` (hecho)
 
 - **Objetivo:** que el agente pase el payload sin tubería (D9).
 - **Construye:** el flag `--file` en `handle/record.go`. Lee el archivo con la ruta relativa al directorio actual; `-` y `--file` a la vez, o ninguno, dan `record_source_invalid`, con un `hint` que dice cuál usar.
 - **Hecho cuando:** `record --file` hace lo mismo que `record -` con el mismo payload (incluido `--approve`), un archivo que no existe falla con un error claro, y el e2e cubre los tres casos.
+- **Cómo quedó:** `record [-]` acepta un argumento opcional. Pasar `-` y `--file` a la vez, o ninguno, da `record_source_invalid` (código 1), y un archivo ilegible da `record_file_unreadable` con la ruta en `details`. El flujo de después es el mismo: `--approve` y los niveles funcionan igual con un archivo. La guía del método se actualiza en el paso 10.
 
-### Paso 2. `attest`
+### Paso 2. `attest` (hecho)
 
 - **Objetivo:** que una promesa manual pueda llegar a `Attested` y volver a la deriva cuando cambia su código (D11).
 - **Construye:**
@@ -296,8 +297,14 @@ cmd/beacon → router → snares.go → action → weaver.go → spider.go
   - El handler `beacon attest` y el sufijo `via` en `attested` (`ledger`).
 - **Cuidado:** solo se atestiguan promesas **manuales**; una promesa automática falla con `attest_not_manual` y un `hint` que manda a `beacon check`. Una atestación **no es un cambio de nivel 3** (no debilita nada).
 - **Hecho cuando:** una promesa manual tocada aparece en la lista; al atestiguarla pasa a `Attested` con su evidencia; editar un archivo de sus `paths` la vuelve a mostrar con deriva; y la persona y el agente quedan en `by` y `via`.
+- **Cómo quedó:**
+  - **Dominio:** `PromiseAttestation` suma `via` (opcional, siempre un agente) y el lector y el formateador de `attested` lo conocen: el orden canónico es `by`, `at`, `via`, `commit`, `evidence`.
+  - **Spider:** `ManualPromises(revisión)` lista las promesas manuales y `active` de las capabilities tocadas que no están atestiguadas o tienen deriva, y `Attest` escribe `attested` con el mismo `Draft` y el mismo candado que `record`. `Project.Head` da el commit corto.
+  - **Una atestación exige código commiteado:** si los `paths` de la capability tienen cambios sin commitear, `Attest` falla con `attest_uncommitted`. Esto **corrige a D11**, que decía que la atestación quedaba con deriva: un resultado de check guarda la huella de lo no commiteado, pero una atestación solo guarda un commit, y atestiguar antes de commitear habría dejado la promesa con deriva para siempre. El orden es: la persona commitea, y entonces se atestigua.
+  - **Weaver:** `Attester` usa el sello de siempre (`StampApproval`): `by` es la persona y `via` el agente cuando el sí llega sin terminal. `beacon attest` sin ids lista y deja un `hint` que le dice al agente que pregunte de una en una.
+  - **Errores:** `attest_not_manual` (promesa automática), `attest_uncommitted` y `record_missing`, cada uno con su `hint`.
 
-### Paso 3. Riesgo y `verify`
+### Paso 3. Riesgo y `verify` (hecho)
 
 - **Objetivo:** que el riesgo lo calcule el código y que la revisión independiente tenga qué leer (D2, D12).
 - **Construye:**
@@ -305,6 +312,12 @@ cmd/beacon → router → snares.go → action → weaver.go → spider.go
   - `action/verify.go`: reutiliza `Checker` para los checks relacionados, calcula el riesgo, y con riesgo alto arma el paquete: por promesa tocada su texto y su estado, el diff por nivel y las instrucciones para el revisor (solo promesas y diff, nunca commit ni push).
   - `beacon verify [--risk high] [--base <ref>]`, y una línea de riesgo en `beacon diff`.
 - **Hecho cuando:** un cambio de nivel 3 da riesgo alto con su razón; uno de mantenimiento, bajo; `--risk high` sube y nunca baja; un check en rojo sale con código 2; y el paquete lista cada promesa tocada.
+- **Cómo quedó:**
+  - **Dominio:** `deltas.AssessRisk(hallazgos, zonas, subido)` devuelve `low` o `high` y sus razones, sin repetirlas: `weakening_change`, `red_promise`, `drifted_promise` y `raised_on_request`. Una zona es una capability tocada con alguna promesa `violated` o con deriva (las manuales atestiguadas incluidas).
+  - **`diff`** calcula el riesgo con las zonas del estado actual y lo muestra en la primera línea (`risk: high (weakening_change)`) y en `data.risk`.
+  - **`verify`** corre primero los checks relacionados y después calcula el riesgo, para que una promesa que acaba de arreglarse no cuente como roja. Con riesgo alto, `data.review` trae las promesas tocadas (las comprobadas y las manuales pendientes) con su texto y su estado, el diff clasificado y cuatro reglas para el revisor. El `hint` pide la revisión; con un rojo, el `hint` es el de `check` y el código es 2.
+  - **Cambio necesario:** `TouchedCapabilities` solo aceptaba un commit en hexadecimal, y `diff --since HEAD~1` se rompió al necesitarlo. Ahora resuelve cualquier nombre con `rev-parse` y rechaza lo que parezca una opción.
+  - **Los textos de las promesas** llegan a `check` por `Analysis` (`PromiseState.Text`), sin duplicar la lectura.
 
 ## 5. Bloque 2: Snares
 
