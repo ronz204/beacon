@@ -223,3 +223,23 @@ func TestBriefStaysQuietAboutTheBaseWhenItExists(t *testing.T) {
 		t.Fatalf("hint = %v", *envelope.Hint)
 	}
 }
+
+func TestBriefListsAnOpenQuestionThatBlocksNothing(t *testing.T) {
+	root := utilities.NewRepository(t)
+	payload := `{"type":"question","record":{"text":"Which cache fits?",` +
+		`"status":"open"}}`
+
+	saved := record(t, root, sampleAgent, payload)
+	result := utilities.Beacon(t, root, "brief", "--json")
+
+	found := false
+	for _, line := range decodeSummary(t, result.Stdout).Lines {
+		if line.Section == "question" &&
+			strings.Contains(line.Text, "Which cache fits?") {
+			found = true
+		}
+	}
+	if saved.Code != 0 || !found {
+		t.Fatalf("saved %+v, brief %s", saved, result.Stdout)
+	}
+}
