@@ -197,3 +197,18 @@ Lo único que estudios como E7 y E8 enseñan para diseñarlo es **qué medir y c
   5. Costo: tokens, tiempo y latencia del binario (E2 muestra que el contexto extra cuesta más de 20 %).
 - **Análisis:** tasas con intervalos de confianza; no afirmar causalidad con N pequeño; publicar tareas y registros, y reportar también cuando Beacon empata o pierde.
 - **Sesgos a vigilar:** quien diseña es quien evalúa; las tareas pueden favorecer a Beacon; un solo modelo principal.
+
+## 8. Ronda de investigación del 2026-11-27: colecciones de skills
+
+Alimenta el diseño de los packs (`packs`). Se leyeron 4 `SKILL.md` de Pocock, 6 de Superpowers (que tiene 20) y 3 de Osmani (que tiene 26); de Anthropic solo la lista. Los conteos de skills y estrellas vienen de agregadores.
+
+| Colección | Qué hace | Para Beacon |
+|---|---|---|
+| **Pocock** (`mattpocock/skills`, MIT) | 27 skills; muchas son delgadas (`grill-me` tiene 6 líneas y delega en `grilling`). `tdd` pide confirmar los seams antes de escribir un test; `diagnosing-bugs` es un bucle con compuertas | Se adopta el comportamiento (preguntar de a una, el seam antes del test, el diagnóstico con compuertas). Se descartan `handoff`, `triage`, `to-spec`, `wayfinder` y `setup`, que suplen la falta de estado y Beacon ya la cubre |
+| **Superpowers** (`obra/superpowers`) | 20 skills con "iron laws", compuertas y listas de alarmas; `verification-before-completion` liga cada afirmación a la evidencia que la prueba; `systematic-debugging` manda replantear tras 3 arreglos fallidos; `brainstorming` no construye hasta aprobar el diseño. Pesan de 550 a 2.300 palabras | La tabla afirmación-evidencia es lo que ya hacen Holds, Attested, Unverified y Violated, pero decidido por el binario. El "hard gate" equivale a `blocks`. El tamaño se descarta: el tope aquí es de 60 líneas |
+| **Osmani** (`addyosmani/agent-skills`) | 26 skills con una anatomía común (cuándo, proceso, racionalizaciones, alarmas, verificación); `doubt-driven-development` ataca cada decisión con un revisor de contexto limpio, hasta 3 ciclos | Se adopta la anatomía con la compuerta como paso central y los ciclos acotados. Las tablas de racionalizaciones se descartan: son prosa y flojas por sí solas |
+| **Anthropic** (`anthropics/skills`) | ~22 skills; la única exigencia es `name` y `description`; no fija un tope de tamaño | Sin tope externo: el de los packs es propio |
+
+**Sobre saturar:** los nombres y descripciones de todas las skills se cargan en cada sesión. Hay guías que recomiendan pocas y bien acotadas, y un paper (SkillReducer) reporta que recortar mejora la calidad. Son blogs y un paper no revisado: orientan, no prueban. Con 9 descripciones cortas se está lejos del problema que describen (decenas de skills), y se mide (`packs`).
+
+**Sobre rules por path:** las guías coinciden en una rule por tema, globs estrechos y lo crítico como reglas `deny` y hooks, no como prosa. La sintaxis exacta del `paths:` conviene verificarla contra la documentación de Anthropic al implementar (`anchor`).

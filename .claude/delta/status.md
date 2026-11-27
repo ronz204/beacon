@@ -33,7 +33,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Jerarquía de tareas | `parent` apunta siempre al work raíz y la tarea padre sale del id; sin huérfanas, bloqueo heredado, trabajo en las hojas y sin `done` antes que las hijas | `ledger` |
 | Globs | Estilo doublestar (`*`, `**`, `?`, `{a,b}`), desde la raíz del repo y sin negaciones; las llaves se expanden antes de comparar, con un máximo de 64 combinaciones | `ledger` |
 | Actor | Persona en una terminal: `human:<user.name de git>`. Sin terminal: `via` es `agent:<nombre>` del último hook del worktree (24 h) o `agent:unknown`; `BEACON_ACTOR` es un override opcional que nadie instala; `approved: {by, at, via}`. Decidido el 2026-11-26. Es un marcado, no una prueba | `ledger`, `deltas` |
-| `config.yaml` | Claves: `schema`, `runners` (con `baseline` opcional en los visuales), `review`, `limits` (`guide`, `brief`, `hook`), `agents`. Nivel 3 solo para `runners` y `schema` | `ledger`, `deltas` |
+| `config.yaml` | Claves: `schema`, `runners` (con `baseline` opcional en los visuales), `review`, `limits` (`guide`, `brief`, `hook`), `agents`, `packs`. Nivel 3 para `runners`, `schema` y `packs` | `ledger`, `deltas` |
 | Carga en memoria | Validada con benchmark en Go: 500 archivos en unos 100 ms, 5.000 en unos 0,5 a 0,8 s | `layout` |
 | Consultas a git | En lote (una por commit base y una de frescura), nunca una por promesa; de 5 a 60 ms | `layout`, `spider` |
 | Tipos de registro | goal, capability (con promesas), decision, question, guide, work, task | `ledger` |
@@ -71,18 +71,19 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Ejecución de checks | Tope fijo de 10 minutos por invocación (`timeout` es `Violated`); con un rojo, `check` sale con código 2. El tope se vuelve configurable si la fricción lo pide | `weaver` |
 | `results.json` | Lo guarda Spider, con commit y huella de lo no commiteado, para que un check con cambios sin commitear no muestre deriva | `layout`, `pledge` |
 | Archivo | Adelantado a la Fase 2, porque `close` lo necesita; una línea JSON por registro cerrado | `layout` |
-| Detalle de Weaver | Aprobado el 2026-11-25: frontera pública de Spider con tipos planos, forma del payload, nivel de cada cambio, promesas que no se borran por omisión, regla del sí fresco y cómo se corren los checks (D15 a D20) | `PLANNING.md` |
+| Detalle de Weaver | Aprobado el 2026-11-25: frontera pública de Spider con tipos planos, forma del payload, nivel de cada cambio, promesas que no se borran por omisión, regla del sí fresco y cómo se corren los checks (D15 a D20) | Historial de git (plan de la Fase 2) |
 | Benchmark de fricción | Protocolo aprobado: condiciones A (sin Beacon), B (solo guía), C (completo) y D (C sin reinyección); piloto de 10 tareas, 3 repeticiones y un agente (90 sesiones); métricas de proceso, integridad, fricción, resultado y costo. **El arnés está construido (Fase 3)**: lee transcripts de Claude Code, arma las cuatro condiciones con el binario real y resume con intervalos de Wilson; se probó con transcripts simulados y uno real. Las 10 tareas del piloto y correrlo son de la Fase 6 | `survey` 7.6 |
 
 ## Abierto
 
-**No queda nada de diseño abierto.** Las propuestas R1 a R9 que salieron de la investigación del 2026-11-22 se aprobaron ese mismo día y ya están aplicadas en los archivos de arriba (`survey` las llama "propuestas": ese texto es el de la fecha de la investigación). Lo que sigue son detalles de implementación que se resuelven al construir cada fase:
+**No queda diseño abierto del núcleo; lo de los packs, aprobado después, tiene sus puntos abiertos al final de la lista.** Las propuestas R1 a R9 que salieron de la investigación del 2026-11-22 se aprobaron ese mismo día y ya están aplicadas en los archivos de arriba (`survey` las llama "propuestas": ese texto es el de la fecha de la investigación). Lo que sigue son detalles de implementación que se resuelven al construir cada fase:
 
 - Qué hook sirve en Codex, Cursor y los demás agentes para reinyectar antes de editar y tras compactar (R1). En Claude Code está resuelto y confirmado (`anchor`).
 - **Pasar el payload de `record` sin tubería.** En Windows el agente usa PowerShell y escribe `@'...'@ | beacon record -`, que la regla `PowerShell(beacon *)` no cubre y pide permiso cada vez. Una opción `record --file <ruta>` (o leer de un archivo temporal) lo evitaría. Se decide con la fricción del benchmark. **Decidido el 2026-11-27: `record --file <ruta>` entra en la Fase 4.**
 - Si el hook de cierre (`Stop`) puede ser útil sin ser ruido: dispara al terminar cada respuesta (Fase 4, con `attest`).
 - Los campos del payload de `merge_group` de GitHub (`base_sha`, `base_ref`): el evento y sus reglas están verificados, el payload no (`snares`).
 - Si el nivel 3 de las capturas base resulta demasiado ruidoso; se mide en la fricción y se afina el `baseline`.
+- **Packs (`packs`):** el contenido de `elicit` y `digest`, que parte de las skills de Delta y la persona debe aportar; si las rules de este repo pasan a ser la salida de los packs (criterio D9 de `PLANNING.md`); qué skills puede invocar el modelo y si eso quita su descripción del contexto; cómo se sella el sí cuando la persona ejecuta `install` y cambia `packs:`; la forma exacta de `packs:` (paso K2).
 
 ## Diferido
 
@@ -95,6 +96,8 @@ Fuera del orden de construcción hasta que se cumpla su condición.
 ## Investigación
 
 **Hecha el 2026-11-22** (`survey`, sección 7): PRD, ADR, arc42 y C4; OpenSpec; flujos de equipo; protocolo del benchmark de fricción; Spec Kit, Superpowers y Kiro; Gentle-AI; verificación de UI.
+
+**Hecha el 2026-11-27** (`survey`, sección 8): colecciones de skills y rules (Pocock, Superpowers, Osmani, Anthropic) y saturación de skills.
 
 **Lo que queda, y no bloquea la construcción:**
 
@@ -123,10 +126,12 @@ Fuera del orden de construcción hasta que se cumpla su condición.
 | Agentes cambiantes | Los adaptadores envejecen rápido (`anchor`) |
 | Colisión de nombre | Beacon coincide con el producto de Asymptote Labs (open source, Go, memoria para agentes de código, con financiación), incluido el comando `beacon`; en npm los nombres `beacon` y `beacon-cli` ya están tomados. Se decidió mantener el nombre, así que hay riesgo de confusión y de choque con ese comando en la máquina de quien use ambas herramientas |
 | Resultados local vs CI | Una promesa puede pasar en un clon y fallar en CI; la fuente de verdad es el CI (`pledge`) |
+| Packs que saturan al agente | Rules y skills ocupan contexto; tope de tamaño, `paths:` y medición con el benchmark (`packs`) |
+| Packs sin evidencia | Ninguna medición muestra aún que mejoren resultados; son una hipótesis hasta correr el benchmark con ellos (`packs`) |
 
 ## Orden de construcción
 
-Sin recorte de producto; el orden sigue las dependencias. El plan detallado de la Fase 2 (Weaver), cerrada, está en `PLANNING.md`; el de la Fase 1 (Spider) queda en el historial de git.
+Sin recorte de producto; el orden sigue las dependencias. Los planes detallados de las Fases 1 a 4 quedan en el historial de git (`PLANNING.md` hasta el commit `7895362`). El vigente, el de los packs, está en `PLANNING.md`.
 
 | Fase | Contenido |
 |---|---|
@@ -134,6 +139,7 @@ Sin recorte de producto; el orden sigue las dependencias. El plan detallado de l
 | 1 | **Cerrada el 2026-11-23. Spider:** esquema (con `nongoals`, `rejected` y `evidence`), parser YAML estricto, `fmt`, ids, grafo en memoria, validación, `doctor`, globs |
 | 2 | **Cerrada el 2026-11-26. Weaver (CLI):** `--json` con el sobre uniforme y códigos 0, 1 y 2; `brief`, `status`, `context` con `--hook`, `get`, `find`, `ready`, `record` con stdin y `--approve`, `close` con archivo, `claim` con claim local, `check` con ejecutores y `results.json`, y `diff` con niveles (incluidas las capturas base) y pendientes de sí; ramas largas probadas y tiempos medidos |
 | 3 | **Cerrada el 2026-11-27. Anchor sobre el CLI, solo Claude Code:** guía del método, `beacon hook` con reinyección (arranque, tras compactar y antes de editar), permisos, y el nombre del agente en el sello por terminal y actividad de los hooks; `beacon install` con `--preview`, `--uninstall`, `--skip` y copias; guía de redacción de promesas en `record`; contadores de inyección; arnés del benchmark (`testing/benchmark`); probado con sesiones reales de Claude Code 2.1.321 en `src/projects/sandbox` |
-| 4 | **Por empezar el 2026-11-27 (plan en `PLANNING.md`). Snares y lo que falta de Weaver:** `record --file`, `attest` con `--evidence`, `verify` con riesgo y paquete de revisión; `beacon snares pre-commit` (lo instala `install`) y `beacon snares ci` con la plantilla de GitHub Actions (`install --ci github`, con `merge_group`); `beacon init` con escaneo de Go, Bun, Node y Python; ejemplos de UI; Beacon en su propio repo |
+| 4 | **En curso (plan en el historial de git; hechos los pasos 1 a 10, faltan Beacon en su propio repo y la medición y KB). Snares y lo que falta de Weaver:** `record --file`, `attest` con `--evidence`, `verify` con riesgo y paquete de revisión; `beacon snares pre-commit` (lo instala `install`) y `beacon snares ci` con la plantilla de GitHub Actions (`install --ci github`, con `merge_group`); `beacon init` con escaneo de Go, Bun, Node y Python; ejemplos de UI; Beacon en su propio repo |
+| 4b | **Propuesta. Packs de rules y skills (Anchor):** `--pack` y `--skip <pieza>` en `install`, `packs:` en `config.yaml`, las rules y skills de `core`, señales que nombran skills y medición con el benchmark; plan en `PLANNING.md` (pasos K0 a K12). La segunda ola de agentes de los packs va con la Fase 6 |
 | 5 | Frescura de guides, `stale` |
-| 6 | Segunda ola de agentes (Codex y Cursor entre ellos), `stats`, correr el benchmark de fricción; usar Beacon en su propio repo si el arranque ya existe |
+| 6 | Segunda ola de agentes (Codex y Cursor entre ellos) y los packs en cada uno, `stats`, correr el benchmark de fricción; usar Beacon en su propio repo si el arranque ya existe |
