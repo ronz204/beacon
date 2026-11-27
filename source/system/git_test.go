@@ -2,6 +2,7 @@ package system_test
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -35,5 +36,28 @@ func TestGitReportsTheFailingCommand(t *testing.T) {
 
 	if err == nil || !strings.Contains(err.Error(), "git log") {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestGitCommonDirIsAbsoluteInsideARepository(t *testing.T) {
+	root := t.TempDir()
+	if _, err := system.Git(context.Background(), root, "init", "-q"); err != nil {
+		t.Fatal(err)
+	}
+
+	common, err := system.GitCommonDir(context.Background(), root)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !filepath.IsAbs(common) || filepath.Base(common) != ".git" {
+		t.Fatalf("common = %q", common)
+	}
+}
+
+func TestGitCommonDirFailsOutsideARepository(t *testing.T) {
+	if _, err := system.GitCommonDir(context.Background(), t.TempDir()); err == nil {
+		t.Fatal("expected an error")
 	}
 }

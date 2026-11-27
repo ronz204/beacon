@@ -38,14 +38,9 @@ func Open(ctx context.Context, directory string) (Repo, error) {
 	}
 
 	root := filepath.Clean(strings.TrimSpace(top))
-	common, err := system.Git(ctx, root, "rev-parse", "--git-common-dir")
+	gitDir, err := system.GitCommonDir(ctx, root)
 	if err != nil {
 		return Repo{}, kernel.FailHistory(err)
-	}
-
-	gitDir := strings.TrimSpace(common)
-	if !filepath.IsAbs(gitDir) {
-		gitDir = filepath.Join(root, gitDir)
 	}
 
 	backups := filepath.Join(gitDir, stateFolder, backupsFolder)
