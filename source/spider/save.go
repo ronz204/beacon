@@ -20,8 +20,6 @@ const (
 	SaveTaskHasOpenChildren SaveCode = "task_has_open_children"
 )
 
-type SaveError = kernel.Error[SaveCode]
-
 var saveErrors = kernel.ErrorCatalog[SaveCode]{
 	SavePayloadInvalid:      "the payload does not describe a valid record",
 	SaveGraphInvalid:        "the change breaks references or relations",
