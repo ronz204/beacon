@@ -91,6 +91,10 @@ func decodeConfig(file string, data []byte) (Config, []error) {
 	return config, nil
 }
 
+func ParseConfig(file string, data []byte) (Config, []error) {
+	return decodeConfig(file, data)
+}
+
 func configRunners(f *fields) map[string]Runner {
 	section, found := f.mapping("runners")
 	if !found {

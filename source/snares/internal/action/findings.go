@@ -38,16 +38,7 @@ func unapproved(pending []weaver.EntryView) *Block {
 		return nil
 	}
 
-	items := make([]string, 0, len(pending))
-	for _, entry := range pending {
-		items = append(items, fmt.Sprintf(
-			"%s %s %s %s",
-			entry.Path,
-			entry.Target,
-			entry.ID,
-			entry.Reason,
-		))
-	}
+	items := itemsOf(pending)
 
 	return &Block{
 		Kind:    BlockUnapproved,
@@ -102,4 +93,20 @@ func unavailableWarnings(invocations []weaver.InvocationView) []string {
 	}
 
 	return warnings
+}
+
+func itemsOf(entries []weaver.EntryView) []string {
+	items := make([]string, 0, len(entries))
+
+	for _, entry := range entries {
+		items = append(items, fmt.Sprintf(
+			"%s %s %s %s",
+			entry.Path,
+			entry.Target,
+			entry.ID,
+			entry.Reason,
+		))
+	}
+
+	return items
 }

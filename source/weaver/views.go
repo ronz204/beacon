@@ -74,6 +74,7 @@ type CheckView struct {
 	Promises     []PromiseResultView `json:"promises"`
 	Invocations  []InvocationView    `json:"invocations"`
 	Manual       []string            `json:"manual"`
+	Skipped      []string            `json:"skipped"`
 	Failed       []PromiseResultView `json:"failed"`
 }
 

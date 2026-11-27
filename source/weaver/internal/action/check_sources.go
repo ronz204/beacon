@@ -50,6 +50,7 @@ type Analysis struct {
 type CheckSource interface {
 	Root() string
 	Runners(ctx context.Context) ([]RunnerDef, error)
+	RunnersAt(ctx context.Context, revision string) ([]RunnerDef, error)
 	Targets(ctx context.Context) ([]TargetDef, error)
 	Touched(ctx context.Context, revision string) ([]string, error)
 	Record(ctx context.Context, verdicts []Verdict) error

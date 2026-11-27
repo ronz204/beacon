@@ -53,6 +53,27 @@ func (s Snares) PreCommit(ctx context.Context) (PreCommitView, error) {
 	}, err
 }
 
+func (s Snares) CI(
+	ctx context.Context,
+	input CIInput,
+) (CIView, error) {
+	result, err := action.CI{Ports: s.ports}.Run(ctx, action.CIInput(input))
+
+	risk := result.Diff.Risk
+	risk.Reasons = nonNil(risk.Reasons)
+
+	return CIView{
+		Revision: result.Revision,
+		Scope:    result.Scope,
+		Risk:     risk,
+		Blocks:   blockViews(result.Blocks),
+		Warnings: nonNil(result.Warnings),
+		Checked:  nonNil(result.Check.Capabilities),
+		Skipped:  nonNil(result.Check.Skipped),
+		Comment:  result.Comment,
+	}, err
+}
+
 func blockViews(blocks []action.Block) []BlockView {
 	views := make([]BlockView, 0, len(blocks))
 

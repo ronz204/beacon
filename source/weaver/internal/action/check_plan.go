@@ -11,11 +11,24 @@ type plannedGroup struct {
 	group      checks.InvocationGroup
 }
 
+func (c Checker) runners(
+	ctx context.Context,
+	input CheckInput,
+) ([]RunnerDef, error) {
+	if input.RunnersAt != "" {
+		return c.Source.RunnersAt(ctx, input.RunnersAt)
+	}
+
+	return c.Source.Runners(ctx)
+}
+
 func (c Checker) plan(
 	ctx context.Context,
+	input CheckInput,
 	promises []PromiseDef,
+	result *CheckResult,
 ) ([]plannedGroup, error) {
-	defs, err := c.Source.Runners(ctx)
+	defs, err := c.runners(ctx, input)
 	if err != nil {
 		return nil, err
 	}
@@ -28,6 +41,11 @@ func (c Checker) plan(
 	parsed := make([]checks.PromiseCheck, 0, len(promises))
 	for _, promise := range promises {
 		if _, found := specs[promise.Runner]; !found {
+			if input.RunnersAt != "" {
+				result.Skipped = append(result.Skipped, promise.ID)
+				continue
+			}
+
 			return nil, checkErrors.Fail(RunnerMissing, map[string]any{
 				"runner":  promise.Runner,
 				"promise": promise.ID,

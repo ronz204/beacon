@@ -25,6 +25,13 @@ func (f *fakeSource) Runners(context.Context) ([]action.RunnerDef, error) {
 	}}, nil
 }
 
+func (f *fakeSource) RunnersAt(
+	ctx context.Context,
+	_ string,
+) ([]action.RunnerDef, error) {
+	return f.Runners(ctx)
+}
+
 func (f *fakeSource) Targets(context.Context) ([]action.TargetDef, error) {
 	return f.targets, nil
 }
@@ -163,5 +170,31 @@ func TestCheckRecordsNothingForAnUnavailableRunner(t *testing.T) {
 		if invocation.Status != "unavailable" {
 			t.Fatalf("invocation = %+v", invocation)
 		}
+	}
+}
+
+func TestCheckFromAnotherRevisionSkipsTheRunnersItDoesNotHave(t *testing.T) {
+	var runs []double.Run
+	source := sampleSource()
+	source.targets[0].Promises[0].Runner = "test-new"
+	checker := action.Checker{
+		Source:   source,
+		Base:     fakeBase{},
+		Executor: double.Executor{Runs: &runs},
+	}
+
+	result, err := checker.Check(
+		context.Background(),
+		action.CheckInput{Capability: "bc-7f3a", RunnersAt: "abc1234"},
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Skipped) != 1 || result.Skipped[0] != "bc-c3d4" {
+		t.Fatalf("skipped = %v", result.Skipped)
+	}
+	if len(source.recorded) != 2 {
+		t.Fatalf("recorded = %+v", source.recorded)
 	}
 }
