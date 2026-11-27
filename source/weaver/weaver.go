@@ -14,13 +14,14 @@ import (
 )
 
 type Weaver struct {
-	project spider.Project
-	changes deltas.ChangeSource
-	records action.Recorder
-	closer  action.Closer
-	claimer action.Claimer
-	checker action.Checker
-	differ  action.Differ
+	project  spider.Project
+	changes  deltas.ChangeSource
+	records  action.Recorder
+	closer   action.Closer
+	claimer  action.Claimer
+	checker  action.Checker
+	differ   action.Differ
+	attester action.Attester
 }
 
 func New(project spider.Project) Weaver {
@@ -53,6 +54,12 @@ func New(project spider.Project) Weaver {
 			Identity: who,
 		},
 		differ: differ,
+		attester: action.Attester{
+			Ports:    facade.NewAttests(project),
+			Base:     branch.Git{},
+			Identity: who,
+			Today:    today,
+		},
 		checker: action.Checker{
 			Source:   facade.NewChecks(project),
 			Base:     branch.Git{},

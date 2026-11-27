@@ -77,6 +77,21 @@ type CheckView struct {
 	Failed       []PromiseResultView `json:"failed"`
 }
 
+type ManualView struct {
+	ID         string `json:"id"`
+	Capability string `json:"capability"`
+	Text       string `json:"text"`
+	Manual     string `json:"manual"`
+	State      string `json:"state"`
+	Drifted    bool   `json:"drifted"`
+}
+
+type AttestView struct {
+	Pending  []ManualView `json:"pending"`
+	Attested []string     `json:"attested"`
+	Commit   string       `json:"commit,omitempty"`
+}
+
 type EntryView struct {
 	Path     string `json:"path"`
 	Kind     string `json:"kind"`
