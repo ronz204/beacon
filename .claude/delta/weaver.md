@@ -53,7 +53,8 @@ Sin `--json`, la salida es texto breve para personas. Con `--json`, **todos los 
 | `beacon migrate` | Migra el esquema |
 | `beacon stats` | Métricas locales de fricción |
 | `beacon snares ci` | Todo lo que corre el CI en una llamada (`snares`) |
-| `beacon install [--dry-run]` | Instala en los agentes con copia de seguridad; `--dry-run` solo muestra qué cambiaría (`anchor`) |
+| `beacon install [--dry-run] [--uninstall] [--skip hooks\|reinject]` | Instala en Claude Code el bloque de guía, `CLAUDE.md`, los permisos y los hooks, con copia de seguridad; `--dry-run` muestra qué cambiaría y `--uninstall` quita solo lo que coincide byte a byte (`anchor`) |
+| `beacon hook <evento> --agent <nombre>` | Lo llaman los hooks del agente, no la persona. Lee por stdin el JSON del agente y responde en su formato: `start` entrega el `brief` y `edit` el contexto del archivo que se va a editar. **Sale siempre con código 0**: un fallo va a stderr y no inyecta nada (`anchor`) |
 
 **Rama base:** `check` y `diff` comparan contra `git merge-base HEAD <base>`, donde `<base>` es `origin/HEAD` si existe y, si no, `main` o `master`. `--base <ref>` la fuerza. Es el punto de origen de la rama, así que también sirve para ramas largas (`method`).
 

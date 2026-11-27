@@ -6,7 +6,7 @@ Adaptadores que instalan Beacon en cada agente. Son **transporte opaco**: no tom
 
 1. **Bloque de guía del método:** unas 20 líneas en inglés (`survey`, E2), siete reglas (ver abajo).
 2. **Hooks** donde el agente los soporte (ver "Hooks y reinyección"). Son recordatorio, no garantía (`design`).
-3. **Permiso para `beacon`:** la regla que evita que el agente pida aprobación en cada comando.
+3. **Permiso para `beacon`:** la regla que evita que el agente pida aprobación en cada comando. En Claude Code son dos, una por herramienta de shell (`Bash(beacon *)` y `PowerShell(beacon *)`). Un comando compuesto o una tubería hacia `beacon` sigue pidiendo permiso (ver "Hooks de Claude Code").
 4. **Nombre del agente para el sello:** no se instala nada. Cada `beacon hook` anota qué agente corrió en el worktree y el binario lo usa como `via` cuando el sí llega sin terminal (`ledger`, sección Actor). Es un marcado, no una prueba (`deltas`).
 5. **Comandos** nativos si el agente los admite.
 
@@ -16,10 +16,10 @@ La obediencia a las instrucciones decae a lo largo de la sesión, y reorganizar 
 
 | Momento | Qué corre | Por qué |
 |---|---|---|
-| Inicio y reanudación de sesión | `beacon brief` | El agente empieza con la meta, los bloqueos y los rojos sin pedirlos |
-| **Tras compactar el contexto** | `beacon brief` | La compactación borra el `brief`; sin esto el agente sigue sin saber lo que sabía |
-| **Antes de editar un archivo** | `beacon context --hook <ruta>` | El contexto que aplica llega justo cuando se necesita, no solo al principio |
-| Cierre de sesión | Recordatorio de `beacon check` y `beacon attest` | Que no se cierre sin comprobar |
+| Inicio y reanudación de sesión | `beacon hook start` (el `brief`) | El agente empieza con la meta, los bloqueos y los rojos sin pedirlos |
+| **Tras compactar el contexto** (y tras `/clear`) | `beacon hook start` (el `brief`) | La compactación borra el `brief`; sin esto el agente sigue sin saber lo que sabía |
+| **Antes de editar un archivo** | `beacon hook edit` (el `context --hook`) | El contexto que aplica llega justo cuando se necesita, no solo al principio |
+| Cierre de sesión | **No se instala.** Recordatorio de `beacon check` y `beacon attest` | `Stop` dispara al terminar cada respuesta, no la sesión, y `attest` llega en la Fase 4. Se retoma entonces |
 
 Reglas de la inyección antes de editar, para que no se vuelva ruido:
 

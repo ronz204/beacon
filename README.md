@@ -49,10 +49,13 @@ beacon/
 │  │     └─ driver/
 │  ├─ anchor/                   # instalación en cada agente
 │  │  ├─ anchor.go
+│  │  ├─ views.go
 │  │  └─ internal/
-│  │     ├─ action/
-│  │     ├─ agents/             # claude, codex, cursor
-│  │     └─ assets/
+│  │     ├─ domain/blocks/      # bloques gestionados y entradas JSON
+│  │     ├─ action/             # plan, apply, hook
+│  │     ├─ agents/             # contrato Agent y claude (Fase 3)
+│  │     ├─ assets/             # guía del método
+│  │     └─ driver/             # files (con copias) y double
 │  └─ snares/                   # git hooks y CI
 │     ├─ snares.go
 │     └─ internal/
