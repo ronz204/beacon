@@ -5,28 +5,26 @@ import (
 	"strings"
 
 	"github.com/ronz204/beacon/source/router/internal/output"
+	"github.com/ronz204/beacon/source/spider"
 	"github.com/spf13/cobra"
 )
 
-func Find(printer *output.Printer, exit *int) *cobra.Command {
+func Find(printer *output.Printer) *cobra.Command {
 	var archived bool
 
 	command := &cobra.Command{
 		Use:   "find <text>",
 		Short: "Search records by text",
 		Args:  cobra.MinimumNArgs(1),
-		RunE: func(command *cobra.Command, args []string) error {
-			project, failure := locateProject()
-			if failure != nil {
-				*exit = printer.Failure(*failure)
-				return nil
-			}
-
+		RunE: inProject(printer, func(
+			command *cobra.Command,
+			args []string,
+			project spider.Project,
+		) (output.Result, *output.Failure) {
 			text := strings.Join(args, " ")
 			view, findings := project.Find(command.Context(), text, archived)
 			if failure := stateFailure(findings); failure != nil {
-				*exit = printer.Failure(*failure)
-				return nil
+				return output.Result{}, failure
 			}
 
 			lines := make([]string, 0, len(view.Matches)+1)
@@ -45,10 +43,8 @@ func Find(printer *output.Printer, exit *int) *cobra.Command {
 				))
 			}
 
-			*exit = printer.Success(view, lines...)
-
-			return nil
-		},
+			return succeed(view, lines...)
+		}),
 	}
 
 	command.Flags().BoolVar(

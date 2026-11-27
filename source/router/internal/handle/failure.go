@@ -67,7 +67,7 @@ var blockedCodes = map[string]bool{
 	"claim_taken":       true,
 }
 
-func errorFailure(err error) output.Failure {
+func errorFailure(err error) *output.Failure {
 	view := kernel.DescribeFailure(err)
 
 	code := view.Code
@@ -86,7 +86,7 @@ func errorFailure(err error) output.Failure {
 		message = view.Cause
 	}
 
-	failure := output.Failure{
+	failure := &output.Failure{
 		Code:    code,
 		Message: message,
 		Hint:    hint,

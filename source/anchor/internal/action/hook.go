@@ -15,8 +15,6 @@ const (
 	HookInputInvalid HookCode = "hook_input_invalid"
 )
 
-type HookError = kernel.Error[HookCode]
-
 var hookErrors = kernel.ErrorCatalog[HookCode]{
 	HookAgentUnknown: "the agent has no hook adapter",
 	HookEventUnknown: "the hook event must be start or edit",

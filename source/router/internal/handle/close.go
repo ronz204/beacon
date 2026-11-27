@@ -15,7 +15,7 @@ const (
 	reasonRequiredHint    = "pass --reason with why it no longer holds"
 )
 
-func Close(printer *output.Printer, exit *int) *cobra.Command {
+func Close(printer *output.Printer) *cobra.Command {
 	var reason string
 	var approve bool
 
@@ -23,20 +23,21 @@ func Close(printer *output.Printer, exit *int) *cobra.Command {
 		Use:   "close <id>",
 		Short: "Close a record with a reason and archive it",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(command *cobra.Command, args []string) error {
+		RunE: execute(printer, func(
+			command *cobra.Command,
+			args []string,
+		) (output.Result, *output.Failure) {
 			if strings.TrimSpace(reason) == "" {
-				*exit = printer.Failure(output.Failure{
+				return output.Result{}, &output.Failure{
 					Code:    reasonRequiredCode,
 					Message: reasonRequiredMessage,
 					Hint:    reasonRequiredHint,
-				})
-				return nil
+				}
 			}
 
 			project, failure := locateProject()
 			if failure != nil {
-				*exit = printer.Failure(*failure)
-				return nil
+				return output.Result{}, failure
 			}
 
 			view, err := weaver.New(project).Close(
@@ -48,19 +49,17 @@ func Close(printer *output.Printer, exit *int) *cobra.Command {
 			if err != nil {
 				failure := errorFailure(err)
 				failure.Lines = changeLines(view.Changes)
-				*exit = printer.Failure(failure)
 
-				return nil
+				return output.Result{}, failure
 			}
 
 			lines := append(
 				[]string{fmt.Sprintf("closed %s %s", view.ID, view.File)},
 				changeLines(view.Changes)...,
 			)
-			*exit = printer.Success(view, lines...)
 
-			return nil
-		},
+			return succeed(view, lines...)
+		}),
 	}
 
 	command.Flags().StringVar(&reason, "reason", "", "why it no longer holds")

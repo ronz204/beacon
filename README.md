@@ -12,9 +12,9 @@ beacon/
 ├─ .github/workflows/           # CI
 ├─ cmd/beacon/main.go           # punto de entrada del binario
 ├─ testing/
-│  ├─ e2e/                      # pruebas del binario real
-│  ├─ utils/                    # ayudas compartidas de prueba
-│  └─ bench/                    # arnés del benchmark de fricción
+│  ├─ integration/              # pruebas del binario real, un archivo por comando
+│  ├─ benchmark/                # arnés del benchmark de fricción y sus datos
+│  └─ utilities/                # ayudas compartidas y el ejecutor de prueba
 ├─ source/
 │  ├─ kernel/                   # bases puras: errores, ids, actor
 │  ├─ system/                   # escritura atómica y ejecución de git
@@ -24,7 +24,8 @@ beacon/
 │  │     ├─ handle/             # comandos
 │  │     └─ output/             # sobre --json y códigos de salida
 │  ├─ spider/                   # registros, grafo y señales
-│  │  ├─ spider.go
+│  │  ├─ project.go             # Project y Locate; un archivo por operación
+│  │  ├─ views.go
 │  │  └─ internal/
 │  │     ├─ domain/
 │  │     │  ├─ ledger/          # goal, capability
@@ -40,7 +41,8 @@ beacon/
 │  │        ├─ double/          # contratos en memoria para tests
 │  │        └─ states/          # estado local en .git/beacon/
 │  ├─ weaver/                   # checks, niveles de cambio y riesgo
-│  │  ├─ weaver.go
+│  │  ├─ weaver.go              # Weaver y New; un archivo por operación
+│  │  ├─ views.go
 │  │  └─ internal/
 │  │     ├─ domain/
 │  │     │  ├─ deltas/
@@ -48,11 +50,14 @@ beacon/
 │  │     ├─ action/
 │  │     └─ driver/
 │  ├─ anchor/                   # instalación en cada agente
-│  │  ├─ anchor.go
+│  │  ├─ anchor.go              # Anchor y New; install.go y hook.go
+│  │  ├─ views.go
 │  │  └─ internal/
-│  │     ├─ action/
-│  │     ├─ agents/             # claude, codex, cursor
-│  │     └─ assets/
+│  │     ├─ domain/blocks/      # bloques gestionados y entradas JSON
+│  │     ├─ action/             # plan, apply, hook
+│  │     ├─ agents/             # contrato Agent y claude (Fase 3)
+│  │     ├─ assets/             # guía del método
+│  │     └─ driver/             # files (con copias) y double
 │  └─ snares/                   # git hooks y CI
 │     ├─ snares.go
 │     └─ internal/
@@ -68,7 +73,7 @@ Las carpetas se crean cuando su fase las necesita (`.claude/delta/status.md`).
 ## Reglas de la estructura
 
 - **Dependencias en una sola dirección:** `router → snares → weaver → spider`, y `router → anchor`. Todas pueden usar `kernel` y `system`, salvo `domain`, que solo usa `kernel`.
-- **Cada pieza se expone por su paquete raíz**: su archivo de entrada (`spider.go`, `weaver.go`) y, si hace falta, los tipos públicos planos que devuelve (`views.go`). Ningún tipo de su `internal/` cruza esa frontera. Lo demás va en su `internal/`, y el compilador impide importarlo desde fuera.
+- **Cada pieza se expone por su paquete raíz**: su archivo de entrada (`project.go`, `weaver.go`, `anchor.go`), con una operación por archivo, y, si hace falta, los tipos públicos planos que devuelve (`views.go`). Ningún tipo de su `internal/` cruza esa frontera. Lo demás va en su `internal/`, y el compilador impide importarlo desde fuera.
 - **`source/` no es privado para Go:** al no llamarse `internal`, otro módulo podría importar `kernel`, `system`, `router` y las fachadas de cada pieza. No se promete que esas APIs sean estables; lo que de verdad es privado vive en el `internal/` de cada pieza.
 - **Cada pieza tiene solo las capas que necesita:** `domain` (reglas), `action` (casos de uso) y `driver` (YAML, git y otros sistemas).
 - **Una pieza nueva** se agrega como `source/<pieza>/` con su archivo de entrada y se conecta en `router`.

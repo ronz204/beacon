@@ -1,0 +1,8 @@
+schema: 1
+runners:
+  gotest:
+    run: [go, test, "{pkg}", -run, "{target}"]
+limits:
+  guide: 150
+  brief: 60
+  hook: 20

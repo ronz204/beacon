@@ -16,22 +16,19 @@ type readyData struct {
 	Tasks  []spider.Summary  `json:"tasks"`
 }
 
-func Ready(printer *output.Printer, exit *int) *cobra.Command {
+func Ready(printer *output.Printer) *cobra.Command {
 	return &cobra.Command{
 		Use:   "ready",
 		Short: "Show the work ready on the current branch",
 		Args:  cobra.NoArgs,
-		RunE: func(command *cobra.Command, _ []string) error {
-			project, failure := locateProject()
-			if failure != nil {
-				*exit = printer.Failure(*failure)
-				return nil
-			}
-
+		RunE: inProject(printer, func(
+			command *cobra.Command,
+			_ []string,
+			project spider.Project,
+		) (output.Result, *output.Failure) {
 			branch, err := project.Branch(command.Context())
 			if err != nil {
-				*exit = printer.Failure(errorFailure(err))
-				return nil
+				return fail(err)
 			}
 
 			view, findings, err := project.Ready(
@@ -39,12 +36,10 @@ func Ready(printer *output.Printer, exit *int) *cobra.Command {
 				branch.Name,
 			)
 			if err != nil {
-				*exit = printer.Failure(errorFailure(err))
-				return nil
+				return fail(err)
 			}
 			if failure := stateFailure(findings); failure != nil {
-				*exit = printer.Failure(*failure)
-				return nil
+				return output.Result{}, failure
 			}
 
 			result := output.Result{
@@ -59,10 +54,8 @@ func Ready(printer *output.Printer, exit *int) *cobra.Command {
 				result.Hint = detachedHint
 			}
 
-			*exit = printer.Done(result)
-
-			return nil
-		},
+			return result, nil
+		}),
 	}
 }
 

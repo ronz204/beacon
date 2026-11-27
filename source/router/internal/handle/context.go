@@ -10,7 +10,7 @@ import (
 
 const sessionRequiredHint = "pass --session <id> with --hook"
 
-func Context(printer *output.Printer, exit *int) *cobra.Command {
+func Context(printer *output.Printer) *cobra.Command {
 	var hook bool
 	var session string
 
@@ -18,37 +18,31 @@ func Context(printer *output.Printer, exit *int) *cobra.Command {
 		Use:   "context <paths>",
 		Short: "Show what applies to the given files",
 		Args:  cobra.MinimumNArgs(1),
-		RunE: func(command *cobra.Command, args []string) error {
-			project, failure := locateProject()
-			if failure != nil {
-				*exit = printer.Failure(*failure)
-				return nil
-			}
-
+		RunE: inProject(printer, func(
+			command *cobra.Command,
+			args []string,
+			project spider.Project,
+		) (output.Result, *output.Failure) {
 			paths := make([]string, 0, len(args))
 			for _, arg := range args {
 				paths = append(paths, project.RepoPath(arg))
 			}
 
 			if hook {
-				*exit = hookContext(command, printer, project, session, paths)
-				return nil
+				return hookContext(command, project, session, paths)
 			}
 
 			view, findings := project.Context(command.Context(), paths)
 			if failure := stateFailure(findings); failure != nil {
-				*exit = printer.Failure(*failure)
-				return nil
+				return output.Result{}, failure
 			}
 
-			*exit = printer.Done(output.Result{
+			return output.Result{
 				Data:    view,
 				Signals: view.Signals,
 				Lines:   contextLines(view),
-			})
-
-			return nil
-		},
+			}, nil
+		}),
 	}
 
 	command.Flags().BoolVar(
@@ -64,17 +58,16 @@ func Context(printer *output.Printer, exit *int) *cobra.Command {
 
 func hookContext(
 	command *cobra.Command,
-	printer *output.Printer,
 	project spider.Project,
 	session string,
 	paths []string,
-) int {
+) (output.Result, *output.Failure) {
 	if session == "" {
-		return printer.Failure(output.Failure{
+		return output.Result{}, &output.Failure{
 			Code:    "session_required",
 			Message: "--hook needs a session id",
 			Hint:    sessionRequiredHint,
-		})
+		}
 	}
 
 	view, findings, err := project.HookContext(
@@ -83,21 +76,18 @@ func hookContext(
 		paths,
 	)
 	if err != nil {
-		return printer.Failure(errorFailure(err))
+		return fail(err)
 	}
 	if failure := stateFailure(findings); failure != nil {
-		return printer.Failure(*failure)
+		return output.Result{}, failure
 	}
 
 	lines := hookLines(view)
 
-	return printer.Done(output.Result{
-		Data: struct {
-			Lines   []string `json:"lines"`
-			Omitted int      `json:"omitted"`
-		}{Lines: lines, Omitted: view.Omitted},
-		Lines: lines,
-	})
+	return succeed(struct {
+		Lines   []string `json:"lines"`
+		Omitted int      `json:"omitted"`
+	}{Lines: lines, Omitted: view.Omitted}, lines...)
 }
 
 func hookLines(view spider.HookView) []string {

@@ -38,9 +38,10 @@ Lo que no se comparte vive en `.git/beacon/`, dentro del directorio común de gi
 
 - `results.json`: resultados de los checks por promesa, con commit y huella (`pledge`; formato abajo).
 - `claims.json`: los claims de tareas de este clon, visibles a todos sus worktrees (ver abajo).
-- Las métricas de fricción (`weaver`).
+- `metrics.json`: por sesión y por evento, cuántas veces corrió cada hook, cuántas inyectó algo y cuántas líneas (`anchor`). Lo leerá `stats` (Fase 6). Una sesión sin actividad en 7 días se descarta.
+- `activity.json`: qué agente corrió por último un hook en cada worktree, para ponerle nombre al sello `via` (`ledger`). Vale 24 horas y se descarta a los 7 días.
 - `injected.json`: lo que los hooks ya inyectaron en cada sesión, para no repetirlo (`anchor`). Una sesión sin actividad en 7 días se descarta.
-- `backups/`: copias de los archivos que `beacon install` modificó (`anchor`).
+- `backups/`: copias de los archivos que `beacon install` modificó (`anchor`), en una carpeta por fecha. Las de más de 30 días se borran en la siguiente copia.
 
 Git no puede commitearlo por accidente, no hay nada que añadir al `.gitignore` y vive y muere con el clon. Se puede borrar sin consecuencias: los resultados se recalculan y solo se pierden las métricas locales, los claims locales y las copias.
 
@@ -166,6 +167,24 @@ Qué dicen los números:
 - **No se paraleliza `check` (D20).** Lo que tarda es el ejecutor, que el binario no acorta, y correr suites a la vez puede romperlas si comparten puertos o una base de datos. Se mantiene en serie y se reconsidera si la fricción muestra suites independientes que sumen minutos.
 
 Esta tabla se midió con `gopkg.in/yaml.v3`, hoy archivada. En una prueba del 2026-11-23, solo de parseo a nodos, v3.0.6 y v4.0.0 tardaron prácticamente lo mismo (42 y 41 ms para 500 archivos). Al cerrar la Fase 1 se midió el código real: 500 capabilities con 10 promesas cada una, carga más validación del grafo, tardan unos 70 ms (mediana de 5 corridas con caché caliente, en un i7-13620H de 16 hilos). No es comparable directo con la tabla, medida con 2 núcleos.
+
+### Medición de la Fase 3: los hooks
+
+Medida el 2026-11-27 con el binario real, un proceso por llamada, en el mismo repo sintético de la Fase 2 (500 capabilities con 10 promesas, 2,3 MB, empaquetado con `git gc`), mediana de 9 corridas, Windows con 16 hilos. Cada corrida de `hook` usa una sesión nueva, salvo la fila "otra vez".
+
+| Comando | Tiempo | Qué incluye |
+|---|---|---|
+| `hook start` | 221 ms | Lo mismo que `brief` (207 ms) más leer el JSON, dar formato y escribir los contadores y el agente activo |
+| `hook edit`, primera vez en la sesión | 102 ms | `context --hook` (88 ms) más lo mismo de arriba |
+| `hook edit`, otra vez el mismo archivo | 89 ms | Sin nada nuevo que inyectar |
+| `install --dry-run` | 53 ms | No carga el estado de Beacon |
+
+Qué dicen los números:
+
+- **El hook suma unos 14 ms** sobre el comando que envuelve, con las dos escrituras (`metrics.json` y `activity.json`) incluidas. Abrir el estado local ya no lanza `git` cuando `.git` es una carpeta; sin ese cambio cada llamada pagaba un proceso más por apertura.
+- **Antes de cada edición, 0,1 s.** Es lo que se suma al agente una vez por capability y sesión. El de arranque cuesta 0,2 s una vez por sesión, al reanudar y al compactar.
+- **Qué se inyecta:** el bloque de guía mide 15 líneas y 1,8 KB. El arranque de este repo, 2 líneas y 98 bytes. El contexto de una capability con 10 promesas, 21 líneas y 1 KB (el tope `limits.hook` de 20 más el aviso). En el proyecto de prueba, 2 y 3 líneas.
+- **No se midió** el costo en tokens ni su efecto en el resultado: es el benchmark de la Fase 6. Una sesión de prueba con un modelo pequeño costó unos 0,005 a 0,01 dólares.
 
 ### Consultas a git
 

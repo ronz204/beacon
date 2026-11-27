@@ -16,33 +16,33 @@ const (
 	stdinMarkerReason = "the record is read from stdin, pass - as the argument"
 )
 
-func Record(printer *output.Printer, exit *int) *cobra.Command {
+func Record(printer *output.Printer) *cobra.Command {
 	var approve bool
 
 	command := &cobra.Command{
 		Use:   "record -",
 		Short: "Create or replace a record read from stdin",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(command *cobra.Command, args []string) error {
+		RunE: execute(printer, func(
+			command *cobra.Command,
+			args []string,
+		) (output.Result, *output.Failure) {
 			if args[0] != stdinMarker {
-				*exit = printer.Failure(output.Failure{
+				return output.Result{}, &output.Failure{
 					Code:    stdinMarkerCode,
 					Message: stdinMarkerReason,
 					Hint:    stdinMarkerHint,
-				})
-				return nil
+				}
 			}
 
 			project, failure := locateProject()
 			if failure != nil {
-				*exit = printer.Failure(*failure)
-				return nil
+				return output.Result{}, failure
 			}
 
 			payload, err := io.ReadAll(command.InOrStdin())
 			if err != nil {
-				*exit = printer.Failure(errorFailure(err))
-				return nil
+				return fail(err)
 			}
 
 			view, err := weaver.New(project).Record(
@@ -53,15 +53,12 @@ func Record(printer *output.Printer, exit *int) *cobra.Command {
 			if err != nil {
 				failure := errorFailure(err)
 				failure.Lines = changeLines(view.Changes)
-				*exit = printer.Failure(failure)
 
-				return nil
+				return output.Result{}, failure
 			}
 
-			*exit = printer.Success(view, recordLines(view)...)
-
-			return nil
-		},
+			return succeed(view, recordLines(view)...)
+		}),
 	}
 
 	command.Flags().BoolVar(&approve, "approve", false, "pass the person's yes")

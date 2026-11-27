@@ -19,7 +19,7 @@ const (
 	skipHint     = "use --skip hooks or --skip reinject"
 )
 
-func Install(printer *output.Printer, exit *int) *cobra.Command {
+func Install(printer *output.Printer) *cobra.Command {
 	var dryRun, uninstall bool
 	var skip []string
 
@@ -27,23 +27,23 @@ func Install(printer *output.Printer, exit *int) *cobra.Command {
 		Use:   "install",
 		Short: "Install Beacon in the coding agents of this repository",
 		Args:  cobra.NoArgs,
-		RunE: func(command *cobra.Command, _ []string) error {
+		RunE: execute(printer, func(
+			command *cobra.Command,
+			_ []string,
+		) (output.Result, *output.Failure) {
 			options, failure := installOptions(dryRun, skip)
 			if failure != nil {
-				*exit = printer.Failure(*failure)
-				return nil
+				return output.Result{}, failure
 			}
 
 			directory, err := os.Getwd()
 			if err != nil {
-				*exit = printer.Failure(*projectFailure(err))
-				return nil
+				return output.Result{}, projectFailure(err)
 			}
 
 			tool, err := anchor.New(command.Context(), directory)
 			if err != nil {
-				*exit = printer.Failure(errorFailure(err))
-				return nil
+				return fail(err)
 			}
 
 			run := tool.Install
@@ -53,18 +53,15 @@ func Install(printer *output.Printer, exit *int) *cobra.Command {
 
 			view, err := run(command.Context(), options)
 			if err != nil {
-				*exit = printer.Failure(errorFailure(err))
-				return nil
+				return fail(err)
 			}
 
-			*exit = printer.Done(output.Result{
+			return output.Result{
 				Data:  view,
 				Hint:  installHint(view),
 				Lines: installLines(view),
-			})
-
-			return nil
-		},
+			}, nil
+		}),
 	}
 
 	flags := command.Flags()

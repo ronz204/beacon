@@ -58,7 +58,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Arranque | Escaneo mecánico, todo `proposed`, preguntas de una en una; guide de arquitectura como `draft` con un esqueleto corto inspirado en arc42 | `method` |
 | Claims | Consultivos, en dos sitios: local en `.git/beacon/` (visible entre worktrees, avisa al instante) y `owner` y `branch` en el registro (avisan al equipo); `ready` por rama | `method`, `layout` |
 | Guía del método | Bloque de unas 20 líneas en inglés, siete reglas, versión CLI | `anchor` |
-| Hooks y reinyección | Donde el agente tenga el evento: `beacon brief` al empezar y tras compactar, y `beacon context --hook` antes de editar (una vez por archivo y sesión, con tope `limits.hook`). Los eventos de cada agente se verifican al implementar | `anchor` |
+| Hooks y reinyección | `beacon hook start` al empezar, reanudar, tras `/clear` y tras compactar, y `beacon hook edit` antes de editar (una vez por capability y sesión, con tope `limits.hook`). Confirmado con sesiones reales de Claude Code el 2026-11-27. No hay hook de cierre | `anchor` |
 | Instalación | `beacon install` con `--dry-run`, copia de seguridad en `.git/beacon/backups/`, solo archivos del repo y resumen final | `anchor` |
 | Agentes | Ola 1: Claude Code (Fase 3). Ola 2: Codex, Cursor, OpenCode, Gemini CLI, Copilot (Fase 6); decidido el 2026-11-26 para probar un agente a fondo antes de sumar otros | `anchor` |
 | Hooks de Codex | Soportados (`SessionStart`, `Stop`, y `PreCompact` y `PostCompact` para la reinyección); el hook llama al CLI | `anchor` |
@@ -72,13 +72,15 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | `results.json` | Lo guarda Spider, con commit y huella de lo no commiteado, para que un check con cambios sin commitear no muestre deriva | `layout`, `pledge` |
 | Archivo | Adelantado a la Fase 2, porque `close` lo necesita; una línea JSON por registro cerrado | `layout` |
 | Detalle de Weaver | Aprobado el 2026-11-25: frontera pública de Spider con tipos planos, forma del payload, nivel de cada cambio, promesas que no se borran por omisión, regla del sí fresco y cómo se corren los checks (D15 a D20) | `PLANNING.md` |
-| Benchmark de fricción | Protocolo aprobado: condiciones A (sin Beacon), B (solo guía), C (completo) y D (C sin reinyección); piloto de 10 tareas, 3 repeticiones y un agente (90 sesiones); métricas de proceso, integridad, fricción, resultado y costo. El arnés se construye pronto y el benchmark se corre en la Fase 6 | `survey` 7.6 |
+| Benchmark de fricción | Protocolo aprobado: condiciones A (sin Beacon), B (solo guía), C (completo) y D (C sin reinyección); piloto de 10 tareas, 3 repeticiones y un agente (90 sesiones); métricas de proceso, integridad, fricción, resultado y costo. **El arnés está construido (Fase 3)**: lee transcripts de Claude Code, arma las cuatro condiciones con el binario real y resume con intervalos de Wilson; se probó con transcripts simulados y uno real. Las 10 tareas del piloto y correrlo son de la Fase 6 | `survey` 7.6 |
 
 ## Abierto
 
 **No queda nada de diseño abierto.** Las propuestas R1 a R9 que salieron de la investigación del 2026-11-22 se aprobaron ese mismo día y ya están aplicadas en los archivos de arriba (`survey` las llama "propuestas": ese texto es el de la fecha de la investigación). Lo que sigue son detalles de implementación que se resuelven al construir cada fase:
 
-- Qué hook sirve en cada agente para reinyectar antes de editar y tras compactar, y cómo identificar la sesión (R1).
+- Qué hook sirve en Codex, Cursor y los demás agentes para reinyectar antes de editar y tras compactar (R1). En Claude Code está resuelto y confirmado (`anchor`).
+- **Pasar el payload de `record` sin tubería.** En Windows el agente usa PowerShell y escribe `@'...'@ | beacon record -`, que la regla `PowerShell(beacon *)` no cubre y pide permiso cada vez. Una opción `record --file <ruta>` (o leer de un archivo temporal) lo evitaría. Se decide con la fricción del benchmark.
+- Si el hook de cierre (`Stop`) puede ser útil sin ser ruido: dispara al terminar cada respuesta (Fase 4, con `attest`).
 - El nombre y el comportamiento exactos del evento `merge_group` de GitHub (`snares`).
 - Si el nivel 3 de las capturas base resulta demasiado ruidoso; se mide en la fricción y se afina el `baseline`.
 
@@ -109,7 +111,7 @@ Fuera del orden de construcción hasta que se cumpla su condición.
 | **El agente no llama a las herramientas** | El central: las garantías cubren promesas, no que la memoria se use. Los hooks que inyectan el `brief` y el contexto lo reducen (`design`, `anchor`), pero la obediencia decae dentro de la sesión (E7) y los hooks pueden no ejecutarse |
 | Sobreingeniería | Se construye todo sin recorte, así que hay que vigilar el alcance |
 | Evidencia débil | Fuentes de vendedores, benchmarks sintéticos, hipótesis de cognición; ningún estudio muestra que las specs reduzcan defectos (E9) y Beacon tampoco lo ha mostrado (`survey`) |
-| Arranque lento | Con el CLI como única interfaz cada llamada carga el estado, y los hooks de reinyección llaman más veces. Medido con el binario completo y 500 capabilities con 10 promesas: `context` 105 ms, `brief` y `status` 230 ms, `check` unos 0,4 a 0,5 s propios; los repos reales pueden ser más lentos (`layout`) |
+| Arranque lento | Con el CLI como única interfaz cada llamada carga el estado, y los hooks de reinyección llaman más veces. Medido con el binario completo y 500 capabilities con 10 promesas: `context` 105 ms, `brief` y `status` 230 ms, `check` unos 0,4 a 0,5 s propios; los hooks suman unos 14 ms: `hook start` 221 ms y `hook edit` 102 ms; los repos reales pueden ser más lentos (`layout`) |
 | Ruido de los hooks | Inyectar antes de cada edición puede cansar o gastar contexto; por eso hay tope, una vez por archivo y sesión, y se mide (`anchor`) |
 | Marcado del actor no infalible | El agente corre con el mismo usuario del sistema; la garantía real es la review del PR por una persona (`deltas`) |
 | Fatiga del nivel 3 | Demasiados síes se desactivan (`deltas`); las capturas base pueden sumar (ver Abierto) |
@@ -131,7 +133,7 @@ Sin recorte de producto; el orden sigue las dependencias. El plan detallado de l
 | 0 | **Cerrada:** nombre, benchmarks de carga y de git, esquema, guía del método, decisiones de interfaz y las propuestas de la investigación |
 | 1 | **Cerrada el 2026-11-23. Spider:** esquema (con `nongoals`, `rejected` y `evidence`), parser YAML estricto, `fmt`, ids, grafo en memoria, validación, `doctor`, globs |
 | 2 | **Cerrada el 2026-11-26. Weaver (CLI):** `--json` con el sobre uniforme y códigos 0, 1 y 2; `brief`, `status`, `context` con `--hook`, `get`, `find`, `ready`, `record` con stdin y `--approve`, `close` con archivo, `claim` con claim local, `check` con ejecutores y `results.json`, y `diff` con niveles (incluidas las capturas base) y pendientes de sí; ramas largas probadas y tiempos medidos |
-| 3 | **En curso desde el 2026-11-26. Anchor sobre el CLI, solo Claude Code:** guía del método, `beacon hook` con reinyección y permisos; `beacon install` con `--dry-run`, `--uninstall` y copias; guía de redacción de promesas; arnés del benchmark; prueba real en `src/projects/sandbox` (plan en `PLANNING.md`) |
+| 3 | **Cerrada el 2026-11-27. Anchor sobre el CLI, solo Claude Code:** guía del método, `beacon hook` con reinyección (arranque, tras compactar y antes de editar), permisos, y el nombre del agente en el sello por terminal y actividad de los hooks; `beacon install` con `--dry-run`, `--uninstall`, `--skip` y copias; guía de redacción de promesas en `record`; contadores de inyección; arnés del benchmark (`testing/benchmark`); probado con sesiones reales de Claude Code 2.1.321 en `src/projects/sandbox` |
 | 4 | **Snares:** pre-commit, `beacon snares ci` y plantilla de GitHub Actions (con `merge_group`); arranque, `attest` con `--evidence`, `verify`; ejecutores de ejemplo para UI |
 | 5 | Frescura de guides, `stale` |
 | 6 | Segunda ola de agentes (Codex y Cursor entre ellos), `stats`, correr el benchmark de fricción; usar Beacon en su propio repo si el arranque ya existe |
