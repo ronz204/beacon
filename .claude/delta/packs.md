@@ -87,6 +87,8 @@ packs:
 | `refute` | Un revisor con contexto limpio ataca una decisión no trivial, hasta 3 ciclos; el resultado es una `decision` con sus `rejected` | `beacon record`; el tope de ciclos es prosa, no se puede comprobar |
 | `divide` | Parte un `work` en tareas con un resultado comprobable y sus `blocks` | `beacon doctor` valida la jerarquía y `beacon ready` muestra qué sigue |
 
+`elicit` y `digest` se escriben desde cero; si la persona encuentra sus skills antiguas de Delta, se ajustan.
+
 **Invocación (Propuesta):** `ensure`, `locate` y `finish` pueden ser invocables por el modelo; las demás las invoca la persona o una señal. Falta confirmar si desactivar la invocación del modelo quita también la descripción del contexto.
 
 ## Señales que apuntan a skills
@@ -109,6 +111,7 @@ El texto de la skill no se inyecta: solo una línea con su nombre, para no satur
 Se aplica P4: cero comandos que aprender, valor en la primera sesión, ninguna ceremonia.
 
 - **Cero preguntas por defecto:** `beacon install` instala `core`, detecta el stack y sigue. Lo opcional se pide con `--pack git` o `--pack arch`.
+- **Quién da el sí:** `packs:` es nivel 3. Una persona que ejecuta `install` en una terminal ya lo da, y se sella a su nombre (`ledger`, Actor); un agente sin terminal recibe el código 2 y pide el sí con `--approve`.
 - **Se ve antes de hacerse:** `--preview` muestra qué archivos crearía y cómo quedarían; la instalación termina con un resumen de lo instalado y de cómo quitarlo.
 - **Se quita por piezas o entero:** `--skip <pieza>` (**Propuesta**: hoy `--skip` solo acepta `hooks` y `reinject`) y `--uninstall`, que borra solo lo que coincide byte a byte.
 - **Actualizar es volver a instalar:** es idempotente. Lo que la persona editó se conserva y `doctor` avisa de que quedó atrás.
