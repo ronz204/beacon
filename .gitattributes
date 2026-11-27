@@ -1,4 +1,3 @@
 .beacon/** text eol=lf
-source/spider/internal/driver/record/testdata/** text eol=lf
+**/testdata/** text eol=lf
 *.go text eol=lf
-testing/benchmark/testdata/** text eol=lf
