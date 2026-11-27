@@ -11,10 +11,9 @@ import (
 
 type sampleCode string
 
-const (
-	sampleBroken  sampleCode = "sample_broken"
-	sampleMessage            = "sample_broken: sample is broken"
-)
+const sampleBroken sampleCode = "sample_broken"
+
+const sampleMessage = "sample_broken: sample is broken"
 
 var sampleErrors = kernel.ErrorCatalog[sampleCode]{
 	sampleBroken: "sample is broken",

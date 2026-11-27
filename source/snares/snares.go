@@ -38,7 +38,7 @@ func New(project spider.Project) Snares {
 }
 
 func (s Snares) Streaming(out io.Writer) Snares {
-	s.ports.Weaver = s.ports.Weaver.Streaming(out)
+	s.ports.Weaver = s.ports.Streaming(out)
 
 	return s
 }
