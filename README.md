@@ -70,6 +70,21 @@ beacon/
 
 Las carpetas se crean cuando su fase las necesita (`.claude/delta/status.md`).
 
+## Ejecutores de ejemplo para UI
+
+`beacon init` propone solo los ejecutores de tests de cada stack. Los de UI no, porque no sabe si el proyecto tiene interfaz ni dónde guarda sus capturas. Con Bun como ejemplo, se escriben en `.beacon/config.yaml` y entran con el sí de la persona (`beacon record --approve`):
+
+```yaml
+runners:
+  test-e2e:
+    run: [bun, x, playwright, test, --grep, "{target}"]
+  visual:
+    run: [bun, x, playwright, test, --grep, "{target}"]
+    baseline: [tests/**/*-snapshots/**]
+```
+
+`visual` compara contra la captura base guardada en git, y actualizar esa captura es un cambio de nivel 3 (`.claude/delta/deltas.md`).
+
 ## Reglas de la estructura
 
 - **Dependencias en una sola dirección:** `router → snares → weaver → spider`, y `router → anchor`. Todas pueden usar `kernel` y `system`, salvo `domain`, que solo usa `kernel`.

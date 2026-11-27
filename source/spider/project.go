@@ -34,12 +34,16 @@ const (
 
 type ProjectCode string
 
-const ProjectMissing ProjectCode = "project_missing"
+const (
+	ProjectMissing ProjectCode = "project_missing"
+	ProjectExists  ProjectCode = "project_exists"
+)
 
 type ProjectError = kernel.Error[ProjectCode]
 
 var projectErrors = kernel.ErrorCatalog[ProjectCode]{
 	ProjectMissing: "no .beacon folder found here or in a parent folder",
+	ProjectExists:  "a .beacon folder already exists here or above",
 }
 
 type Project struct {

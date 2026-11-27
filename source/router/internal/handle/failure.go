@@ -35,6 +35,8 @@ var errorHints = map[string]string{
 	"claim_task_done":       "run beacon ready to pick another task",
 	"claim_task_archived":   "run beacon get {task} to see the closed task",
 	"claim_branch_detached": "check out a branch, then rerun",
+	"project_exists": "this repository already has .beacon; run " +
+		"beacon brief",
 	"base_missing": "pass --base <ref> with the branch to compare " +
 		"against",
 	"runner_missing": "add runner {runner} to .beacon/config.yaml, or fix " +

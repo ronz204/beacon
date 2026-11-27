@@ -132,6 +132,19 @@ limits:
 agents: [claude-code, codex, cursor]
 ```
 
+Con Bun como ejecutor principal, los ejemplos de UI son (`init` no los propone, porque no sabe si el proyecto tiene UI ni dónde guarda sus capturas):
+
+```yaml
+runners:
+  test-bun:
+    run: [bun, test, --cwd, "{pkg}", "{target}"]
+  test-e2e:
+    run: [bun, x, playwright, test, --grep, "{target}"]
+  visual:
+    run: [bun, x, playwright, test, --grep, "{target}"]
+    baseline: [tests/**/*-snapshots/**]
+```
+
 | Clave | Qué es | Cambiarla es |
 |---|---|---|
 | `schema` | Versión del esquema (`layout`) | Nivel 3 |

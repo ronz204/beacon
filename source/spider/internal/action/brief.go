@@ -18,6 +18,7 @@ const (
 	BriefGoal     BriefSection = "goal"
 	BriefBlockers BriefSection = "blockers"
 	BriefProgress BriefSection = "progress"
+	BriefQuestion BriefSection = "question"
 	BriefPending  BriefSection = "pending"
 	BriefChecks   BriefSection = "checks"
 	BriefGuides   BriefSection = "guides"
@@ -56,6 +57,7 @@ func Brief(
 		progressLines(snapshot),
 		pendingLines(pending),
 		texts.checkLines(analysis.Signals, analysis.Stale),
+		openQuestionLines(snapshot.Questions, analysis.Signals),
 		guideLines(snapshot.Guides),
 	)
 
@@ -247,6 +249,33 @@ func (t briefTexts) checkLines(
 			record.ID,
 			firstLine(t.reviews[record.ID.String()]),
 		))
+	}
+
+	return lines
+}
+
+func openQuestionLines(
+	questions []memory.Question,
+	signals []thread.Signal,
+) []BriefLine {
+	blocking := map[string]bool{}
+	for _, signal := range signals {
+		if signal.Kind == thread.SignalBlocked {
+			blocking[signal.Related.String()] = true
+		}
+	}
+
+	var lines []BriefLine
+	for _, question := range questions {
+		id := question.ID().String()
+		if question.Status() == memory.QuestionOpen && !blocking[id] {
+			lines = append(lines, briefLine(
+				BriefQuestion,
+				"Open question %s: %s",
+				id,
+				firstLine(question.Text().String()),
+			))
+		}
 	}
 
 	return lines

@@ -194,3 +194,25 @@ func TestInstallDoesNotDuplicateTheLineEndingRuleWrittenByHand(t *testing.T) {
 		}
 	}
 }
+
+func TestInstallOverAnOldGuideOnlyReplacesTheGuideBlock(t *testing.T) {
+	root := newBareRepository(t)
+	runInstall(t, root)
+	path := filepath.Join(root, "AGENTS.md")
+	current := utilities.ReadFile(t, path)
+	utilities.WriteFile(t, root, "AGENTS.md", strings.Replace(
+		current,
+		"beacon attest",
+		"beacon old",
+		1,
+	))
+
+	data := runInstall(t, root)
+
+	if len(data.Changes) != 1 || data.Changes[0].Path != "AGENTS.md" {
+		t.Fatalf("changes = %+v", data.Changes)
+	}
+	if utilities.ReadFile(t, path) != current {
+		t.Error("the guide block was not restored")
+	}
+}
