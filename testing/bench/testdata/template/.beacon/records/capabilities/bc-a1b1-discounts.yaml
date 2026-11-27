@@ -1,0 +1,13 @@
+id: bc-a1b1
+created: 2026-11-27
+author: "human:jane"
+name: Discounts
+intent: Large baskets get a percentage off the total.
+paths: [discount/**]
+serves: bc-0001
+promises:
+  - id: bc-b2c2
+    text: A basket of 20000 cents is charged 18000 cents.
+    check: {runner: gotest, pkg: ./discount, target: TestTenPercentOverOneHundred}
+    status: active
+    approved: {by: "human:jane", at: 2026-11-27}

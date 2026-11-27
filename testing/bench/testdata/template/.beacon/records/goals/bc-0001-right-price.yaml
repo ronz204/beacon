@@ -1,0 +1,6 @@
+id: bc-0001
+created: 2026-11-27
+author: "human:jane"
+statement: Customers see the right price for their basket.
+success: Every discount rule has a test that cites its promise.
+status: active

@@ -1,0 +1,11 @@
+{
+  "id": "add-total",
+  "title": "Add a basket total",
+  "kind": "feature",
+  "request": "Add Total(items []int) int to the discount package. It sums the items and applies Apply to the sum.",
+  "template": "../../template",
+  "hidden": {
+    "dir": "hidden",
+    "run": ["go", "test", "./discount/..."]
+  }
+}
