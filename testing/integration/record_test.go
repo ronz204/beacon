@@ -358,3 +358,76 @@ func TestApprovalRequiredListsTheChangesWithLowercaseKeys(t *testing.T) {
 		}
 	}
 }
+
+func writePayload(t *testing.T, root, payload string) string {
+	t.Helper()
+
+	return utilities.WriteFile(t, root, "payload.json", payload)
+}
+
+func TestRecordFromAFileDoesTheSameAsStdin(t *testing.T) {
+	root := utilities.NewRepository(t)
+	payload := weakenedLockout(t, root)
+	file := writePayload(t, root, payload)
+
+	result := utilities.BeaconWith(
+		t,
+		root,
+		utilities.Options{Actor: sampleAgent},
+		"record", "--json", "--file", file, "--approve",
+	)
+
+	text := utilities.ReadFile(t, filepath.Join(root, capabilityPath))
+	if result.Code != 0 || !strings.Contains(text, "After 10 failed") {
+		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
+	}
+}
+
+func TestRecordFromAFileStillAsksForTheYes(t *testing.T) {
+	root := utilities.NewRepository(t)
+	file := writePayload(t, root, weakenedLockout(t, root))
+
+	result := utilities.BeaconWith(
+		t,
+		root,
+		utilities.Options{Actor: sampleAgent},
+		"record", "--json", "--file", file,
+	)
+
+	asked := strings.Contains(result.Stdout, "approval_required")
+	if result.Code != 2 || !asked {
+		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
+	}
+}
+
+func TestRecordNeedsExactlyOneSource(t *testing.T) {
+	root := utilities.NewRepository(t)
+	file := writePayload(t, root, "{}")
+
+	cases := [][]string{
+		{"record", "--json", "-", "--file", file},
+		{"record", "--json"},
+	}
+
+	for _, args := range cases {
+		result := utilities.Beacon(t, root, args...)
+
+		rejected := strings.Contains(result.Stdout, "record_source_invalid")
+		if result.Code != 1 || !rejected {
+			t.Errorf("args %v: code %d, %s", args, result.Code, result.Stdout)
+		}
+	}
+}
+
+func TestRecordFromAMissingFileFails(t *testing.T) {
+	root := utilities.NewRepository(t)
+
+	result := utilities.Beacon(
+		t, root, "record", "--json", "--file", "missing.json",
+	)
+
+	unreadable := strings.Contains(result.Stdout, "record_file_unreadable")
+	if result.Code != 1 || !unreadable {
+		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
+	}
+}
