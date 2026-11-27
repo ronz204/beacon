@@ -4,7 +4,7 @@ Este plan cubre solo la fase en curso: en qué orden se construye y qué archivo
 
 La numeración de pasos, decisiones y hitos **se reinicia** en esta fase. Las referencias de la KB y de los commits anteriores apuntan a los planes de las fases cerradas, que están en el historial de git: la Fase 1 (Spider) con `git show 967f5aa:PLANNING.md`, la Fase 2 (Weaver) con `git show 9e5ed52:PLANNING.md` y la Fase 3 (Anchor) con `git show 8457fc7:PLANNING.md`.
 
-> **Estado: por empezar (2026-11-27).** D1 a D10 las cerró la persona. D11 a D19 son propuestas de este plan, pendientes de su visto bueno antes de construir el paso que las usa.
+> **Estado: por empezar (2026-11-27).** D1 a D19 las aprobó la persona el mismo día. Las verificaciones previas (GitHub, Bun, Python y la versión que estampa Go) están hechas y quedan en los pasos 6, 7 y 8.
 
 ## 1. Panorama
 
@@ -45,7 +45,7 @@ La fase trae también lo que Weaver todavía no tiene (`attest` y `verify`, con 
 - La segunda ola de agentes (Fase 6) y el hook de cierre `Stop`, que sigue siendo ruido (`anchor`).
 - `stale` y la frescura de guides (Fase 5), y el lint de tests que citan promesas inexistentes (`pledge`), que se evalúa con ellos.
 - `stats` y correr el benchmark de fricción (Fase 6).
-- Releases, Homebrew y Scoop (distribución, sin fase todavía) y plantillas de CI distintas de GitHub (`snares`).
+- Etiquetas, Releases, Homebrew y Scoop (distribución, sin fase todavía; la persona agregará las etiquetas más adelante) y plantillas de CI distintas de GitHub (`snares`).
 
 ### Qué existirá al terminar
 
@@ -83,7 +83,7 @@ action/*                   precommit, ci, comment
 
 ## 2. Decisiones
 
-D1 a D10 se cerraron con la persona el 2026-11-27. D11 a D19 son propuestas de este plan.
+D1 a D10 se cerraron con la persona el 2026-11-27, y D11 a D19, que eran propuestas del plan, las aprobó el mismo día.
 
 ### D1. Todo en la Fase 4, en cuatro bloques
 
@@ -106,7 +106,7 @@ D1 a D10 se cerraron con la persona el 2026-11-27. D11 a D19 son propuestas de e
 ### D4. El CI instala `beacon` con `go install`
 
 - **Decisión:** la plantilla instala el binario con `go install github.com/ronz204/beacon/cmd/beacon@<versión>`. No se publican Releases en esta fase.
-- **Detalle propuesto:** `install --ci github` escribe como versión la del binario que lo ejecuta (`runtime/debug.ReadBuildInfo`, que da la etiqueta cuando se instaló con `go install ...@v1.2.3`). Si es una compilación local, usa `latest` y el resumen avisa que conviene fijarla.
+- **Detalle (verificado el 2026-11-27):** `install --ci github` escribe como versión la del binario que lo ejecuta, con `runtime/debug.ReadBuildInfo`. Con Go 1.24 o más, una compilación local dentro de un repo git **ya no da `(devel)`**: estampa una pseudoversión (`v0.0.0-20261127145601-c96620ea8bf8`, medida sobre el binario de este repo), que `go install` acepta si ese commit está en el remoto, y con una etiqueta (`go install ...@v1.2.3`) da la etiqueta. Si termina en `+dirty` no se puede instalar: se usa `latest` y el resumen avisa. La persona agregará etiquetas y Releases más adelante; con ellas la versión queda fija sin cambiar nada de esto.
 - **Afecta a:** paso 7.
 
 ### D5. La plantilla de GitHub se entrega con `beacon install --ci github`
@@ -146,51 +146,51 @@ D1 a D10 se cerraron con la persona el 2026-11-27. D11 a D19 son propuestas de e
 
 ### D11. `attest`: un comando que lista y atestigua
 
-- **Propuesta:** `beacon attest` sin argumentos lista las promesas **manuales cuyo código cambió** desde la base (`pledge`), con una pregunta de sí o no por cada una, que el agente hace de una en una. `beacon attest <promesa>... [--evidence <ref>]` las atestigua. El sello usa las mismas reglas que `approved` (D13 de la Fase 3): `by` es la persona y `via` es el agente si el sí llega sin terminal. `attested` suma `via` (opcional) a `{by, at, commit, evidence}`.
+- **Decisión:** `beacon attest` sin argumentos lista las promesas **manuales cuyo código cambió** desde la base (`pledge`), con una pregunta de sí o no por cada una, que el agente hace de una en una. `beacon attest <promesa>... [--evidence <ref>]` las atestigua. El sello usa las mismas reglas que `approved` (D13 de la Fase 3): `by` es la persona y `via` es el agente si el sí llega sin terminal. `attested` suma `via` (opcional) a `{by, at, commit, evidence}`.
 - **`commit`:** el commit `HEAD` del momento. Si hay cambios sin commitear en los `paths` de la promesa, la atestación queda con deriva, como cualquier resultado (`pledge`).
 - **Afecta a:** paso 2.
 
 ### D12. Cómo se calcula y se muestra el riesgo
 
-- **Propuesta:** el riesgo es **alto** si hay un cambio de nivel 3 (incluye ejecutores, esquema y capturas base) o se toca una capability con promesas en rojo o con deriva; si no, **bajo** (`deltas`). `verify` lo calcula y `diff` lo muestra en una línea. El agente puede subirlo (`verify --risk high`), nunca bajarlo.
+- **Decisión:** el riesgo es **alto** si hay un cambio de nivel 3 (incluye ejecutores, esquema y capturas base) o se toca una capability con promesas en rojo o con deriva; si no, **bajo** (`deltas`). `verify` lo calcula y `diff` lo muestra en una línea. El agente puede subirlo (`verify --risk high`), nunca bajarlo.
 - **Código de salida de `verify`:** 2 si algún check queda en rojo; con riesgo alto sin rojos sale 0 y el `hint` pide la revisión. La revisión nunca hace commit ni push.
 - **Afecta a:** paso 3.
 
 ### D13. En el CI los ejecutores son los de la base
 
-- **Propuesta:** `snares ci` lee los `runners` de `config.yaml` de la **rama base** (`git show <base>:.beacon/config.yaml`). Solo usa los de la rama del PR si su `config.yaml` trae un `approved` fresco (la regla del sí fresco, Fase 2, D19). Si el PR cambia los ejecutores sin sello, las promesas que dependen de ellos **no se ejecutan** y el comando falla con código 2 y `runners_unapproved`.
+- **Decisión:** `snares ci` lee los `runners` de `config.yaml` de la **rama base** (`git show <base>:.beacon/config.yaml`). Solo usa los de la rama del PR si su `config.yaml` trae un `approved` fresco (la regla del sí fresco, Fase 2, D19). Si el PR cambia los ejecutores sin sello, las promesas que dependen de ellos **no se ejecutan** y el comando falla con código 2 y `runners_unapproved`.
 - **Por qué:** un PR no puede ejecutar ejecutores que él mismo introduce (`snares`).
 - **Afecta a:** paso 6.
 
 ### D14. Cómo verifica los síes el CI
 
-- **Propuesta:** reutiliza los pendientes de sí de `diff` (Fase 2, D19) calculados contra la base del evento: en `pull_request`, el merge-base; en `merge_group`, la base que trae el propio evento, pasada con `--base`. Un pendiente sale con código 2 y el comentario lo lista. Es un marcado: la garantía real es la review (`deltas`).
+- **Decisión:** reutiliza los pendientes de sí de `diff` (Fase 2, D19) calculados contra la base del evento: en `pull_request`, el merge-base; en `merge_group`, la base que trae el propio evento, pasada con `--base`. Un pendiente sale con código 2 y el comentario lo lista. Es un marcado: la garantía real es la review (`deltas`).
 - **Afecta a:** paso 6.
 
 ### D15. El pre-commit compara con `HEAD` y corre solo lo relacionado
 
-- **Propuesta:** compara el árbol de trabajo con `HEAD` (lo que el commit está por sumar, sin importar qué se añadió al índice) y corre los checks de las capabilities tocadas respecto de la base (`check` sin argumentos), no todos. Un check en rojo, un nivel 3 sin sello o un registro inválido salen con código 2. Es un cálculo parecido al del CI, con menos alcance, para que el commit no tarde.
+- **Decisión:** compara el árbol de trabajo con `HEAD` (lo que el commit está por sumar, sin importar qué se añadió al índice) y corre los checks de las capabilities tocadas respecto de la base (`check` sin argumentos), no todos. Un check en rojo, un nivel 3 sin sello o un registro inválido salen con código 2. Es un cálculo parecido al del CI, con menos alcance, para que el commit no tarde.
 - **Límite anotado:** comparar con el árbol de trabajo y no con el índice puede bloquear por un archivo que no se va a commitear; se acepta por simplicidad y se afina con el uso.
 - **Afecta a:** paso 4.
 
 ### D16. La guía suma `attest` y `--file`
 
-- **Propuesta:** el bloque de guía del método (`anchor`) cambia dos frases: la regla 4 recomienda `beacon record --file <ruta>` para textos largos, y la regla 7 pide, al terminar, preguntarle a la persona por las promesas manuales con `beacon attest`. Sigue por debajo de 30 líneas. El hook `Stop` sigue sin existir.
+- **Decisión:** el bloque de guía del método (`anchor`) cambia dos frases: la regla 4 recomienda `beacon record --file <ruta>` para textos largos, y la regla 7 pide, al terminar, preguntarle a la persona por las promesas manuales con `beacon attest`. Sigue por debajo de 30 líneas. El hook `Stop` sigue sin existir.
 - **Afecta a:** paso 10.
 
 ### D17. Los ejecutores de UI son documentación
 
-- **Propuesta:** los ejemplos de `test-e2e` (Playwright) y `visual` (con su `baseline`) se documentan en la KB y en el `README` con Bun como ejemplo principal; `init` no los propone, porque no puede saber si el proyecto tiene UI ni dónde guarda sus capturas.
+- **Decisión:** los ejemplos de `test-e2e` (Playwright) y `visual` (con su `baseline`) se documentan en la KB y en el `README` con Bun como ejemplo principal; `init` no los propone, porque no puede saber si el proyecto tiene UI ni dónde guarda sus capturas.
 - **Afecta a:** paso 10.
 
 ### D18. `init` no escribe la clave `agents`
 
-- **Propuesta:** con un solo agente soportado la clave no informa nada, y Anchor no toca `.beacon/`. Se retoma en la Fase 6, cuando haya más de un adaptador.
+- **Decisión:** con un solo agente soportado la clave no informa nada, y Anchor no toca `.beacon/`. Se retoma en la Fase 6, cuando haya más de un adaptador.
 - **Afecta a:** paso 9.
 
 ### D19. `snares ci` entrega un comentario y un resumen
 
-- **Propuesta:** `--comment <ruta>` escribe el comentario en Markdown (el diff por nivel, los pendientes, los rojos y el riesgo); la plantilla lo publica con `gh pr comment` solo en `pull_request` y lo copia al resumen del job. El binario no habla con la API de GitHub.
+- **Decisión:** `--comment <ruta>` escribe el comentario en Markdown (el diff por nivel, los pendientes, los rojos y el riesgo); la plantilla lo publica con `gh pr comment` solo en `pull_request` y lo copia al resumen del job. El binario no habla con la API de GitHub.
 - **Afecta a:** pasos 6 y 7.
 
 ## 3. Estructura objetivo
@@ -336,7 +336,11 @@ cmd/beacon → router → snares.go → action → weaver.go → spider.go
 ### Paso 7. La plantilla de GitHub Actions
 
 - **Objetivo:** que un proyecto tenga el CI con una línea (D4, D5).
-- **Antes de escribir:** verificar contra la documentación de GitHub el nombre y el comportamiento exactos del evento `merge_group` (`snares` lo marca como no consultado), qué trae `github.event.merge_group` como base, y las versiones vigentes de las acciones que use la plantilla. Anotarlo en `snares`.
+- **Verificado el 2026-11-27** en la documentación de GitHub (se anota en `snares`):
+  - **Confirmado:** el evento se llama `merge_group`, su único tipo es `checks_requested`, corre "cuando un pull request se agrega a una cola de fusión", `GITHUB_SHA` es el SHA del grupo y el workflow **debe** incluir `merge_group` como disparador para que los checks requeridos reporten. El evento es distinto de `pull_request` y `push`. `actions/checkout` trae por omisión un solo commit del SHA que disparó el workflow, y `fetch-depth: 0` trae todo el historial.
+  - **Para `gh pr comment`:** `--body-file <archivo>` lee el cuerpo de un archivo, el token va en `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`, y al declarar `permissions` lo no declarado queda en `none`, así que hacen falta `contents: read` y `pull-requests: write`. El resumen del job se escribe en `$GITHUB_STEP_SUMMARY` (tope de 1 MiB por paso). En un PR desde un fork el token es de solo lectura, así que el comentario falla ahí: la plantilla lo publica solo si el PR es del mismo repositorio.
+  - **Sin confirmar:** los campos del payload de `merge_group` (`base_sha`, `base_ref`, `head_sha`) **no aparecen en las páginas leídas**, ni el formato de `GITHUB_REF`. La plantilla usa `github.event.merge_group.base_sha` para `--base` y, mientras no se confirme, `snares ci` cae a `git merge-base HEAD origin/<rama base>` cuando `--base` llega vacío. Queda como riesgo hasta que corra en una cola real.
+  - **Versiones:** el README de `actions/checkout` y de `actions/setup-go` muestra `@v7` como la actual (no se consultó la página de releases); se vuelve a mirar al escribir el archivo.
 - **Construye:** `agents/github` de Anchor y `assets/beacon.yml`: `pull_request` y `merge_group`, `actions/checkout` con `fetch-depth: 0`, la instalación de `beacon` (D4), `beacon snares ci --base ... --comment ...`, y la publicación del comentario con `gh pr comment` solo en `pull_request`. Suma `install --ci github`.
 - **Hecho cuando:** `install --ci github` crea el archivo, repetirlo no cambia nada, `--uninstall` lo quita, el YAML tiene la forma que GitHub espera (se valida con un lector YAML en el test) y la verificación queda escrita en `snares`.
 - **No se puede probar aquí:** que el workflow corra de verdad en GitHub. Se prueba el comando que llama y la forma del archivo.
@@ -348,7 +352,10 @@ cmd/beacon → router → snares.go → action → weaver.go → spider.go
 ### Paso 8. El escaneo mecánico
 
 - **Objetivo:** saber qué hay en un repo sin inventar nada (D6).
-- **Antes de escribir:** verificar cómo se ejecutan los tests de **Bun** (el principal) por paquete y por archivo, y los de Python, para que los ejecutores propuestos sean comandos reales con `{pkg}` y `{target}`. Anotar lo verificado en `method`.
+- **Verificado el 2026-11-27** con Bun 1.3.14 y Python 3.14 en esta máquina (se anota en `method`):
+  - **Bun:** `bun test <ruta> -t "<nombre>"` filtra por archivo y por nombre desde la raíz, `bun test --cwd <paquete>` corre un paquete de un workspace, y un test que falla sale con código 1. Ejecutor propuesto: `test-bun: [bun, test, --cwd, "{pkg}", "{target}"]`, con `{target}` como ruta de archivo relativa al paquete.
+  - **Python:** `python -m pytest <archivo>::<test>` elige un test y `-k` filtra por nombre; un fallo sale con 1. Ejecutor propuesto: `test-python: [python, -m, pytest, "{target}"]`. `pytest` no está instalado en esta máquina: la prueba se hizo con `uv run --with pytest`, y el ejecutor da `runner_unavailable` si falta.
+  - **Go:** `[go, test, "{pkg}", -run, "{target}"]` (ya en uso). **Node:** `[pnpm, --filter, "{pkg}", test, --, "{target}"]` (el ejemplo de la KB); npm y yarn llevan su propia variante.
 - **Construye:** `driver/scan` y `Scan` en Spider: detecta Go (`go.mod`), Bun (`bun.lock`, `bunfig.toml`, `package.json`), Node (`pnpm-lock.yaml`, `yarn.lock`, `package-lock.json`) y Python (`pyproject.toml`, `requirements.txt`); los paquetes de un monorepo (workspaces o módulos); el comando de test de cada uno como **ejecutor propuesto**; y las carpetas candidatas a capability, por tamaño.
 - **Cuidado:** solo lee; no escribe nada. Ignora `node_modules`, `.git`, `vendor`, `dist` y las carpetas ocultas.
 - **Hecho cuando:** en repos temporales de cada ecosistema, el escaneo devuelve el stack, los ejecutores y los candidatos esperados; un repo sin ninguno devuelve la lista vacía con un `hint`; y un monorepo mixto detecta los dos stacks.
@@ -400,9 +407,9 @@ cmd/beacon → router → snares.go → action → weaver.go → spider.go
 | El pre-commit bloquea por un cambio que no se va a commitear (compara con el árbol de trabajo, D15) | Límite anotado; se afina con el uso del paso 11 |
 | Un hook existente (husky, `core.hooksPath` versionado) se edita sin querer | El bloque es gestionado, `install` guarda copia, el resumen avisa de que edita un archivo del proyecto y `--skip precommit` lo evita |
 | El CI ejecuta código del PR | Ejecutores de la base hasta que se aprueben (D13), sin shell y con parámetros que no empiezan con `-` (`pledge`) |
-| El evento `merge_group` no se comporta como la KB supone (viene de mi conocimiento, no de una fuente consultada) | El paso 7 empieza verificándolo contra la documentación de GitHub |
-| No hay etiquetas ni Releases, así que `go install ...@<versión>` puede no tener una versión fija (D4) | La plantilla usa la versión del binario que ejecuta `install` y avisa si es local; publicar Releases queda como tarea de distribución |
-| El escaneo propone mal los ejecutores de Bun o Python | El paso 8 verifica los comandos reales antes de escribirlos, y los ejecutores solo entran con un sí (D6) |
+| El payload de `merge_group` (`base_sha`) no se pudo confirmar en la documentación | `snares ci` cae a `git merge-base` si `--base` llega vacío; se confirma la primera vez que corra en una cola de fusión real |
+| No hay etiquetas ni Releases, así que la versión que fija la plantilla es una pseudoversión de commit (D4) | Sirve mientras el commit esté en el remoto; con `+dirty` se cae a `latest` y se avisa. La persona agregará las etiquetas más adelante |
+| El escaneo propone mal los ejecutores de Bun o Python | Los comandos se probaron en esta máquina (paso 8) y los ejecutores solo entran con un sí (D6); lo no instalado da `runner_unavailable`, no un rojo |
 | `init` genera ruido en un monorepo grande | Tope de 10 capabilities y una pregunta resumen del resto (D7) |
 | El agente fabrica un sí o una atestación | Es un marcado, no una prueba (`deltas`); la garantía es la review del PR. Los síes del paso 11 los da la persona |
 | La atestación `via` agente se toma por una verificación humana | `attest` solo afirma que una persona dijo sí; la evidencia del agente es `observed` y no cuenta (`pledge`) |
