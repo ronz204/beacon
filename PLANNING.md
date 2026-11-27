@@ -323,20 +323,27 @@ cmd/beacon → router → snares.go → action → weaver.go → spider.go
 
 **Rama:** `feat/snares-ci`, desde `main` con el Bloque 1 fusionado.
 
-### Paso 4. La pieza Snares y `snares pre-commit`
+### Paso 4. La pieza Snares y `snares pre-commit` (hecho)
 
 - **Objetivo:** que un commit que debilita lo prometido se bloquee sin depender del agente (D3, D15).
 - **Construye:** `source/snares` con su fachada (`snares.go`, `views.go`) y `action/precommit.go`, que llama a `Spider.Doctor`, a los pendientes de sí de Weaver contra `HEAD` y a `Check` de las capabilities tocadas. Sale con 0, o con 2 y un `hint` por cada bloqueo. Añade el grupo `beacon snares` al router.
 - **Hecho cuando:** en un repo temporal, un nivel 3 sin sello, un check en rojo y un registro inválido salen cada uno con código 2 y su `hint`; la deriva solo avisa; y un commit sin nada de eso sale con 0.
+- **Cómo quedó:**
+  - `snares.New(project)` junta `Spider.Doctor` y `Weaver` (`Diff` desde `HEAD`, `Check` de lo tocado) detrás de una interfaz `Ports`, y la acción devuelve bloqueos (`invalid_state`, `unapproved_change`, `failed_check`) con su `hint`; el router los junta y sale con 2.
+  - **Sin commits todavía:** si no hay `HEAD`, solo valida el estado y avisa. **Sin rama base:** salta los checks y avisa. Un ejecutor que no arranca avisa y no bloquea.
 
-### Paso 5. Instalar el pre-commit
+### Paso 5. Instalar el pre-commit (hecho)
 
 - **Objetivo:** que `install` deje el hook funcionando (D3).
 - **Construye:** el agente `git` de Anchor, que contribuye un bloque gestionado al hook de pre-commit (`#!/bin/sh` si el archivo es nuevo; `beacon snares pre-commit || exit $?`). La ruta sale de `git rev-parse --git-path hooks/pre-commit`, que respeta `core.hooksPath`; el archivo queda ejecutable; el `FileStore` sabe escribir dentro de la carpeta de git. Suma `--skip precommit`, y `.beacon/** text eol=lf linguist-generated` en el bloque de `.gitattributes` (`snares`).
 - **Cuidado:** si el hook ya existe y termina con `exit 0`, el bloque se agrega antes de esa línea; si `core.hooksPath` apunta a una carpeta versionada del repo (husky), el resumen avisa de que se edita un archivo del proyecto.
 - **Hecho cuando:** `install` crea el hook ejecutable, un `git commit` real se bloquea con un nivel 3 sin sello y pasa con `--no-verify`, repetir `install` no cambia nada y `--uninstall` deja el hook como estaba.
+- **Cómo quedó:**
+  - `agents/git` entrega un bloque con `#!/bin/sh` como preámbulo del archivo nuevo; `Planner` suma `Git` (con `--skip precommit` se omite) y `CI`. En la desinstalación, un hook que queda solo con el preámbulo se borra.
+  - `blocks.Upsert` inserta el bloque antes de un `exit 0` final, y quitarlo devuelve el archivo igual que estaba. `files.Repo` conoce la ruta del hook (`git rev-parse --git-path`, que respeta `core.hooksPath`), la acepta aunque quede fuera del repo y le pone modo 0755.
+  - Si el hook es un archivo del proyecto (husky), el resumen avisa. `.gitattributes` suma `linguist-generated`.
 
-### Paso 6. Ejecutores de la base y `snares ci`
+### Paso 6. Ejecutores de la base y `snares ci` (hecho)
 
 - **Objetivo:** que el CI sea la garantía (D8, D13, D14, D19).
 - **Construye:**
@@ -345,8 +352,12 @@ cmd/beacon → router → snares.go → action → weaver.go → spider.go
   - `action/comment.go` y `--comment <ruta>`: el Markdown con el diff por nivel.
   - `beacon snares ci [--base <ref>] [--scope all|touched] [--comment <ruta>]`.
 - **Hecho cuando:** en un repo temporal con una rama que cambia los ejecutores sin sello, las promesas que dependen de ellos no se ejecutan y sale con 2; con el sello, se usan los de la rama; un nivel 3 sin sello sale con 2; un PR limpio sale con 0; y el comentario lista lo que debe leer el revisor.
+- **Cómo quedó:**
+  - `Project.RunnersAt` lee `config.yaml` en una revisión (vacío si no existía) y `CheckInput.RunnersAt` hace que el `Checker` use esos ejecutores y **omita** las promesas cuyo ejecutor no existe ahí (`skipped`), en vez de fallar con `runner_missing`.
+  - `snares ci` calcula primero el diff contra la base. Si hay un cambio `runners_changed` sin sello, corre con los ejecutores de la base y bloquea con `runners_unapproved`; si lo tiene, usa los de la rama. Los demás pendientes salen como `unapproved_change`.
+  - `--base` vacío cae a `origin/HEAD`, `main`, `master`, `origin/main` y `origin/master`. `--comment` escribe el Markdown (riesgo, bloqueos, omitidas, avisos y cambios por nivel).
 
-### Paso 7. La plantilla de GitHub Actions
+### Paso 7. La plantilla de GitHub Actions (hecho)
 
 - **Objetivo:** que un proyecto tenga el CI con una línea (D4, D5).
 - **Verificado el 2026-11-27** en la documentación de GitHub (se anota en `snares`):
@@ -357,6 +368,10 @@ cmd/beacon → router → snares.go → action → weaver.go → spider.go
 - **Construye:** `agents/github` de Anchor y `assets/beacon.yml`: `pull_request` y `merge_group`, `actions/checkout` con `fetch-depth: 0`, la instalación de `beacon` (D4), `beacon snares ci --base ... --comment ...`, y la publicación del comentario con `gh pr comment` solo en `pull_request`. Suma `install --ci github`.
 - **Hecho cuando:** `install --ci github` crea el archivo, repetirlo no cambia nada, `--uninstall` lo quita, el YAML tiene la forma que GitHub espera (se valida con un lector YAML en el test) y la verificación queda escrita en `snares`.
 - **No se puede probar aquí:** que el workflow corra de verdad en GitHub. Se prueba el comando que llama y la forma del archivo.
+- **Cómo quedó:**
+  - `actions/checkout` y `actions/setup-go` siguen en `@v7` (v7.0.1 y v7.1.0, consultado el 2026-11-27 en la API pública de releases).
+  - El archivo entero es un bloque gestionado (`# BEGIN BEACON` ... `# END BEACON`) con `{{version}}`, que `install` llena con `runtime/debug`; sin versión usable (`(devel)` o `+dirty`) pone `latest` y el resumen avisa.
+  - `--base` es `origin/<base_ref>` en `pull_request` y `merge_group.base_sha` en la cola; si llega vacío, no se pasa. El comentario se publica solo si el PR es del mismo repositorio. `--ci` solo acepta `github`.
 
 ## 6. Bloque 3: arranque
 

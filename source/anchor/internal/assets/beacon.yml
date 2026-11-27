@@ -1,0 +1,42 @@
+# BEGIN BEACON (managed block: do not edit inside)
+name: beacon
+
+on:
+  pull_request:
+  merge_group:
+    types: [checks_requested]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  snares:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+      - name: Install beacon
+        run: |
+          go install github.com/ronz204/beacon/cmd/beacon@{{version}}
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Run the snares
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.merge_group.base_sha }}
+        run: |
+          status=0
+          args=()
+          if [ -n "$BASE" ]; then args+=(--base "$BASE"); fi
+          beacon snares ci "${args[@]}" --comment "$RUNNER_TEMP/beacon.md" || status=$?
+          if [ -f "$RUNNER_TEMP/beacon.md" ]; then cat "$RUNNER_TEMP/beacon.md" >> "$GITHUB_STEP_SUMMARY"; fi
+          exit $status
+      - name: Comment on the pull request
+        if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && hashFiles(format('{0}/beacon.md', runner.temp)) != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment "${{ github.event.pull_request.number }}" --body-file "$RUNNER_TEMP/beacon.md"
+# END BEACON

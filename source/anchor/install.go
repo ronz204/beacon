@@ -20,6 +20,10 @@ const (
 
 	missingBinaryNote = "beacon is not on PATH; the agent calls it by " +
 		"name, so install it with go install or add it to PATH"
+	latestVersion       = "latest"
+	unpinnedVersionNote = "this beacon has no release version, so the " +
+		"workflow installs the latest one; push a tag or install a tagged " +
+		"beacon and run install again to pin it"
 	versionedHookNote = "the pre-commit hook is a file of the project, so " +
 		"this edits it and the change is committed with the project: "
 )
@@ -130,6 +134,9 @@ func (a Anchor) reviewNotes(options InstallOptions) []string {
 
 	if _, err := a.lookup(binaryName); err != nil {
 		notes = append(notes, missingBinaryNote)
+	}
+	if options.CI != "" && !a.pinned {
+		notes = append(notes, unpinnedVersionNote)
 	}
 	if options.Precommit && versionedHook(a.hookPath) {
 		notes = append(notes, versionedHookNote+a.hookPath)

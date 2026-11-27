@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ronz204/beacon/testing/utilities"
+	"go.yaml.in/yaml/v4"
 )
 
 type ciData struct {
@@ -249,6 +250,80 @@ func TestCIRejectsAnUnknownScope(t *testing.T) {
 	result := utilities.Beacon(t, root, "snares", "ci", "--scope", "some")
 
 	if result.Code != 1 || !strings.Contains(result.Stderr, "scope_invalid") {
+		t.Fatalf("code %d, stderr %s", result.Code, result.Stderr)
+	}
+}
+
+const workflowFile = ".github/workflows/beacon.yml"
+
+func TestInstallCIWritesAWorkflowGitHubCanRead(t *testing.T) {
+	root := newBareRepository(t)
+
+	runInstall(t, root, "--ci", "github")
+
+	var workflow struct {
+		On   map[string]any `yaml:"on"`
+		Jobs map[string]struct {
+			Steps []struct {
+				Uses string         `yaml:"uses"`
+				Run  string         `yaml:"run"`
+				With map[string]any `yaml:"with"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	text := utilities.ReadFile(t, filepath.Join(root, workflowFile))
+	if err := yaml.Unmarshal([]byte(text), &workflow); err != nil {
+		t.Fatalf("invalid yaml: %v\n%s", err, text)
+	}
+
+	if _, ok := workflow.On["pull_request"]; !ok {
+		t.Errorf("on = %v", workflow.On)
+	}
+	if _, ok := workflow.On["merge_group"]; !ok {
+		t.Errorf("on = %v", workflow.On)
+	}
+
+	steps := workflow.Jobs["snares"].Steps
+	if len(steps) < 4 || steps[0].With["fetch-depth"] != 0 {
+		t.Errorf("steps = %+v", steps)
+	}
+	if strings.Contains(text, "{{version}}") ||
+		!strings.Contains(text, "go install github.com/ronz204/beacon/cmd") {
+		t.Errorf("the version was not filled:\n%s", text)
+	}
+}
+
+func TestInstallCITwiceChangesNothingAndUninstallRemovesIt(t *testing.T) {
+	root := newBareRepository(t)
+
+	runInstall(t, root, "--ci", "github")
+	again := runInstall(t, root, "--ci", "github")
+	runInstall(t, root, "--uninstall")
+
+	if len(again.Changes) != 0 {
+		t.Errorf("second install changed %+v", again.Changes)
+	}
+	if present(root, workflowFile) {
+		t.Error("the workflow is still there")
+	}
+}
+
+func TestInstallWithoutCIDoesNotTouchTheWorkflows(t *testing.T) {
+	root := newBareRepository(t)
+
+	runInstall(t, root)
+
+	if present(root, ".github") {
+		t.Error("install wrote CI files without --ci")
+	}
+}
+
+func TestInstallRejectsAnUnknownCI(t *testing.T) {
+	root := newBareRepository(t)
+
+	result := utilities.Beacon(t, root, "install", "--ci", "gitlab")
+
+	if result.Code != 1 || !strings.Contains(result.Stderr, "ci_invalid") {
 		t.Fatalf("code %d, stderr %s", result.Code, result.Stderr)
 	}
 }
