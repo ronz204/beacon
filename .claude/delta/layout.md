@@ -88,7 +88,7 @@ Los worktrees de un mismo repo comparten `.git/beacon/`, y varias sesiones de ag
 | guide | `title`, `kind`, `applies`, `always`, `review`, `reviewed`, `tags`, `audience`, `status`, `refers` |
 | `check` | `runner` y sus parámetros en orden alfabético, o `manual` |
 | `approved` | `by`, `at`, `via` |
-| `attested` | `by`, `at`, `commit`, `evidence` |
+| `attested` | `by`, `at`, `via`, `commit`, `evidence` |
 | `config.yaml` | `schema`, `runners`, `review`, `limits`, `agents`, `approved`. Los ejecutores van en orden alfabético, cada uno con `run` y `baseline`; `review` y `limits` siguen el orden de `ledger` |
 
 - El binario valida contra un esquema y, si algo no encaja, dice cómo arreglarlo.

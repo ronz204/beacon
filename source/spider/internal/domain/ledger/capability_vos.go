@@ -179,6 +179,7 @@ func (c PromiseCheck) Manual() string {
 type PromiseAttestationInput struct {
 	By       string
 	At       string
+	Via      string
 	Commit   string
 	Evidence string
 }
@@ -186,6 +187,7 @@ type PromiseAttestationInput struct {
 type PromiseAttestation struct {
 	by       kernel.Actor
 	at       kernel.CalendarDate
+	via      kernel.Actor
 	commit   string
 	evidence string
 }
@@ -204,12 +206,31 @@ func ParsePromiseAttestation(
 		return invalidPromiseAttestation()
 	}
 
+	via, err := parseAttestationVia(input.Via)
+	if err != nil {
+		return invalidPromiseAttestation()
+	}
+
 	return PromiseAttestation{
 		by:       by,
 		at:       at,
+		via:      via,
 		commit:   commit,
 		evidence: strings.TrimSpace(input.Evidence),
 	}, nil
+}
+
+func parseAttestationVia(raw string) (kernel.Actor, error) {
+	if strings.TrimSpace(raw) == "" {
+		return kernel.Actor{}, nil
+	}
+
+	via, err := kernel.ParseActor(raw)
+	if err != nil || via.IsHuman() {
+		return kernel.Actor{}, capabilityErrors.Fail(PromiseAttestInvalid, nil)
+	}
+
+	return via, nil
 }
 
 func invalidPromiseAttestation() (PromiseAttestation, error) {
@@ -223,6 +244,10 @@ func (a PromiseAttestation) By() kernel.Actor {
 
 func (a PromiseAttestation) At() kernel.CalendarDate {
 	return a.at
+}
+
+func (a PromiseAttestation) Via() (kernel.Actor, bool) {
+	return a.via, !kernel.IsMissing(a.via)
 }
 
 func (a PromiseAttestation) Commit() string {

@@ -171,3 +171,49 @@ func TestParsePromiseAttestationRejectsInvalid(t *testing.T) {
 		})
 	}
 }
+
+func TestParsePromiseAttestationKeepsWhoTransmittedIt(t *testing.T) {
+	got, err := ledger.ParsePromiseAttestation(
+		ledger.PromiseAttestationInput{
+			By:     "human:jane",
+			At:     "2026-11-22",
+			Via:    "agent:sample-agent",
+			Commit: "9f3c2ab",
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	via, found := got.Via()
+	if !found || via.String() != "agent:sample-agent" {
+		t.Errorf("via = %q, found %v", via, found)
+	}
+
+	direct, err := ledger.ParsePromiseAttestation(
+		ledger.PromiseAttestationInput{
+			By:     "human:jane",
+			At:     "2026-11-22",
+			Commit: "9f3c2ab",
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, found := direct.Via(); found {
+		t.Error("a direct attestation must not carry via")
+	}
+}
+
+func TestParsePromiseAttestationRejectsAHumanVia(t *testing.T) {
+	_, err := ledger.ParsePromiseAttestation(
+		ledger.PromiseAttestationInput{
+			By:     "human:jane",
+			At:     "2026-11-22",
+			Via:    "human:sam",
+			Commit: "9f3c2ab",
+		},
+	)
+
+	requireCode(t, err, ledger.PromiseAttestInvalid)
+}

@@ -46,6 +46,10 @@ var errorHints = map[string]string{
 	"runner_run_invalid": "fix the runner in .beacon/config.yaml, then rerun",
 	"state_invalid":      "fix the reported records, then run beacon doctor",
 	"history_failed":     "run beacon from inside a git repository",
+	"attest_not_manual": "only manual promises are attested; run " +
+		"beacon check <capability> for the automatic ones",
+	"attest_uncommitted": "commit the code of capability {capability} " +
+		"first, then run beacon attest again",
 	"block_unclosed": "restore the END BEACON line or delete the block in " +
 		"the reported file, then rerun",
 	"entry_conflict": "the file already has a different value at {path}; " +

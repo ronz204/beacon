@@ -10,17 +10,20 @@ import (
 type DiffInput struct {
 	Since string
 	Base  string
+	Raise bool
 }
 
 type DiffResult struct {
 	Revision string
 	Entries  []Entry
 	Pending  []Entry
+	Risk     deltas.Assessment
 }
 
 type Differ struct {
 	Changes deltas.ChangeSource
 	Base    BaseResolver
+	Zones   ZoneSource
 }
 
 func (d Differ) Pending(ctx context.Context) ([]Entry, error) {
@@ -56,9 +59,35 @@ func (d Differ) Diff(
 
 	entries := EntriesOf(changes)
 
+	risk, err := d.risk(ctx, revision, entries, input.Raise)
+	if err != nil {
+		return DiffResult{}, err
+	}
+
 	return DiffResult{
 		Revision: revision,
 		Entries:  entries,
 		Pending:  PendingOf(entries),
+		Risk:     risk,
 	}, nil
+}
+
+func (d Differ) risk(
+	ctx context.Context,
+	revision string,
+	entries []Entry,
+	raised bool,
+) (deltas.Assessment, error) {
+	var zones []deltas.Zone
+
+	if d.Zones != nil {
+		found, err := d.Zones.Zones(ctx, revision)
+		if err != nil {
+			return deltas.Assessment{}, err
+		}
+
+		zones = found
+	}
+
+	return deltas.AssessRisk(findingsOf(entries), zones, raised), nil
 }

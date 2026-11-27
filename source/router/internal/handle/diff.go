@@ -58,11 +58,12 @@ func pendingHint(view weaver.DiffView) string {
 }
 
 func diffLines(view weaver.DiffView) []string {
+	lines := []string{riskLine(view.Risk)}
+
 	if len(view.Levels) == 0 {
-		return []string{"no state changes since " + view.Revision}
+		return append(lines, "no state changes since "+view.Revision)
 	}
 
-	var lines []string
 	for _, level := range view.Levels {
 		lines = append(lines, fmt.Sprintf("level %d", level.Level))
 		for _, entry := range level.Changes {

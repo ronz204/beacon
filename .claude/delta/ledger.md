@@ -100,7 +100,7 @@ Además de los campos comunes, cada tipo tiene estos. Los `status` son enumeraci
 | guide | `title`, `kind` (`guides`) | `applies`, `always`, `review`, `reviewed`, `tags`, `audience`, `status` |
 
 - `check` es `{runner, ...parámetros}` o `{manual: <pasos>}` (`pledge`).
-- `attested` es `{by, at, commit}` y, si la persona lo indica, `evidence`: una ruta o un enlace a lo que se revisó (una captura, un video). Beacon no guarda el archivo, solo la referencia (`pledge`).
+- `attested` es `{by, at, commit}` y, opcionalmente, `via` (el agente que transmitió el sí de la persona, igual que en `approved`) y `evidence`: una ruta o un enlace a lo que se revisó (una captura, un video). `by` es siempre una persona. Beacon no guarda el archivo, solo la referencia (`pledge`). Solo se atestigua código **commiteado**: con cambios sin commitear en los `paths` de la promesa, `beacon attest` falla con `attest_uncommitted`.
 - `nongoals` es una lista de textos: lo que esa meta o capability **no** hace, para que el agente no lo construya sin que nadie lo pida.
 - `rejected` es una lista de textos: las alternativas descartadas y por qué, para que el agente no vuelva a proponerlas (`spider`).
 

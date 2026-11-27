@@ -52,7 +52,14 @@ func promiseResults(reports []action.PromiseReport) []PromiseResultView {
 	views := make([]PromiseResultView, 0, len(reports))
 
 	for _, report := range reports {
-		views = append(views, PromiseResultView(report))
+		views = append(views, PromiseResultView{
+			ID:         report.ID,
+			Capability: report.Capability,
+			Status:     report.Status,
+			Reason:     report.Reason,
+			State:      report.State,
+			Drifted:    report.Drifted,
+		})
 	}
 
 	return views

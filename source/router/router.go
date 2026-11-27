@@ -63,6 +63,7 @@ func newRoot(printer *output.Printer) *cobra.Command {
 		"print the result as JSON",
 	)
 	root.AddCommand(
+		handle.Attest(printer),
 		handle.Brief(printer),
 		handle.Check(printer),
 		handle.Claim(printer),
@@ -78,6 +79,7 @@ func newRoot(printer *output.Printer) *cobra.Command {
 		handle.Ready(printer),
 		handle.Record(printer),
 		handle.Status(printer),
+		handle.Verify(printer),
 	)
 
 	return root

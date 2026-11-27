@@ -235,6 +235,7 @@ func attestation(f *fields) ledger.PromiseAttestation {
 		ledger.PromiseAttestationInput{
 			By:       one(section, "by", rawText),
 			At:       one(section, "at", rawText),
+			Via:      one(section, "via", rawText),
 			Commit:   one(section, "commit", rawText),
 			Evidence: one(section, "evidence", rawText),
 		},

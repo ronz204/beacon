@@ -3,6 +3,7 @@ package handle
 import (
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/ronz204/beacon/source/router/internal/output"
 	"github.com/ronz204/beacon/source/weaver"
@@ -10,29 +11,32 @@ import (
 )
 
 const (
-	stdinMarker       = "-"
-	stdinMarkerHint   = "run beacon record - and send the record on stdin"
-	stdinMarkerCode   = "record_source_invalid"
-	stdinMarkerReason = "the record is read from stdin, pass - as the argument"
+	stdinMarker  = "-"
+	sourceCode   = "record_source_invalid"
+	sourceReason = "the record is read from stdin with - " +
+		"or from a file with --file"
+	sourceBothReason = "pass the record on stdin or in a file, not both"
+	sourceHint       = "run beacon record - with the record on stdin, " +
+		"or beacon record --file <path>"
+	fileCode   = "record_file_unreadable"
+	fileReason = "the file passed to --file could not be read"
+	fileHint   = "check the path passed to --file, then run it again"
 )
 
 func Record(printer *output.Printer) *cobra.Command {
 	var approve bool
+	var file string
 
 	command := &cobra.Command{
-		Use:   "record -",
-		Short: "Create or replace a record read from stdin",
-		Args:  cobra.ExactArgs(1),
+		Use:   "record [-]",
+		Short: "Create or replace a record read from stdin or a file",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: execute(printer, func(
 			command *cobra.Command,
 			args []string,
 		) (output.Result, *output.Failure) {
-			if args[0] != stdinMarker {
-				return output.Result{}, &output.Failure{
-					Code:    stdinMarkerCode,
-					Message: stdinMarkerReason,
-					Hint:    stdinMarkerHint,
-				}
+			if failure := sourceFailure(args, file); failure != nil {
+				return output.Result{}, failure
 			}
 
 			project, failure := locateProject()
@@ -40,9 +44,9 @@ func Record(printer *output.Printer) *cobra.Command {
 				return output.Result{}, failure
 			}
 
-			payload, err := io.ReadAll(command.InOrStdin())
-			if err != nil {
-				return fail(err)
+			payload, failure := readPayload(command, file)
+			if failure != nil {
+				return output.Result{}, failure
 			}
 
 			view, err := weaver.New(project).Record(
@@ -62,8 +66,55 @@ func Record(printer *output.Printer) *cobra.Command {
 	}
 
 	command.Flags().BoolVar(&approve, "approve", false, "pass the person's yes")
+	command.Flags().StringVar(&file, "file", "", "read the record from a file")
 
 	return command
+}
+
+func sourceFailure(args []string, file string) *output.Failure {
+	fromStdin := len(args) == 1 && args[0] == stdinMarker
+
+	switch {
+	case fromStdin && file != "":
+		return sourceError(sourceBothReason)
+	case !fromStdin && file == "":
+		return sourceError(sourceReason)
+	case len(args) == 1 && !fromStdin:
+		return sourceError(sourceReason)
+	}
+
+	return nil
+}
+
+func sourceError(reason string) *output.Failure {
+	return &output.Failure{Code: sourceCode, Message: reason, Hint: sourceHint}
+}
+
+func readPayload(
+	command *cobra.Command,
+	file string,
+) ([]byte, *output.Failure) {
+	if file == "" {
+		payload, err := io.ReadAll(command.InOrStdin())
+		if err != nil {
+			return nil, errorFailure(err)
+		}
+
+		return payload, nil
+	}
+
+	payload, err := os.ReadFile(file)
+	if err != nil {
+		return nil, &output.Failure{
+			Code:    fileCode,
+			Message: fileReason,
+			Hint:    fileHint,
+			Details: map[string]string{"file": file},
+			Lines:   []string{err.Error()},
+		}
+	}
+
+	return payload, nil
 }
 
 func recordLines(view weaver.RecordView) []string {
