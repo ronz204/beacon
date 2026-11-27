@@ -183,3 +183,23 @@ func TestAttestRefusesCodeThatIsNotCommitted(t *testing.T) {
 		t.Errorf("err = %v", err)
 	}
 }
+
+func TestTouchedCapabilitiesAcceptsAnyRevisionName(t *testing.T) {
+	project, root := newProject(t)
+	editLogin(t, root)
+
+	touched, err := project.TouchedCapabilities(context.Background(), "HEAD")
+	if err != nil || len(touched) != 1 || touched[0] != "bc-7f3a" {
+		t.Fatalf("touched %v, err %v", touched, err)
+	}
+
+	_, err = project.TouchedCapabilities(context.Background(), "--output=x")
+	if err == nil {
+		t.Error("a revision that looks like an option must be refused")
+	}
+
+	_, err = project.TouchedCapabilities(context.Background(), "no-such-rev")
+	if err == nil {
+		t.Error("an unknown revision must fail")
+	}
+}

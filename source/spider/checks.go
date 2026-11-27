@@ -2,12 +2,17 @@ package spider
 
 import (
 	"context"
+	"errors"
+	"strings"
 
 	"github.com/ronz204/beacon/source/kernel"
 	"github.com/ronz204/beacon/source/spider/internal/action"
 	"github.com/ronz204/beacon/source/spider/internal/driver/commit"
 	"github.com/ronz204/beacon/source/spider/internal/driver/match"
+	"github.com/ronz204/beacon/source/system"
 )
+
+var errUnsafeRevision = errors.New("a revision cannot start with a dash")
 
 type CheckPromise struct {
 	ID     string            `json:"id"`
@@ -57,7 +62,12 @@ func (p Project) TouchedCapabilities(
 	ctx context.Context,
 	revision string,
 ) ([]string, error) {
-	files, err := commit.NewRepository(p.root).FilesChangedSince(ctx, revision)
+	resolved, err := p.resolveRevision(ctx, revision)
+	if err != nil {
+		return nil, err
+	}
+
+	files, err := commit.NewRepository(p.root).FilesChangedSince(ctx, resolved)
 	if err != nil {
 		return nil, err
 	}
@@ -107,4 +117,24 @@ func globTexts(globs []kernel.PathGlob) []string {
 	}
 
 	return texts
+}
+
+func (p Project) resolveRevision(
+	ctx context.Context,
+	revision string,
+) (string, error) {
+	if strings.HasPrefix(revision, "-") {
+		return "", kernel.FailHistory(errUnsafeRevision)
+	}
+
+	output, err := system.Git(
+		ctx,
+		p.root,
+		"rev-parse", "--verify", "--quiet", revision+"^{commit}",
+	)
+	if err != nil {
+		return "", kernel.FailHistory(err)
+	}
+
+	return strings.TrimSpace(output), nil
 }
