@@ -53,7 +53,7 @@ func TestBriefStartsWithTheGoalAndCarriesSignals(t *testing.T) {
 	result := utilities.Beacon(t, root, "brief", "--json")
 
 	data := decodeSummary(t, result.Stdout)
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 0 || len(data.Lines) == 0 {
 		t.Fatalf("result = %+v", result)
 	}
@@ -72,7 +72,7 @@ func TestBriefListsTheYesesThatArePending(t *testing.T) {
 	result := utilities.Beacon(t, root, "brief", "--json")
 
 	data := decodeSummary(t, result.Stdout)
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	joined := strings.Join(texts(data), "\n")
 	if !strings.Contains(joined, "Needs approval: promise bc-c3d4") {
 		t.Fatalf("lines = %v", texts(data))
@@ -178,7 +178,7 @@ func TestBriefWithoutABaseSaysThatPendingYesesWereNotChecked(t *testing.T) {
 	result := utilities.Beacon(t, root, "brief", "--json")
 	text := utilities.Beacon(t, root, "brief")
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 0 || !hintContains(envelope.Hint, "--base") {
 		t.Fatalf("result = %+v", result)
 	}
@@ -219,7 +219,7 @@ func TestBriefStaysQuietAboutTheBaseWhenItExists(t *testing.T) {
 
 	result := utilities.Beacon(t, root, "brief", "--json")
 
-	if envelope := parseRead(t, result.Stdout); envelope.Hint != nil {
+	if envelope := parseEnvelope(t, result.Stdout); envelope.Hint != nil {
 		t.Fatalf("hint = %v", *envelope.Hint)
 	}
 }

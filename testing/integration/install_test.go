@@ -1,8 +1,6 @@
 package integration_test
 
 import (
-	"errors"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -23,22 +21,6 @@ type installData struct {
 	Kept    []struct {
 		Path string `json:"path"`
 	} `json:"kept"`
-}
-
-func newBareRepository(t *testing.T) string {
-	t.Helper()
-
-	root := t.TempDir()
-	utilities.Git(t, root, "init", "-q", "-b", "main")
-	utilities.Git(t, root, "config", "user.name", "jane")
-
-	return root
-}
-
-func present(root, name string) bool {
-	_, err := os.Stat(filepath.Join(root, name))
-
-	return !errors.Is(err, os.ErrNotExist)
 }
 
 func runInstall(t *testing.T, root string, args ...string) installData {
@@ -155,7 +137,7 @@ func TestInstallPointsToTheNextStepWithoutBeacon(t *testing.T) {
 	root := newBareRepository(t)
 
 	result := utilities.Beacon(t, root, "install", "--json", "--dry-run")
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 
 	if !hintContains(envelope.Hint, ".beacon/config.yaml") {
 		t.Errorf("hint = %v", envelope.Hint)
@@ -164,7 +146,7 @@ func TestInstallPointsToTheNextStepWithoutBeacon(t *testing.T) {
 	initialized := utilities.NewRepository(t)
 	result = utilities.Beacon(t, initialized, "install", "--json", "--dry-run")
 
-	if parseRead(t, result.Stdout).Hint != nil {
+	if parseEnvelope(t, result.Stdout).Hint != nil {
 		t.Error("an initialized project should not get the hint")
 	}
 }

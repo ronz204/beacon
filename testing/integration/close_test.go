@@ -65,7 +65,7 @@ func TestCloseNeedsAReason(t *testing.T) {
 
 	result := closeRecord(t, root, sampleAgent, "bc-e5f6")
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "reason_required" {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
@@ -119,7 +119,7 @@ func TestCloseRefusesAGuideAndHintsAtDeletingIt(t *testing.T) {
 
 	result := closeWithReason(t, root, "bc-0a9b")
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "guide_not_archivable" {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
@@ -136,7 +136,7 @@ func TestCloseRefusesATaskWithOpenSubtasks(t *testing.T) {
 
 	result := closeWithReason(t, root, "bc-91cd.1")
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "task_has_open_children" {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
@@ -150,7 +150,7 @@ func TestCloseOfAnUnknownRecordHintsAtFind(t *testing.T) {
 
 	result := closeWithReason(t, root, "bc-ffff")
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "record_missing" {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}

@@ -77,7 +77,7 @@ func TestDiffShowsAHandEditedPromiseAsPending(t *testing.T) {
 	result := utilities.Beacon(t, root, "diff", "--json")
 
 	data := decodeDiff(t, result.Stdout)
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	entry, found := entryFor(data, "bc-c3d4")
 	if result.Code != 0 || !found || entry.Level != 3 || !entry.NeedsYes {
 		t.Fatalf("result = %+v", result)

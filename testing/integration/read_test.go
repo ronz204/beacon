@@ -10,42 +10,6 @@ import (
 	"github.com/ronz204/beacon/testing/utilities"
 )
 
-type signal struct {
-	Kind   string `json:"kind"`
-	Record string `json:"record"`
-}
-
-type readEnvelope struct {
-	OK      bool            `json:"ok"`
-	Data    json.RawMessage `json:"data"`
-	Signals []signal        `json:"signals"`
-	Hint    *string         `json:"hint"`
-	Error   *failure        `json:"error"`
-}
-
-func parseRead(t *testing.T, text string) readEnvelope {
-	t.Helper()
-
-	var parsed readEnvelope
-	if err := json.Unmarshal([]byte(text), &parsed); err != nil {
-		t.Fatalf("invalid json %q: %v", text, err)
-	}
-
-	return parsed
-}
-
-func decodeData(t *testing.T, text string, target any) {
-	t.Helper()
-
-	if err := json.Unmarshal(parseRead(t, text).Data, target); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func hintContains(hint *string, text string) bool {
-	return hint != nil && strings.Contains(*hint, text)
-}
-
 func TestGetPrintsTheRecordInTheEnvelope(t *testing.T) {
 	root := utilities.NewRepository(t)
 
@@ -55,7 +19,7 @@ func TestGetPrintsTheRecordInTheEnvelope(t *testing.T) {
 		Type     string `json:"type"`
 		Archived bool   `json:"archived"`
 	}
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if err := json.Unmarshal(envelope.Data, &data); err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +34,7 @@ func TestGetOfAnUnknownIDHintsAtFind(t *testing.T) {
 
 	result := utilities.Beacon(t, root, "get", "bc-ffff", "--json")
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "record_missing" {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
@@ -96,7 +60,7 @@ func TestContextReturnsWhatAppliesWithSignals(t *testing.T) {
 		t, root, "context", "src/auth/login.go", "--json",
 	)
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 0 || !strings.Contains(string(envelope.Data), "bc-7f3a") {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}

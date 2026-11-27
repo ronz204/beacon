@@ -119,7 +119,7 @@ func TestDoctorReportsAGitConflictOnTheSamePromise(t *testing.T) {
 
 	result := utilities.Beacon(t, root, "doctor", "--json")
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if !strings.Contains(merged, "CONFLICT") {
 		t.Fatalf("git must flag the file: %s", merged)
 	}
@@ -169,7 +169,7 @@ func TestOldBranchCannotClaimATaskMainAlreadyClosed(t *testing.T) {
 
 	result := claim(t, root)
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "claim_task_archived" {
 		t.Fatalf("claim = %+v", result)
 	}
@@ -246,7 +246,7 @@ func TestDoctorHintsAtGitattributesForCRLFRecords(t *testing.T) {
 	fixed := utilities.Beacon(t, root, "fmt")
 	again := utilities.Beacon(t, root, "doctor")
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	finding := envelope.Error.Details.Findings[0]
 	if result.Code != 1 || finding.Code != "record_line_endings" {
 		t.Fatalf("doctor = %+v", result)

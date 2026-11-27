@@ -1,7 +1,6 @@
 package integration_test
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,49 +10,6 @@ import (
 )
 
 const brokenGoal = ".beacon/records/goals/bc-0001-frictionless-payments.yaml"
-
-type finding struct {
-	Severity string         `json:"severity"`
-	Code     string         `json:"code"`
-	File     string         `json:"file"`
-	Line     int            `json:"line"`
-	Details  map[string]any `json:"details"`
-}
-
-type failure struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-	Details struct {
-		Findings []finding `json:"findings"`
-		Changed  []string  `json:"changed"`
-	} `json:"details"`
-}
-
-type envelope struct {
-	OK      bool            `json:"ok"`
-	Data    json.RawMessage `json:"data"`
-	Signals []any           `json:"signals"`
-	Hint    *string         `json:"hint"`
-	Error   *failure        `json:"error"`
-}
-
-func TestMain(m *testing.M) {
-	os.Exit(utilities.RunSuite(m))
-}
-
-func parseEnvelope(t *testing.T, text string) envelope {
-	t.Helper()
-
-	var parsed envelope
-	if err := json.Unmarshal([]byte(text), &parsed); err != nil {
-		t.Fatalf("invalid json %q: %v", text, err)
-	}
-	if parsed.Signals == nil {
-		t.Fatalf("signals must be a list: %s", text)
-	}
-
-	return parsed
-}
 
 func breakGoal(t *testing.T, root string) {
 	t.Helper()

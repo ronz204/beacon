@@ -9,13 +9,6 @@ import (
 	"github.com/ronz204/beacon/testing/utilities"
 )
 
-const (
-	capabilityPath = ".beacon/records/capabilities/bc-7f3a-auth-login.yaml"
-	configPath     = ".beacon/config.yaml"
-	sampleAgent    = "agent:sample-agent"
-	lockoutText    = "After 5 failed attempts the account locks for 15 minutes."
-)
-
 func storedPayload(t *testing.T, root, id string) map[string]any {
 	t.Helper()
 
@@ -38,31 +31,6 @@ func promiseOf(payload map[string]any, id string) map[string]any {
 	}
 
 	return nil
-}
-
-func decodeError(t *testing.T, text string, target any) {
-	t.Helper()
-
-	var parsed struct {
-		Error json.RawMessage `json:"error"`
-	}
-	if err := json.Unmarshal([]byte(text), &parsed); err != nil {
-		t.Fatal(err)
-	}
-	if err := json.Unmarshal(parsed.Error, target); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func jsonOf(t *testing.T, value any) string {
-	t.Helper()
-
-	data, err := json.Marshal(value)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return string(data)
 }
 
 func record(
@@ -122,7 +90,7 @@ func TestRecordBlocksAWeakenedPromiseWithoutAYes(t *testing.T) {
 
 	result := record(t, root, sampleAgent, weakenedLockout(t, root))
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 2 || envelope.OK {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
@@ -199,7 +167,7 @@ func TestRecordByAnAgentNeedsTheGitName(t *testing.T) {
 
 	result := record(t, root, sampleAgent, payload, "--approve")
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "identity_missing" {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
@@ -279,7 +247,7 @@ func TestRecordRejectsAnOmittedPromise(t *testing.T) {
 		"record", "--json", "-",
 	)
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "promise_omitted" {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
@@ -295,7 +263,7 @@ func TestRecordRejectsAnUnknownRecord(t *testing.T) {
 
 	result := record(t, root, sampleAgent, jsonOf(t, payload))
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "record_missing" {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
@@ -306,7 +274,7 @@ func TestRecordRejectsAnInvalidPayload(t *testing.T) {
 
 	result := record(t, root, sampleAgent, `{"type":"question","record":{}}`)
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "payload_invalid" {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}

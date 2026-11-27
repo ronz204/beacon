@@ -112,7 +112,7 @@ func TestSecondWorktreeCannotClaimAndDoesNotSeeTheTask(t *testing.T) {
 
 	second := claim(t, other)
 
-	envelope := parseRead(t, second.Stdout)
+	envelope := parseEnvelope(t, second.Stdout)
 	if second.Code != 2 || envelope.Error.Code != "claim_taken" {
 		t.Fatalf("second = %+v", second)
 	}
@@ -192,7 +192,7 @@ func TestClaimNeedsABranch(t *testing.T) {
 
 	result := claim(t, root)
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "claim_branch_detached" {
 		t.Fatalf("result = %+v", result)
 	}

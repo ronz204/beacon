@@ -84,7 +84,7 @@ func TestCheckRunsEveryPromiseAndBlocksOnARed(t *testing.T) {
 	result := utilities.Beacon(t, root, "check", "bc-7f3a", "--json")
 
 	data := decodeCheck(t, result.Stdout)
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 2 || !envelope.OK {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
@@ -109,7 +109,7 @@ func TestCheckBlockedHintNamesThePromiseAndForbidsEditingIt(t *testing.T) {
 
 	result := utilities.Beacon(t, root, "check", "bc-7f3a", "--json")
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if !hintContains(envelope.Hint, failingPromise) {
 		t.Fatalf("hint = %v", envelope.Hint)
 	}
@@ -217,7 +217,7 @@ func TestCheckOfAnUnknownCapabilityHintsAtFind(t *testing.T) {
 
 	result := utilities.Beacon(t, root, "check", "bc-ffff", "--json")
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "capability_missing" {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
@@ -235,7 +235,7 @@ func TestCheckFailsBeforeRunningWhenARunnerIsMissing(t *testing.T) {
 
 	result := utilities.Beacon(t, root, "check", "bc-7f3a", "--json")
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "runner_missing" {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
@@ -265,7 +265,7 @@ func TestCheckWithAMissingProgramLeavesThePromiseUnverified(t *testing.T) {
 
 	result := utilities.Beacon(t, root, "check", "bc-7f3a", "--json")
 
-	envelope := parseRead(t, result.Stdout)
+	envelope := parseEnvelope(t, result.Stdout)
 	if result.Code != 1 || envelope.Error.Code != "runner_unavailable" {
 		t.Fatalf("code = %d, stdout = %s", result.Code, result.Stdout)
 	}
