@@ -362,3 +362,31 @@ func TestRecordApproveOfAnUnchangedRecordWithNothingPendingTouchesNothing(
 		t.Fatalf("result = %+v", result)
 	}
 }
+
+func TestApprovalRequiredListsTheChangesWithLowercaseKeys(t *testing.T) {
+	root := utils.NewRepository(t)
+
+	result := record(t, root, sampleAgent, weakenedLockout(t, root))
+
+	var parsed struct {
+		Error struct {
+			Details struct {
+				Changes []map[string]any `json:"changes"`
+			} `json:"details"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal([]byte(result.Stdout), &parsed); err != nil {
+		t.Fatal(err)
+	}
+
+	changes := parsed.Error.Details.Changes
+	if result.Code != 2 || len(changes) == 0 {
+		t.Fatalf("code %d, stdout %s", result.Code, result.Stdout)
+	}
+
+	for _, key := range []string{"target", "id", "level", "needsYes"} {
+		if _, found := changes[0][key]; !found {
+			t.Errorf("key %q missing in %v", key, changes[0])
+		}
+	}
+}

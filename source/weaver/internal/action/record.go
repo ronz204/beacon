@@ -58,13 +58,13 @@ type RecordInput struct {
 }
 
 type ChangeReport struct {
-	Target   string
-	ID       string
-	Level    int
-	NeedsYes bool
-	Reason   string
-	Before   string
-	After    string
+	Target   string `json:"target"`
+	ID       string `json:"id"`
+	Level    int    `json:"level"`
+	NeedsYes bool   `json:"needsYes"`
+	Reason   string `json:"reason,omitempty"`
+	Before   string `json:"before,omitempty"`
+	After    string `json:"after,omitempty"`
 }
 
 type RecordResult struct {
