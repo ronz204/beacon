@@ -16,6 +16,7 @@ const (
 	actionUpdate = "update"
 	actionDelete = "delete"
 	binaryName   = "beacon"
+	packsRoot    = "packs"
 	configPath   = ".beacon/config.yaml"
 
 	missingBinaryNote = "beacon is not on PATH; the agent calls it by " +
@@ -32,7 +33,12 @@ func (a Anchor) Install(
 	ctx context.Context,
 	options InstallOptions,
 ) (InstallView, error) {
-	plan, err := a.planner.Plan(ctx, agentOptions(options))
+	pieces, err := a.catalog.Select(options.Packs, options.SkipPieces)
+	if err != nil {
+		return InstallView{}, err
+	}
+
+	plan, err := a.planner.Plan(ctx, agentOptions(options, pieces))
 	if err != nil {
 		return InstallView{}, err
 	}
@@ -59,7 +65,12 @@ func (a Anchor) Uninstall(
 		Precommit: true,
 	}
 
-	plan, err := a.planner.Withdraw(ctx, agentOptions(everything))
+	pieces, err := a.catalog.Everything()
+	if err != nil {
+		return InstallView{}, err
+	}
+
+	plan, err := a.planner.Withdraw(ctx, agentOptions(everything, pieces))
 	if err != nil {
 		return InstallView{}, err
 	}
@@ -100,12 +111,16 @@ func (a Anchor) finish(
 	return view, nil
 }
 
-func agentOptions(options InstallOptions) agents.Options {
+func agentOptions(
+	options InstallOptions,
+	pieces []agents.Piece,
+) agents.Options {
 	return agents.Options{
 		Hooks:     options.Hooks,
 		Reinject:  options.Reinject,
 		Precommit: options.Precommit,
 		CI:        options.CI,
+		Pieces:    pieces,
 	}
 }
 
@@ -126,7 +141,7 @@ func skippedParts(options InstallOptions) []string {
 		skipped = append(skipped, string(agents.PartPrecommit))
 	}
 
-	return skipped
+	return append(skipped, options.SkipPieces...)
 }
 
 func (a Anchor) reviewNotes(options InstallOptions) []string {

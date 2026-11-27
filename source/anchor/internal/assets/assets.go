@@ -1,6 +1,6 @@
 package assets
 
-import _ "embed"
+import "embed"
 
 //go:embed method.md
 var Method string
@@ -10,3 +10,6 @@ var Attributes string
 
 //go:embed beacon.yml
 var Workflow string
+
+//go:embed packs
+var Packs embed.FS

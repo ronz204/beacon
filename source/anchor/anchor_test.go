@@ -5,10 +5,13 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/ronz204/beacon/source/anchor"
+	"github.com/ronz204/beacon/source/anchor/internal/action"
+	"github.com/ronz204/beacon/source/anchor/internal/domain/blocks"
 	"github.com/ronz204/beacon/source/system"
 )
 
@@ -229,5 +232,181 @@ func TestInstallSaysWhetherTheProjectIsInitialized(t *testing.T) {
 	view, err = tool.Install(ctx, options)
 	if err != nil || !view.Initialized {
 		t.Errorf("initialized = %v, err %v", view.Initialized, err)
+	}
+}
+
+const recordRule = ".claude/rules/beacon-record.md"
+
+func packOptions() anchor.InstallOptions {
+	return anchor.InstallOptions{
+		Hooks:    true,
+		Reinject: true,
+		Packs:    []string{"core"},
+	}
+}
+
+func readRule(t *testing.T, directory string) string {
+	t.Helper()
+
+	data, err := os.ReadFile(filepath.Join(directory, recordRule))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return string(data)
+}
+
+func writeRule(t *testing.T, directory, text string) {
+	t.Helper()
+
+	target := filepath.Join(directory, recordRule)
+	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(target, []byte(text), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestInstallWritesTheStampedRuleOfAPackOnce(t *testing.T) {
+	ctx := context.Background()
+	directory := newProject(t)
+	tool := newAnchor(t, directory)
+
+	view, err := tool.Install(ctx, packOptions())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rule := readRule(t, directory)
+	if !strings.HasPrefix(rule, "---\nbeacon: ") {
+		t.Errorf("the rule has no stamp: %q", rule[:40])
+	}
+	if blocks.InspectManaged(rule) != blocks.OwnershipManaged {
+		t.Error("a fresh rule is not managed")
+	}
+	if !hasChange(view, recordRule, "rule") {
+		t.Errorf("changes = %+v", view.Changes)
+	}
+
+	view, err = tool.Install(ctx, packOptions())
+	if err != nil || len(view.Changes) != 0 {
+		t.Errorf("second install: %+v, err %v", view.Changes, err)
+	}
+}
+
+func hasChange(view anchor.InstallView, path, part string) bool {
+	for _, change := range view.Changes {
+		if change.Path == path && change.Parts[0] == part {
+			return true
+		}
+	}
+
+	return false
+}
+
+func TestInstallUpdatesARuleNobodyEdited(t *testing.T) {
+	ctx := context.Background()
+	directory := newProject(t)
+
+	older, err := blocks.StampManaged("---\n---\nolder text\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeRule(t, directory, older)
+
+	view, err := newAnchor(t, directory).Install(ctx, packOptions())
+	if err != nil || len(view.Kept) != 0 {
+		t.Fatalf("kept = %+v, err %v", view.Kept, err)
+	}
+	if strings.Contains(readRule(t, directory), "older text") {
+		t.Error("the old rule was not updated")
+	}
+}
+
+func TestInstallKeepsARuleThePersonEditedOrOwns(t *testing.T) {
+	ctx := context.Background()
+	directory := newProject(t)
+	owned := "# My own rule\n"
+	writeRule(t, directory, owned)
+
+	view, err := newAnchor(t, directory).Install(ctx, packOptions())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if readRule(t, directory) != owned {
+		t.Error("a rule that is not Beacon's was overwritten")
+	}
+	if len(view.Kept) != 1 || view.Kept[0].Path != recordRule {
+		t.Errorf("kept = %+v", view.Kept)
+	}
+}
+
+func TestUninstallRemovesAnUntouchedRuleAndKeepsAnEditedOne(t *testing.T) {
+	ctx := context.Background()
+	directory := newProject(t)
+	tool := newAnchor(t, directory)
+
+	if _, err := tool.Install(ctx, packOptions()); err != nil {
+		t.Fatal(err)
+	}
+
+	view, err := tool.Uninstall(ctx, packOptions())
+	if err != nil || exists(directory, recordRule) {
+		t.Fatalf("the rule is still there, err %v", err)
+	}
+	if !hasChange(view, recordRule, "rule") {
+		t.Errorf("changes = %+v", view.Changes)
+	}
+
+	if _, err := tool.Install(ctx, packOptions()); err != nil {
+		t.Fatal(err)
+	}
+	edited := readRule(t, directory) + "- mine\n"
+	writeRule(t, directory, edited)
+
+	view, err = tool.Uninstall(ctx, packOptions())
+	if err != nil || readRule(t, directory) != edited {
+		t.Fatalf("an edited rule changed, err %v", err)
+	}
+	if len(view.Kept) != 1 || view.Kept[0].Part != "rule" {
+		t.Errorf("kept = %+v", view.Kept)
+	}
+}
+
+func TestInstallSkipsAPieceByName(t *testing.T) {
+	directory := newProject(t)
+	options := packOptions()
+	options.SkipPieces = []string{"record"}
+
+	view, err := newAnchor(t, directory).Install(context.Background(), options)
+	if err != nil || exists(directory, recordRule) {
+		t.Fatalf("the skipped rule was written, err %v", err)
+	}
+	if !slices.Contains(view.Skipped, "record") {
+		t.Errorf("skipped = %v", view.Skipped)
+	}
+}
+
+func TestInstallRejectsAnUnknownPackOrPiece(t *testing.T) {
+	ctx := context.Background()
+	tool := newAnchor(t, newProject(t))
+
+	cases := map[action.InstallCode]anchor.InstallOptions{
+		action.PackUnknown: {Packs: []string{"nope"}},
+		action.PieceUnknown: {
+			Packs:      []string{"core"},
+			SkipPieces: []string{"x"},
+		},
+	}
+
+	for code, options := range cases {
+		_, err := tool.Install(ctx, options)
+
+		var failure action.InstallError
+		if !errors.As(err, &failure) || failure.Code != code {
+			t.Errorf("%s: err = %v", code, err)
+		}
 	}
 }

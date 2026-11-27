@@ -27,13 +27,30 @@ const (
 	PartReinject   Part = "reinject"
 	PartPrecommit  Part = "precommit"
 	PartCI         Part = "ci"
+	PartRule       Part = "rule"
+	PartSkill      Part = "skill"
 )
+
+type PieceKind string
+
+const (
+	PieceRule  PieceKind = "rule"
+	PieceSkill PieceKind = "skill"
+)
+
+type Piece struct {
+	Pack    string
+	Kind    PieceKind
+	Name    string
+	Content string
+}
 
 type Options struct {
 	Hooks     bool
 	Reinject  bool
 	Precommit bool
 	CI        string
+	Pieces    []Piece
 }
 
 type BlockFile struct {
@@ -49,9 +66,16 @@ type EntryFile struct {
 	Entries []blocks.Entry
 }
 
+type ManagedFile struct {
+	Path    string
+	Part    Part
+	Content string
+}
+
 type Contribution struct {
 	Blocks  []BlockFile
 	Entries []EntryFile
+	Files   []ManagedFile
 }
 
 type Agent interface {

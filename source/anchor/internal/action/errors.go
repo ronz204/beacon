@@ -10,6 +10,9 @@ const (
 	FileRemoveFailed InstallCode = "file_remove_failed"
 	BackupFailed     InstallCode = "backup_failed"
 	FilePathInvalid  InstallCode = "file_path_invalid"
+	PackUnknown      InstallCode = "pack_unknown"
+	PieceUnknown     InstallCode = "piece_unknown"
+	PackAssetInvalid InstallCode = "pack_asset_invalid"
 )
 
 type InstallError = kernel.Error[InstallCode]
@@ -20,6 +23,9 @@ var installErrors = kernel.ErrorCatalog[InstallCode]{
 	FileRemoveFailed: "a file could not be removed",
 	BackupFailed:     "a backup copy could not be saved",
 	FilePathInvalid:  "a file path must stay inside the repository",
+	PackUnknown:      "no pack has that name",
+	PieceUnknown:     "no rule or skill has that name",
+	PackAssetInvalid: "a pack file could not be read or rendered",
 }
 
 func FailInstall(
@@ -34,4 +40,8 @@ func FailInstall(
 	}
 
 	return failure.WithCause(cause)
+}
+
+func FailPackName(code InstallCode, name string) InstallError {
+	return installErrors.Fail(code, map[string]any{"name": name})
 }

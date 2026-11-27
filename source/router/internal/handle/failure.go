@@ -58,6 +58,14 @@ var errorHints = map[string]string{
 		"resolve it by hand, then rerun",
 	"document_invalid": "fix the JSON of the file listed in details, " +
 		"then rerun",
+	"pack_unknown": "pass a pack that exists, such as --pack core; " +
+		"{name} is not one",
+	"piece_unknown": "pass a rule or skill name without the beacon- " +
+		"prefix; beacon install --preview lists them, and {name} is not one",
+	"pack_asset_invalid": "this is a bug: report it with the path in " +
+		"details",
+	"managed_frontmatter_missing": "this is a bug: report it with the " +
+		"file in details",
 	"file_path_invalid":  "this is a bug: report it with the path in details",
 	"file_read_failed":   "check the permissions of {path}, then rerun",
 	"file_write_failed":  "check the permissions of {path}, then rerun",

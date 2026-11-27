@@ -1,11 +1,13 @@
 package anchor
 
 type InstallOptions struct {
-	Preview   bool
-	Hooks     bool
-	Reinject  bool
-	Precommit bool
-	CI        string
+	Preview    bool
+	Hooks      bool
+	Reinject   bool
+	Precommit  bool
+	CI         string
+	Packs      []string
+	SkipPieces []string
 }
 
 type ChangeView struct {

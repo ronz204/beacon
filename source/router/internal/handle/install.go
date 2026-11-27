@@ -15,9 +15,7 @@ const (
 	skipHooks     = "hooks"
 	skipReinject  = "reinject"
 	skipPrecommit = "precommit"
-	skipCode      = "skip_invalid"
-	skipMessage   = "--skip accepts only hooks, reinject or precommit"
-	skipHint      = "use --skip hooks, --skip reinject or --skip precommit"
+	defaultPack   = "core"
 	ciGithub      = "github"
 	ciCode        = "ci_invalid"
 	ciMessage     = "--ci accepts only github"
@@ -28,7 +26,7 @@ var skipParts = []string{skipHooks, skipReinject, skipPrecommit}
 
 func Install(printer *output.Printer) *cobra.Command {
 	var preview, uninstall bool
-	var skip []string
+	var skip, packs []string
 	var ci string
 
 	command := &cobra.Command{
@@ -39,7 +37,7 @@ func Install(printer *output.Printer) *cobra.Command {
 			command *cobra.Command,
 			_ []string,
 		) (output.Result, *output.Failure) {
-			options, failure := installOptions(preview, skip, ci)
+			options, failure := installOptions(preview, skip, packs, ci)
 			if failure != nil {
 				return output.Result{}, failure
 			}
@@ -76,14 +74,25 @@ func Install(printer *output.Printer) *cobra.Command {
 	flags.BoolVar(&preview, "preview", false, "show the changes without writing")
 	flags.BoolVar(&uninstall, "uninstall", false, "remove what install added")
 	flags.StringVar(&ci, "ci", "", "add the CI workflow of a platform: github")
-	flags.StringSliceVar(&skip, "skip", nil, "leave out hooks, reinject or precommit")
+	flags.StringSliceVar(
+		&skip,
+		"skip",
+		nil,
+		"leave out hooks, reinject, precommit or a piece by name",
+	)
+	flags.StringSliceVar(
+		&packs,
+		"pack",
+		nil,
+		"packs of rules and skills to install (default core)",
+	)
 
 	return command
 }
 
 func installOptions(
 	preview bool,
-	skip []string,
+	skip, packs []string,
 	ci string,
 ) (anchor.InstallOptions, *output.Failure) {
 	if ci != "" && ci != ciGithub {
@@ -94,26 +103,27 @@ func installOptions(
 		}
 	}
 
-	for _, part := range skip {
-		if !slices.Contains(skipParts, part) {
-			return anchor.InstallOptions{}, &output.Failure{
-				Code:    skipCode,
-				Message: skipMessage,
-				Hint:    skipHint,
-				Lines:   []string{"unknown part: " + part},
-			}
-		}
-	}
-
 	hooks := !slices.Contains(skip, skipHooks)
 
+	if len(packs) == 0 {
+		packs = []string{defaultPack}
+	}
+
 	return anchor.InstallOptions{
-		Preview:   preview,
-		Hooks:     hooks,
-		Reinject:  hooks && !slices.Contains(skip, skipReinject),
-		Precommit: !slices.Contains(skip, skipPrecommit),
-		CI:        ci,
+		Preview:    preview,
+		Hooks:      hooks,
+		Reinject:   hooks && !slices.Contains(skip, skipReinject),
+		Precommit:  !slices.Contains(skip, skipPrecommit),
+		CI:         ci,
+		Packs:      packs,
+		SkipPieces: pieceNames(skip),
 	}, nil
+}
+
+func pieceNames(skip []string) []string {
+	return slices.DeleteFunc(slices.Clone(skip), func(name string) bool {
+		return slices.Contains(skipParts, name)
+	})
 }
 
 func installHint(view anchor.InstallView) string {
@@ -144,7 +154,7 @@ func installLines(view anchor.InstallView) []string {
 
 	for _, kept := range view.Kept {
 		lines = append(lines, fmt.Sprintf(
-			"kept %s (%s): edited by hand, remove it yourself",
+			"kept %s (%s): edited by hand, left as it is",
 			kept.Path,
 			kept.Part,
 		))

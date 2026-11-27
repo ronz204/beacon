@@ -149,3 +149,68 @@ func TestTheImportBlockPointsAtTheGuide(t *testing.T) {
 		t.Errorf("text %q, err %v", text, err)
 	}
 }
+
+func TestPiecesBecomeStampedFilesUnderTheClaudeFolders(t *testing.T) {
+	pieces := []agents.Piece{
+		{
+			Pack:    "core",
+			Kind:    agents.PieceRule,
+			Name:    "alpha",
+			Content: "---\n---\n# Alpha\n",
+		},
+		{
+			Pack:    "core",
+			Kind:    agents.PieceSkill,
+			Name:    "gamma",
+			Content: "---\n---\n# Gamma\n",
+		},
+	}
+
+	contribution, err := claude.Agent{}.Contribute(
+		agents.Options{Pieces: pieces},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []agents.ManagedFile{
+		{Path: ".claude/rules/beacon-alpha.md", Part: agents.PartRule},
+		{Path: ".claude/skills/beacon-gamma/SKILL.md", Part: agents.PartSkill},
+	}
+	if len(contribution.Files) != len(want) {
+		t.Fatalf("files = %+v", contribution.Files)
+	}
+
+	for index, file := range contribution.Files {
+		if file.Path != want[index].Path || file.Part != want[index].Part {
+			t.Errorf("file %d = %s (%s)", index, file.Path, file.Part)
+		}
+		if blocks.InspectManaged(file.Content) != blocks.OwnershipManaged {
+			t.Errorf("%s is not stamped", file.Path)
+		}
+	}
+}
+
+func TestAPieceWithoutFrontmatterCannotBeInstalled(t *testing.T) {
+	piece := agents.Piece{
+		Pack:    "core",
+		Kind:    agents.PieceRule,
+		Name:    "broken",
+		Content: "# No frontmatter\n",
+	}
+
+	_, err := claude.Agent{}.Contribute(
+		agents.Options{Pieces: []agents.Piece{piece}},
+	)
+	if err == nil {
+		t.Error("the piece was accepted")
+	}
+}
+
+func TestWithoutPiecesNoFilesAreContributed(t *testing.T) {
+	contribution, err := claude.Agent{}.Contribute(agents.Options{})
+
+	if err != nil || len(contribution.Files) != 0 {
+		t.Errorf("files = %+v, err %v", contribution.Files, err)
+	}
+}

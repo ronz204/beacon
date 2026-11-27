@@ -57,7 +57,12 @@ func (Agent) Contribute(
 	}
 
 	files, err := hookFiles(options)
+	if err != nil {
+		return agents.Contribution{}, err
+	}
+
 	contribution.Entries = append(contribution.Entries, files...)
+	contribution.Files, err = pieceFiles(options.Pieces)
 
 	return contribution, err
 }

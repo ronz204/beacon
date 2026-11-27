@@ -43,7 +43,7 @@ func TestInstallPreviewListsTheFilesAndWritesNothing(t *testing.T) {
 
 	data := runInstall(t, root, "--preview")
 
-	if !data.Preview || len(data.Changes) != 5 {
+	if !data.Preview || len(data.Changes) != 6 {
 		t.Fatalf("data = %+v", data)
 	}
 	if present(root, "AGENTS.md") || present(root, ".gitattributes") {
@@ -85,7 +85,7 @@ func TestUninstallLeavesTheRepositoryAsItWas(t *testing.T) {
 	runInstall(t, root)
 	data := runInstall(t, root, "--uninstall")
 
-	if !data.Uninstall || len(data.Changes) != 5 {
+	if !data.Uninstall || len(data.Changes) != 6 {
 		t.Fatalf("data = %+v", data)
 	}
 	if utilities.ReadFile(t, filepath.Join(root, "AGENTS.md")) != "# Mine\n" {
@@ -123,12 +123,12 @@ func TestInstallSkipHooksReportsWhatItLeftOut(t *testing.T) {
 	}
 }
 
-func TestInstallRejectsAnUnknownSkipPart(t *testing.T) {
+func TestInstallRejectsAnUnknownSkipPiece(t *testing.T) {
 	root := newBareRepository(t)
 
 	result := utilities.Beacon(t, root, "install", "--json", "--skip", "x")
 
-	if result.Code != 1 || !strings.Contains(result.Stdout, "skip_invalid") {
+	if result.Code != 1 || !strings.Contains(result.Stdout, "piece_unknown") {
 		t.Errorf("exit %d: %s", result.Code, result.Stdout)
 	}
 }
@@ -183,7 +183,9 @@ func TestInstallDoesNotDuplicateTheLineEndingRuleWrittenByHand(t *testing.T) {
 		t,
 		root,
 		".gitattributes",
-		".beacon/** text eol=lf linguist-generated\n",
+		".beacon/** text eol=lf linguist-generated\n"+
+			".claude/rules/beacon-*.md text eol=lf\n"+
+			".claude/skills/beacon-*/SKILL.md text eol=lf\n",
 	)
 
 	data := runInstall(t, root)
@@ -214,5 +216,74 @@ func TestInstallOverAnOldGuideOnlyReplacesTheGuideBlock(t *testing.T) {
 	}
 	if utilities.ReadFile(t, path) != current {
 		t.Error("the guide block was not restored")
+	}
+}
+
+const recordRule = ".claude/rules/beacon-record.md"
+
+func TestInstallWritesTheCoreRulesByDefaultAndUninstallRemovesThem(
+	t *testing.T,
+) {
+	root := newBareRepository(t)
+
+	runInstall(t, root)
+	rule := utilities.ReadFile(t, filepath.Join(root, recordRule))
+
+	if !strings.HasPrefix(rule, "---\nbeacon: ") {
+		t.Errorf("the rule has no stamp: %q", rule)
+	}
+	if !strings.Contains(rule, "paths:") {
+		t.Errorf("the rule lost its paths: %q", rule)
+	}
+
+	runInstall(t, root, "--uninstall")
+
+	if present(root, recordRule) {
+		t.Error("uninstall left the rule")
+	}
+}
+
+func TestInstallSkipsARuleByName(t *testing.T) {
+	root := newBareRepository(t)
+
+	data := runInstall(t, root, "--skip", "record")
+
+	if present(root, recordRule) {
+		t.Error("--skip record still wrote the rule")
+	}
+	if len(data.Skipped) != 1 || data.Skipped[0] != "record" {
+		t.Errorf("skipped = %v", data.Skipped)
+	}
+}
+
+func TestInstallRejectsAnUnknownPack(t *testing.T) {
+	root := newBareRepository(t)
+
+	result := utilities.Beacon(t, root, "install", "--json", "--pack", "nope")
+
+	if result.Code != 1 || !strings.Contains(result.Stdout, "pack_unknown") {
+		t.Errorf("exit %d: %s", result.Code, result.Stdout)
+	}
+	if present(root, "AGENTS.md") {
+		t.Error("a failed install wrote files")
+	}
+}
+
+func TestInstallKeepsARuleEditedByHand(t *testing.T) {
+	root := newBareRepository(t)
+	runInstall(t, root)
+
+	original := utilities.ReadFile(t, filepath.Join(root, recordRule))
+	edited := original + "- mine\n"
+	utilities.WriteFile(t, root, recordRule, edited)
+
+	data := runInstall(t, root)
+	again := utilities.ReadFile(t, filepath.Join(root, recordRule))
+
+	if again != edited {
+		t.Error("an edited rule was overwritten")
+	}
+	if len(data.Kept) != 1 || data.Kept[0].Path != recordRule {
+		t.Errorf("kept = %+v", data.Kept)
 	}
 }
