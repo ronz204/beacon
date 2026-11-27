@@ -2,7 +2,7 @@
 
 Plan de ejecución de los packs descritos en `KETSET.md` (qué es y por qué) y en `.claude/delta/packs.md` (el diseño vigente). Aquí va el cómo, el orden y la verificación. Rama: `feat/add-skills-and-rules`.
 
-**Estado:** propuesta y plan aprobados por la persona dueña el 2026-11-27, con el nombre `packs`. D5 quedó en nivel 3 y los packs se redujeron a tres. K0 se cerró el mismo día. Las dos preguntas que quedaban se cerraron después (D16 y D17), así que el plan está listo para implementar K1. Los planes anteriores (Fases 1 a 4) están en el historial de git: `PLANNING.md` hasta el commit `7895362`.
+**Estado:** propuesta y plan aprobados por la persona dueña el 2026-11-27, con el nombre `packs`. D5 quedó en nivel 3 y los packs se redujeron a tres. K0 se cerró el mismo día, D16 y D17 cerraron las dos preguntas que quedaban y K1 se hizo ese día (commit `5a2a167`). Los planes anteriores (Fases 1 a 4) están en el historial de git: `PLANNING.md` hasta el commit `7895362`.
 
 ---
 
@@ -19,7 +19,7 @@ Todo se renderiza con una plantilla y un binding, para que sirva en cualquier st
 
 ### Qué existirá al terminar
 
-- `beacon install --pack <nombre>` con `--preview`, `--uninstall`, copias de seguridad y borrado solo de lo que coincide byte a byte. `--skip` acepta el nombre de una pieza.
+- `beacon install --pack <nombre>` con `--preview`, `--uninstall`, copias de seguridad y borrado solo de lo que nadie editó. `--skip` acepta el nombre de una pieza.
 - 11 rules y 9 skills en tres packs (`core`, `git`, `arch`).
 - Una sección `packs:` en `.beacon/config.yaml` (nivel 3) y un binding de Go incluido.
 - Señales de `brief`, `check` y `doctor` que nombran la skill que resuelve el problema.
@@ -33,11 +33,11 @@ Todo se renderiza con una plantilla y un binding, para que sirva en cualquier st
 
 ## 2. Decisiones
 
-D1 a D12 quedaron aprobadas el 2026-11-27, con los ajustes que se indican. D13 a D17 son nuevas de ese día.
+D1 a D12 quedaron aprobadas el 2026-11-27, con los ajustes que se indican. D13 a D18 son nuevas de ese día (D18 llegó con K1).
 
 ### D1. Los packs viven en Anchor
 
-Anchor ya instala con marcas idempotentes, copias y `--preview`. No se crea una pieza nueva. Los fuentes van en `source/anchor/internal/assets/packs/` (`rules/`, `skills/`, `bindings/`).
+Anchor ya instala con marcas idempotentes, copias y `--preview`. No se crea una pieza nueva. Los fuentes van en `source/anchor/internal/assets/packs/<pack>/` (`rules/` y `skills/`; `bindings/` llega con K8).
 
 ### D2. Nombres de seis letras y prefijo `beacon-`
 
@@ -95,7 +95,7 @@ Se sigue `git-commit-policy`: un commit por fase de trabajo, archivos agrupados 
 
 ### D13. Los archivos instalados llevan LF y `.gitattributes`
 
-Desinstalar compara byte a byte, y en Windows git convierte LF en CRLF. `install` agrega a `.gitattributes` las líneas `text eol=lf` de `.claude/rules/beacon-*` y `.claude/skills/beacon-*/**`, como ya hace con `.beacon/**`.
+La huella de D18 ignora los saltos de línea, así que CRLF no cuenta como edición. Pero Claude Code podría no leer un encabezado con CRLF (sin confirmar) y la rule cargaría siempre. `install` agrega a `.gitattributes` las líneas `text eol=lf` de `.claude/rules/beacon-*` y `.claude/skills/beacon-*/**`, como ya hace con `.beacon/**`.
 
 ### D14. Experiencia de desarrollo
 
@@ -129,6 +129,10 @@ packs:
 - El orden canónico es `enabled`, `skip`, `stacks`, `language`, `commit`, con las listas en línea.
 - **Dónde toca el código (K2):** decodificar y validar en `source/spider/internal/driver/record/config.go`; el orden en `canonical.go` (`configKeys` y las listas en línea); y el nivel 3 en `source/weaver/internal/domain/deltas` (`configGuardedFields`, un `ReasonPacksChanged` nuevo y `configReasons`). El CI solo trata `runners_changed` aparte; un cambio de `packs:` debe pasar por `unapproved_change`.
 
+### D18. La huella decide qué es de Beacon
+
+Cada archivo instalado lleva en el encabezado una línea `beacon: <huella>`: los primeros 16 caracteres del SHA-256 del contenido sin esa línea y con saltos LF. `install` actualiza un archivo si la huella coincide, y lo conserva si no coincide o si no la tiene. `--uninstall` borra solo los que coinciden. Se eligió sobre comparar con lo que se escribiría hoy porque una versión nueva de Beacon puede actualizar un archivo viejo que nadie tocó, y los archivos propios con el mismo nombre nunca se pisan.
+
 ## 3. Estructura objetivo
 
 ```text
@@ -136,15 +140,16 @@ source/anchor/
 ├─ internal/
 │  ├─ assets/
 │  │  └─ packs/
-│  │     ├─ rules/       # <nombre>.md.tmpl
-│  │     ├─ skills/      # <nombre>/SKILL.md
-│  │     └─ bindings/    # go.yaml
-│  ├─ domain/packs/       # packs, binding y reglas de nombre (puro)
-│  └─ action/             # plan y apply de los packs, junto a lo existente
+│  │     └─ <pack>/
+│  │        ├─ rules/    # <nombre>.md o <nombre>.md.tmpl
+│  │        └─ skills/   # <nombre>/SKILL.md
+│  ├─ domain/blocks/      # la huella de los archivos gestionados (K1)
+│  ├─ driver/catalog/     # lee y renderiza los assets de los packs (K1)
+│  └─ action/             # plan y apply, junto a lo existente
 └─ ...
 ```
 
-El contexto `packs` es dominio puro (`code-domain-layer`): valida nombres, packs y binding sin leer archivos. La lectura de `config.yaml` y la escritura de archivos van en `driver`, como en el resto de Anchor. El diseño exacto se ajusta al leer el código de Anchor en K1.
+En K1 la huella vive en el contexto `blocks` y el catálogo en `driver/catalog`. El contexto de dominio `packs` (nombres, packs y binding validados sin leer archivos, `code-domain-layer`) llega con K2, cuando `packs:` necesita validarse; la lectura de `config.yaml` irá en `driver`, como en el resto de Anchor.
 
 ## 4. Pasos
 
@@ -153,9 +158,9 @@ Cada paso deja el repositorio funcionando. El tamaño es relativo: S pequeño, M
 | Paso | Tamaño | Contenido | Verificación | Commit sugerido |
 |---|---|---|---|---|
 | **K0** | S | Aprobar `KETSET.md`, este plan y la KB, y resolver las preguntas que bloqueaban (hecho el 2026-11-27) | La persona dice sí (hecho) | `docs(packs): record packs proposal and its plan` |
-| **K1** | L | Mecánica de instalación de rules y skills en Anchor, solo Claude Code: plantilla, instalar, `--preview`, `--uninstall`, copia de seguridad, prefijo `beacon-`, `--pack`, `--skip <pieza>` y las líneas de `.gitattributes` (D13). Con una rule y una skill mínimas de prueba | Pruebas de `install` con archivos de referencia; idempotencia; desinstalar borra solo lo idéntico; D14 | `feat(anchor): install pack rules and skills` |
+| **K1 (hecho)** | L | Mecánica de instalación de rules y skills en Anchor, solo Claude Code: plantilla, instalar, `--preview`, `--uninstall`, copia de seguridad, prefijo `beacon-`, `--pack`, `--skip <pieza>` y las líneas de `.gitattributes` (D13). Con una rule y una skill mínimas de prueba | Pruebas de `install` con archivos de referencia; idempotencia; desinstalar borra solo lo idéntico; D14 | `feat(anchor): install pack rules and skills` |
 | **K2** | M | Sección `packs:` con la forma de D17: decodificar y validar, orden canónico y nivel 3; detección de stack con el escaneo de `init`; el sello del sí desde una terminal y el código 2 sin ella, con `--approve` (D5) | Pruebas del esquema; `fmt` estable; un `packs:` inválido falla al cargar; un cambio sin sí se bloquea en `record` y se comprueba que el CI lo trate por `unapproved_change` | `feat(anchor): add pack config and stack scan` |
-| **K3** | M | Rules universales y paramétricas: `record`, `pledge`, `frugal`, `locale`, `vendor`, `commit`, `branch`; `frugal` y `locale` con los `paths:` del binding, `commit` y `branch` sin ellos | La prueba de D9 sobre las rules que ya existen; la prueba de nombres y topes (D2, D8); una prueba renderiza cada rule y comprueba que su encabezado se lee (si no, carga siempre) | `feat(anchor): add core and git pack rules` |
+| **K3** | M | Rules universales y paramétricas (`record` se hizo en K1): `pledge`, `frugal`, `locale`, `vendor`, `commit`, `branch`; `frugal` y `locale` con los `paths:` del binding, `commit` y `branch` sin ellos | La prueba de D9 sobre las rules que ya existen; la prueba de nombres y topes (D2, D8); una prueba renderiza cada rule y comprueba que su encabezado se lee (si no, carga siempre) | `feat(anchor): add core and git pack rules` |
 | **K4** | M | Skills `elicit`, `ensure`, `finish`: las que ya tienen comandos que las respaldan; `elicit` se escribe desde cero. Antes, un spike en el proyecto de pruebas: ¿un hook que nombra una skill hace que el modelo la invoque?, y ¿una skill con `disable-model-invocation` conserva su descripción en `/context`? | Una sesión real en el proyecto de pruebas por skill | `feat(anchor): add elicit ensure finish skills` |
 | **K5** | M | Skills `locate`, `digest`, `tailor`; `digest` se escribe desde cero | Ídem; `tailor` produce un cambio de `config.yaml` que pasa por `record` | `feat(anchor): add locate digest tailor skills` |
 | **K6** | M | Skills `review`, `refute`, `divide` | Ídem | `feat(anchor): add review refute divide skills` |
@@ -173,6 +178,17 @@ Cada paso deja el repositorio funcionando. El tamaño es relativo: S pequeño, M
 - K7 necesita las skills de K4 a K6 instaladas para poder nombrarlas.
 - K9 necesita al menos K4, K5 y K6. K10 y K11 son independientes entre sí.
 - K12 es el último y depende de que lo construido esté estable.
+
+### Lo que K1 dejó y sus límites
+
+Hecho el 2026-11-27 (commit `5a2a167`), con las pruebas unitarias y de integración y `golangci-lint` en verde. Los atajos tienen un límite conocido y una fecha para dejarlos:
+
+- **`--skip <pieza>` solo evita instalar.** Quitar una pieza ya instalada llega con la conciliación de K2, cuando `packs:` guarde lo elegido. Hoy se usa `--uninstall` o se borra el archivo.
+- **Sin `packs:` mandan las flags.** `--pack git` instala solo `git`, sin `core`. K2 lo vuelve explícito con `enabled`.
+- **Al desinstalar una skill queda su carpeta vacía.** Se limpia cuando exista la primera skill (K4).
+- **La prueba de choque con los comandos de Beacon** (D2) llega con la primera skill (K4); hoy solo hay una rule.
+- **El binding es un defecto fijo** (`DefaultBinding`: idioma `en`, commits de 40 a 50). K2 lo llena desde `config.yaml`.
+- **La prueba de topes no tiene excepciones.** `domain` entra con la suya en K8.
 
 ### Cómo se escribe cada skill y cada rule
 

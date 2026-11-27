@@ -155,12 +155,12 @@ Es el criterio de diseño que más pesa en la instalación y en el uso diario. S
 |---|---|
 | **Cero preguntas por defecto** | `beacon install` instala `core`, detecta el stack y sigue. Lo opcional se pide con `--pack git` o `--pack arch`. |
 | **Se ve antes de hacerse** | `--preview` muestra los archivos y cómo quedarían. Al terminar, un resumen de lo instalado y de cómo quitarlo. |
-| **Se quita por piezas o entero** | `--skip <pieza>` y `--uninstall`, que borra solo lo que coincide byte a byte. |
+| **Se quita por piezas o entero** | `--skip <pieza>` y `--uninstall`, que borra solo lo que nadie editó (lo reconoce una huella en el encabezado). |
 | **Actualizar es volver a instalar** | Idempotente. Lo que la persona editó se conserva y `doctor` avisa de que quedó atrás. |
 | **Todo visible en `doctor`** | Packs instalados y su versión, piezas editadas o desactualizadas, rules omitidas por falta de binding, skills nombradas por una señal pero no instaladas. |
 | **Lo propio no se toca** | Lo que la persona escribe sin el prefijo `beacon-` queda intacto. |
 | **No hay que recordar nombres** | La persona no tiene que memorizar skills: las señales las nombran cuando hacen falta (sección 9.1). |
-| **Windows** | La comparación byte a byte exige LF. `install` agrega a `.gitattributes` las líneas `text eol=lf` de los archivos de los packs, como ya hace con `.beacon/**`. Esto se vio con el aviso de git de CRLF en este mismo repo. |
+| **Windows** | La huella ignora los saltos de línea, pero Claude Code podría no leer un encabezado con CRLF. `install` agrega a `.gitattributes` las líneas `text eol=lf` de los archivos de los packs, como ya hace con `.beacon/**`. Esto se vio con el aviso de git de CRLF en este mismo repo. |
 | **Sin sorpresas** | Los hooks nunca fallan la sesión; toda instalación deja copia de seguridad; cada bloqueo dice qué hacer (P7). |
 | **Se mide** | El benchmark de fricción ya cuenta callejones sin salida, síes pedidos por sesión y texto inyectado. El resultado decide qué se queda. |
 
@@ -265,8 +265,8 @@ Está en `PLANNING.md`: decisiones, pasos K0 a K12, verificación de cada uno y 
 | `paths:` en rules es de Claude Code | Los otros agentes lo resuelven en K11; el tope de 32 KiB de `AGENTS.md` en Codex limita meter todo ahí. |
 | Un hook no logra que el modelo invoque la skill | Spike en K4; si no funciona, el mensaje pide a la persona que ejecute el comando. |
 | Un `paths:` mal escrito vuelve la rule permanente | Una prueba renderiza cada rule y comprueba que el encabezado se lee. |
-| Choques con rules o skills del usuario | Prefijo `beacon-` y borrado solo de lo que coincide byte a byte. |
-| Los saltos de línea rompen la comparación byte a byte en Windows | `.gitattributes` con `text eol=lf` para los archivos de los packs. |
+| Choques con rules o skills del usuario | Prefijo `beacon-` y borrado solo de lo que nadie editó (huella en el encabezado). |
+| Un encabezado con CRLF no se lee en Windows | `.gitattributes` con `text eol=lf` para los archivos de los packs; la huella ya ignora los saltos de línea. |
 | Los packs crecen más rápido que su valor | Todo lo que no mejore una métrica se borra; los packs son parte del benchmark. |
 | Algunas compuertas son prosa (`refute`, `locate`) | Se dicen como tales; no se vende como verificado lo que no lo es. |
 | **Evidencia débil** | Nada demuestra aún que estos packs mejoren resultados, igual que `code-change-size` admite sobre sí mismo. Esta propuesta es una hipótesis hasta correr K9. |
