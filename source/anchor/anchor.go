@@ -42,9 +42,13 @@ func New(ctx context.Context, directory string) (Anchor, error) {
 	}
 
 	return Anchor{
-		files:   repo,
-		planner: action.Planner{Files: repo, Shared: shared},
-		lookup:  exec.LookPath,
+		files: repo,
+		planner: action.Planner{
+			Files:  repo,
+			Shared: shared,
+			Agents: []agents.Agent{claude.Agent{}},
+		},
+		lookup: exec.LookPath,
 	}, nil
 }
 

@@ -61,7 +61,7 @@ func TestInstallDryRunListsTheFilesAndWritesNothing(t *testing.T) {
 
 	data := runInstall(t, root, "--dry-run")
 
-	if !data.DryRun || len(data.Changes) != 2 {
+	if !data.DryRun || len(data.Changes) != 4 {
 		t.Fatalf("data = %+v", data)
 	}
 	if present(root, "AGENTS.md") || present(root, ".gitattributes") {
@@ -103,7 +103,7 @@ func TestUninstallLeavesTheRepositoryAsItWas(t *testing.T) {
 	runInstall(t, root)
 	data := runInstall(t, root, "--uninstall")
 
-	if !data.Uninstall || len(data.Changes) != 2 {
+	if !data.Uninstall || len(data.Changes) != 4 {
 		t.Fatalf("data = %+v", data)
 	}
 	if utils.ReadFile(t, filepath.Join(root, "AGENTS.md")) != "# Mine\n" {
