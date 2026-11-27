@@ -36,7 +36,7 @@ El riesgo central del proyecto es que el agente no llame a las herramientas (`st
 | `beacon hook <evento>` | Lee el JSON que Claude Code entrega al hook y responde en su formato (D2) |
 | Guía de redacción en `record` | Al proponer una promesa, la respuesta trae la guía de `pledge` (D8) |
 | Contadores de inyección | Cuánto y cuántas veces inyectó cada hook, en `.git/beacon/` (D9) |
-| `testing/bench` | Arnés del benchmark de fricción: tareas, condiciones A a D y extracción de métricas, probado con un agente simulado (D3) |
+| `testing/benchmark` | Arnés del benchmark de fricción: tareas, condiciones A a D y extracción de métricas, probado con un agente simulado (D3) |
 | Banco de pruebas | `src/projects/sandbox`: un proyecto Go pequeño con Beacon instalado y una sesión real de Claude Code (D4, D12) |
 
 **Queda fuera:**
@@ -101,7 +101,7 @@ Todas aprobadas por la persona. D1 a D4 el 2026-11-26 (con el ajuste de alcance 
 
 ### D3. El arnés del benchmark es esqueleto y pruebas, sin sesiones reales
 
-- **Decisión:** `testing/bench` define el formato de tareas, arma las condiciones A a D y extrae métricas de un transcript. Se prueba con un agente simulado que reproduce transcripts de ejemplo. Correr el benchmark, con sus 90 sesiones y su costo, es de la Fase 6.
+- **Decisión:** `testing/benchmark` define el formato de tareas, arma las condiciones A a D y extrae métricas de un transcript. Se prueba con un agente simulado que reproduce transcripts de ejemplo. Correr el benchmark, con sus 90 sesiones y su costo, es de la Fase 6.
 - **Por qué:** el arnés debe existir antes de la Fase 4 para no descubrir tarde que una métrica no se puede medir, pero sin gastar tokens.
 - **Afecta a:** paso 9.
 
@@ -406,7 +406,7 @@ Salieron de revisar el trabajo hecho hasta el paso 6, y van en la rama `feat/act
 ### Paso 9. Arnés del benchmark (hecho)
 
 - **Objetivo:** que cada métrica del protocolo (`survey` 7.6) se pueda calcular, antes de pagar por sesiones reales (D3).
-- **Construye** `testing/bench`:
+- **Construye** `testing/benchmark`:
   - **Tarea:** repo de origen, pedido, ruta de los tests ocultos y qué promesa se tienta. Se escriben dos de ejemplo, una de ellas la que tienta a debilitar una promesa (sobre el sandbox, D12).
   - **Condición:** arma un repo temporal con la instalación de A (sin Beacon), B (`--skip hooks`), C (completa) o D (`--skip reinject`), usando el binario (D7).
   - **Transcript:** del registro de una sesión de Claude Code saca, por paso, si corrió `brief` al empezar, si corrió `context` antes de cada primera edición, los intentos de debilitar una promesa y los bloqueos recibidos.
@@ -415,7 +415,7 @@ Salieron de revisar el trabajo hecho hasta el paso 6, y van en la rama `feat/act
 - **Se queda para la Fase 6:** las 10 tareas del piloto, la elección del segundo repo, un segundo agente y correr las sesiones.
 - **Hecho cuando:** el reporte distingue los dos transcripts de ejemplo en cada métrica de proceso e integridad, procesa el transcript real del paso 8 sin errores, y `go test ./...` no gasta ni una llamada a un agente.
 - **Cómo quedó:**
-  - **`testing/bench`** tiene `Task` (JSON con el pedido, la plantilla, la promesa tentada y los tests ocultos), `Condition` (A a D, con los argumentos de `install` de D7), `Prepare` (copia la plantilla, hace `git init` y un commit, e instala con el binario real), `ParseTranscript`, `Inspect` (copia los tests ocultos, los corre y cuenta los pendientes de `beacon diff`), `Summarize` y `Format`, y la interfaz `Agent` con `Replay`, el único agente que existe: reproduce un transcript y no llama a nadie.
+  - **`testing/benchmark`** tiene `Task` (JSON con el pedido, la plantilla, la promesa tentada y los tests ocultos), `Condition` (A a D, con los argumentos de `install` de D7), `Prepare` (copia la plantilla, hace `git init` y un commit, e instala con el binario real), `ParseTranscript`, `Inspect` (copia los tests ocultos, los corre y cuenta los pendientes de `beacon diff`), `Summarize` y `Format`, y la interfaz `Agent` con `Replay`, el único agente que existe: reproduce un transcript y no llama a nadie.
   - **Métricas del transcript:** `brief` al empezar (por el hook de arranque o por el propio agente antes de la primera edición), `context` antes de cada primera edición (por el agente o por el hook), ediciones a `.beacon/` (manipulación), bloqueos de Beacon (`approval_required`) y de permisos (`requires approval`), líneas inyectadas, turnos, duración y costo. El reporte resume por condición con intervalo de Wilson de 95 % y avisa que con pocas sesiones son pistas, no causas.
   - **Un hook se asocia a su edición por el nombre de la herramienta** (`PreToolUse:Edit`), no por el orden: Claude Code puede lanzar varias herramientas a la vez y la respuesta del hook llega después. Lo encontró el transcript real.
   - **El lector tolera líneas con `message` en texto plano**, que aparecen en transcripts reales y que los inventados no tenían. También lo encontró correr el lector sobre sesiones nuevas, y tiene su test.

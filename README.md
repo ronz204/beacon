@@ -12,9 +12,9 @@ beacon/
 ├─ .github/workflows/           # CI
 ├─ cmd/beacon/main.go           # punto de entrada del binario
 ├─ testing/
-│  ├─ e2e/                      # pruebas del binario real
-│  ├─ utils/                    # ayudas compartidas de prueba
-│  └─ bench/                    # arnés del benchmark de fricción
+│  ├─ integration/              # pruebas del binario real, un archivo por comando
+│  ├─ benchmark/                # arnés del benchmark de fricción y sus datos
+│  └─ utilities/                # ayudas compartidas y el ejecutor de prueba
 ├─ source/
 │  ├─ kernel/                   # bases puras: errores, ids, actor
 │  ├─ system/                   # escritura atómica y ejecución de git
