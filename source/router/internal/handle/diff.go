@@ -4,32 +4,30 @@ import (
 	"fmt"
 
 	"github.com/ronz204/beacon/source/router/internal/output"
+	"github.com/ronz204/beacon/source/spider"
 	"github.com/ronz204/beacon/source/weaver"
 	"github.com/spf13/cobra"
 )
 
-func Diff(printer *output.Printer, exit *int) *cobra.Command {
+func Diff(printer *output.Printer) *cobra.Command {
 	var since, base string
 
 	command := &cobra.Command{
 		Use:   "diff",
 		Short: "Show the state changes by level",
 		Args:  cobra.NoArgs,
-		RunE: func(command *cobra.Command, _ []string) error {
-			project, failure := locateProject()
-			if failure != nil {
-				*exit = printer.Failure(*failure)
-				return nil
-			}
-
+		RunE: inProject(printer, func(
+			command *cobra.Command,
+			_ []string,
+			project spider.Project,
+		) (output.Result, *output.Failure) {
 			view, signals, err := weaver.New(project).Diff(
 				command.Context(),
 				since,
 				base,
 			)
 			if err != nil {
-				*exit = printer.Failure(errorFailure(err))
-				return nil
+				return fail(err)
 			}
 
 			result := output.Result{
@@ -41,10 +39,8 @@ func Diff(printer *output.Printer, exit *int) *cobra.Command {
 				result.Hint = pendingHint(view)
 			}
 
-			*exit = printer.Done(result)
-
-			return nil
-		},
+			return result, nil
+		}),
 	}
 
 	command.Flags().StringVar(&since, "since", "", "compare against a revision")

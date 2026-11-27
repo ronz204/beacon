@@ -18,6 +18,7 @@ type Printer struct {
 	Stdout io.Writer
 	Stderr io.Writer
 	JSON   bool
+	Exit   int
 }
 
 type Failure struct {
@@ -52,18 +53,24 @@ type envelopeError struct {
 	Details any    `json:"details,omitempty"`
 }
 
-func (p *Printer) Success(data any, lines ...string) int {
-	return p.Done(Result{Data: data, Lines: lines})
+func (p *Printer) Report(result Result, failure *Failure) {
+	if failure != nil {
+		p.fail(*failure)
+		return
+	}
+
+	p.done(result)
 }
 
-func (p *Printer) Done(result Result) int {
+func (p *Printer) done(result Result) {
 	if p.JSON {
-		return p.writeEnvelope(envelope{
+		p.writeEnvelope(envelope{
 			OK:      true,
 			Data:    result.Data,
 			Signals: signalList(result.Signals),
 			Hint:    optionalHint(result.Hint),
 		}, result.Exit)
+		return
 	}
 
 	writeLines(p.Stdout, result.Lines)
@@ -72,17 +79,17 @@ func (p *Printer) Done(result Result) int {
 		fmt.Fprintf(p.Stdout, "hint: %s\n", result.Hint)
 	}
 
-	return result.Exit
+	p.Exit = result.Exit
 }
 
-func (p *Printer) Failure(failure Failure) int {
+func (p *Printer) fail(failure Failure) {
 	code := failure.Exit
 	if code == ExitOK {
 		code = ExitUsage
 	}
 
 	if p.JSON {
-		return p.writeEnvelope(envelope{
+		p.writeEnvelope(envelope{
 			OK:      false,
 			Signals: signalList(failure.Signals),
 			Hint:    &failure.Hint,
@@ -92,13 +99,14 @@ func (p *Printer) Failure(failure Failure) int {
 				Details: failure.Details,
 			},
 		}, code)
+		return
 	}
 
 	writeLines(p.Stderr, failure.Lines)
 	fmt.Fprintf(p.Stderr, "%s: %s\n", failure.Code, failure.Message)
 	fmt.Fprintf(p.Stderr, "hint: %s\n", failure.Hint)
 
-	return code
+	p.Exit = code
 }
 
 func optionalHint(hint string) *string {
@@ -109,16 +117,17 @@ func optionalHint(hint string) *string {
 	return &hint
 }
 
-func (p *Printer) writeEnvelope(content envelope, code int) int {
+func (p *Printer) writeEnvelope(content envelope, code int) {
 	encoder := json.NewEncoder(p.Stdout)
 	encoder.SetEscapeHTML(false)
 
 	if err := encoder.Encode(content); err != nil {
 		fmt.Fprintln(p.Stderr, err)
-		return ExitUsage
+		p.Exit = ExitUsage
+		return
 	}
 
-	return code
+	p.Exit = code
 }
 
 func writeLines(target io.Writer, lines []string) {

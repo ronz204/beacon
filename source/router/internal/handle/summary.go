@@ -19,54 +19,61 @@ type summaryData struct {
 	Counts  map[string]int     `json:"counts,omitempty"`
 }
 
-func Brief(printer *output.Printer, exit *int) *cobra.Command {
-	return &cobra.Command{
-		Use:   "brief",
-		Short: "Show the short state of the project",
-		Args:  cobra.NoArgs,
-		RunE: func(command *cobra.Command, _ []string) error {
-			*exit = runSummary(command, printer, weaver.Weaver.Brief, false)
-			return nil
-		},
-	}
-}
-
-func Status(printer *output.Printer, exit *int) *cobra.Command {
-	return &cobra.Command{
-		Use:   "status",
-		Short: "Show the whole state: reds, drift, blocks and pending yeses",
-		Args:  cobra.NoArgs,
-		RunE: func(command *cobra.Command, _ []string) error {
-			*exit = runSummary(command, printer, weaver.Weaver.Status, true)
-			return nil
-		},
-	}
-}
-
 type summaryBuilder func(weaver.Weaver, context.Context) (weaver.Summary, error)
 
-func runSummary(
-	command *cobra.Command,
+func Brief(printer *output.Printer) *cobra.Command {
+	return summaryCommand(
+		printer,
+		"brief",
+		"Show the short state of the project",
+		weaver.Weaver.Brief,
+		false,
+	)
+}
+
+func Status(printer *output.Printer) *cobra.Command {
+	return summaryCommand(
+		printer,
+		"status",
+		"Show the whole state: reds, drift, blocks and pending yeses",
+		weaver.Weaver.Status,
+		true,
+	)
+}
+
+func summaryCommand(
 	printer *output.Printer,
+	name, short string,
 	build summaryBuilder,
 	counted bool,
-) int {
-	project, failure := locateProject()
-	if failure != nil {
-		return printer.Failure(*failure)
-	}
+) *cobra.Command {
+	return &cobra.Command{
+		Use:   name,
+		Short: short,
+		Args:  cobra.NoArgs,
+		RunE: inProject(printer, func(
+			command *cobra.Command,
+			_ []string,
+			project spider.Project,
+		) (output.Result, *output.Failure) {
+			summary, err := build(weaver.New(project), command.Context())
+			if err != nil {
+				return fail(err)
+			}
+			if failure := stateFailure(summary.Findings); failure != nil {
+				return output.Result{}, failure
+			}
 
-	summary, err := build(weaver.New(project), command.Context())
-	if err != nil {
-		return printer.Failure(errorFailure(err))
+			return summaryResult(summary, counted), nil
+		}),
 	}
-	if failure := stateFailure(summary.Findings); failure != nil {
-		return printer.Failure(*failure)
-	}
+}
 
+func summaryResult(summary weaver.Summary, counted bool) output.Result {
 	view := summary.View
 	data := summaryData{Lines: view.Lines, Omitted: view.Omitted}
 	lines := make([]string, 0, len(view.Lines)+1)
+
 	if counted {
 		data.Counts = countsOf(view.Signals)
 		lines = append(lines, countLine(data.Counts))
@@ -80,7 +87,7 @@ func runSummary(
 		result.Hint = uncheckedHint
 	}
 
-	return printer.Done(result)
+	return result
 }
 
 func countsOf(signals []spider.Signal) map[string]int {

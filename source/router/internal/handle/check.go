@@ -15,7 +15,7 @@ const (
 	unavailableMessage = "a runner program could not be started"
 )
 
-func Check(printer *output.Printer, exit *int) *cobra.Command {
+func Check(printer *output.Printer) *cobra.Command {
 	var all bool
 	var base string
 
@@ -23,13 +23,11 @@ func Check(printer *output.Printer, exit *int) *cobra.Command {
 		Use:   "check [capability]",
 		Short: "Run the checks of the promises",
 		Args:  cobra.MaximumNArgs(1),
-		RunE: func(command *cobra.Command, args []string) error {
-			project, failure := locateProject()
-			if failure != nil {
-				*exit = printer.Failure(*failure)
-				return nil
-			}
-
+		RunE: inProject(printer, func(
+			command *cobra.Command,
+			args []string,
+			project spider.Project,
+		) (output.Result, *output.Failure) {
 			capability := ""
 			if len(args) == 1 {
 				capability = args[0]
@@ -47,14 +45,11 @@ func Check(printer *output.Printer, exit *int) *cobra.Command {
 				base,
 			)
 			if err != nil {
-				*exit = printer.Failure(errorFailure(err))
-				return nil
+				return fail(err)
 			}
 
-			*exit = reportCheck(printer, view, signals)
-
-			return nil
-		},
+			return checkResult(view, signals)
+		}),
 	}
 
 	command.Flags().BoolVar(&all, "all", false, "check every capability")
@@ -63,11 +58,10 @@ func Check(printer *output.Printer, exit *int) *cobra.Command {
 	return command
 }
 
-func reportCheck(
-	printer *output.Printer,
+func checkResult(
 	view weaver.CheckView,
 	signals []spider.Signal,
-) int {
+) (output.Result, *output.Failure) {
 	result := output.Result{
 		Data:    view,
 		Signals: signals,
@@ -78,21 +72,21 @@ func reportCheck(
 		result.Exit = output.ExitBlocked
 		result.Hint = failedHint(view)
 
-		return printer.Done(result)
+		return result, nil
 	}
 
 	if unavailable := unavailableRuns(view); len(unavailable) > 0 {
-		return printer.Failure(output.Failure{
+		return output.Result{}, &output.Failure{
 			Code:    unavailableCode,
 			Message: unavailableMessage,
 			Hint:    unavailableHint(unavailable[0]),
 			Details: map[string]any{"invocations": unavailable},
 			Signals: signals,
 			Lines:   checkLines(view),
-		})
+		}
 	}
 
-	return printer.Done(result)
+	return result, nil
 }
 
 func failedHint(view weaver.CheckView) string {

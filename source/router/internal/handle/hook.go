@@ -21,7 +21,7 @@ const (
 	hookEdit       = "edit"
 )
 
-func Hook(printer *output.Printer, _ *int) *cobra.Command {
+func Hook(printer *output.Printer) *cobra.Command {
 	var agent string
 
 	command := &cobra.Command{

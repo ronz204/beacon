@@ -2,6 +2,7 @@ package handle
 
 import (
 	"github.com/ronz204/beacon/source/router/internal/output"
+	"github.com/ronz204/beacon/source/spider"
 	"github.com/spf13/cobra"
 )
 
@@ -15,30 +16,27 @@ type doctorDetails struct {
 	Findings any `json:"findings"`
 }
 
-func Doctor(printer *output.Printer, exit *int) *cobra.Command {
+func Doctor(printer *output.Printer) *cobra.Command {
 	return &cobra.Command{
 		Use:   "doctor",
 		Short: "Validate the project state",
 		Args:  cobra.NoArgs,
-		RunE: func(command *cobra.Command, _ []string) error {
-			project, failure := locateProject()
-			if failure != nil {
-				*exit = printer.Failure(*failure)
-				return nil
-			}
-
+		RunE: inProject(printer, func(
+			command *cobra.Command,
+			_ []string,
+			project spider.Project,
+		) (output.Result, *output.Failure) {
 			findings := project.Doctor(command.Context())
 			details := doctorDetails{Findings: findings}
 
 			if len(errorFindings(findings)) > 0 {
-				*exit = printer.Failure(output.Failure{
+				return output.Result{}, &output.Failure{
 					Code:    doctorFailedCode,
 					Message: doctorFailedMessage,
 					Hint:    findingsHint(findings),
 					Details: details,
 					Lines:   findingLines(findings),
-				})
-				return nil
+				}
 			}
 
 			lines := findingLines(findings)
@@ -46,9 +44,7 @@ func Doctor(printer *output.Printer, exit *int) *cobra.Command {
 				lines = []string{doctorCleanMessage}
 			}
 
-			*exit = printer.Success(details, lines...)
-
-			return nil
-		},
+			return succeed(details, lines...)
+		}),
 	}
 }

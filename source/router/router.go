@@ -26,16 +26,14 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		Stderr: stderr,
 		JSON:   slices.Contains(args, "--json"),
 	}
-	exit := output.ExitOK
-
-	root := newRoot(printer, &exit)
+	root := newRoot(printer)
 	root.SetArgs(args)
 	root.SetIn(stdin)
 	root.SetOut(stdout)
 	root.SetErr(stderr)
 
 	if err := root.ExecuteContext(context.Background()); err != nil {
-		return printer.Failure(output.Failure{
+		printer.Report(output.Result{}, &output.Failure{
 			Code:    usageCode,
 			Message: usageMessage,
 			Hint:    usageHint,
@@ -44,10 +42,10 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		})
 	}
 
-	return exit
+	return printer.Exit
 }
 
-func newRoot(printer *output.Printer, exit *int) *cobra.Command {
+func newRoot(printer *output.Printer) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "beacon",
 		Short:         "Project memory with checked promises",
@@ -65,21 +63,21 @@ func newRoot(printer *output.Printer, exit *int) *cobra.Command {
 		"print the result as JSON",
 	)
 	root.AddCommand(
-		handle.Brief(printer, exit),
-		handle.Check(printer, exit),
-		handle.Claim(printer, exit),
-		handle.Close(printer, exit),
-		handle.Context(printer, exit),
-		handle.Diff(printer, exit),
-		handle.Doctor(printer, exit),
-		handle.Find(printer, exit),
-		handle.Format(printer, exit),
-		handle.Get(printer, exit),
-		handle.Hook(printer, exit),
-		handle.Install(printer, exit),
-		handle.Ready(printer, exit),
-		handle.Record(printer, exit),
-		handle.Status(printer, exit),
+		handle.Brief(printer),
+		handle.Check(printer),
+		handle.Claim(printer),
+		handle.Close(printer),
+		handle.Context(printer),
+		handle.Diff(printer),
+		handle.Doctor(printer),
+		handle.Find(printer),
+		handle.Format(printer),
+		handle.Get(printer),
+		handle.Hook(printer),
+		handle.Install(printer),
+		handle.Ready(printer),
+		handle.Record(printer),
+		handle.Status(printer),
 	)
 
 	return root
