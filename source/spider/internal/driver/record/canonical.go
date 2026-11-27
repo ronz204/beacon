@@ -87,7 +87,7 @@ var (
 	limitKeys    = []string{"guide", "brief", "hook"}
 	runnerKeys   = []string{"run", "baseline"}
 	approvedKeys = []string{"by", "at", "via", "n"}
-	attestedKeys = []string{"by", "at", "commit", "evidence"}
+	attestedKeys = []string{"by", "at", "via", "commit", "evidence"}
 	checkKeys    = []string{"runner", "manual"}
 	flowLists    = []string{
 		"paths", "where", "blocks", "implements", "refers", "tags", "applies",

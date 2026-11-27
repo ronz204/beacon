@@ -38,3 +38,12 @@ func (p Project) RepoPath(path string) string {
 
 	return p.relative(absolute)
 }
+
+func (p Project) Head(ctx context.Context) (string, error) {
+	output, err := system.Git(ctx, p.root, "rev-parse", "--short", "HEAD")
+	if err != nil {
+		return "", kernel.FailHistory(err)
+	}
+
+	return strings.TrimSpace(output), nil
+}
