@@ -19,6 +19,8 @@ const (
 	backupsFolder = "backups"
 	directoryMode = 0o755
 
+	hookName        = "hooks/pre-commit"
+	hookMode        = 0o755
 	StampLayout     = "20060102T150405"
 	backupRetention = 30 * 24 * time.Hour
 )
@@ -26,6 +28,7 @@ const (
 type Repo struct {
 	root    string
 	backups string
+	hook    string
 }
 
 func Open(ctx context.Context, directory string) (Repo, error) {
@@ -47,7 +50,26 @@ func Open(ctx context.Context, directory string) (Repo, error) {
 
 	backups := filepath.Join(gitDir, stateFolder, backupsFolder)
 
-	return Repo{root: root, backups: backups}, nil
+	hook, err := system.Git(ctx, root, "rev-parse", "--git-path", hookName)
+	if err != nil {
+		return Repo{}, kernel.FailHistory(err)
+	}
+
+	hook = filepath.FromSlash(strings.TrimSpace(hook))
+	if !filepath.IsAbs(hook) {
+		hook = filepath.Join(root, hook)
+	}
+
+	return Repo{root: root, backups: backups, hook: hook}, nil
+}
+
+func (r Repo) HookPath() string {
+	relative, err := filepath.Rel(r.root, r.hook)
+	if err == nil && filepath.IsLocal(relative) {
+		return filepath.ToSlash(relative)
+	}
+
+	return filepath.ToSlash(r.hook)
 }
 
 func (r Repo) Read(
@@ -77,6 +99,9 @@ func (r Repo) Write(_ context.Context, path, content string) error {
 	}
 
 	err = writeFile(target, content)
+	if err == nil && target == r.hook {
+		err = os.Chmod(target, hookMode)
+	}
 	if err != nil {
 		return action.FailInstall(action.FileWriteFailed, path, err)
 	}
@@ -103,6 +128,9 @@ func (r Repo) Backup(
 	stamp, path, content string,
 ) error {
 	folder := filepath.Join(r.backups, stamp)
+	if filepath.IsAbs(filepath.FromSlash(path)) {
+		path = hookName
+	}
 
 	target, err := r.resolve(folder, path)
 	if err != nil {
@@ -140,6 +168,9 @@ func (r Repo) pruneBackups(now time.Time) {
 func (r Repo) resolve(base, path string) (string, error) {
 	local := filepath.FromSlash(path)
 
+	if base == r.root && local == r.hook {
+		return local, nil
+	}
 	if !filepath.IsLocal(local) {
 		return "", action.FailInstall(action.FilePathInvalid, path, nil)
 	}

@@ -12,12 +12,15 @@ import (
 )
 
 const (
-	skipHooks    = "hooks"
-	skipReinject = "reinject"
-	skipCode     = "skip_invalid"
-	skipMessage  = "--skip accepts only hooks or reinject"
-	skipHint     = "use --skip hooks or --skip reinject"
+	skipHooks     = "hooks"
+	skipReinject  = "reinject"
+	skipPrecommit = "precommit"
+	skipCode      = "skip_invalid"
+	skipMessage   = "--skip accepts only hooks, reinject or precommit"
+	skipHint      = "use --skip hooks, --skip reinject or --skip precommit"
 )
+
+var skipParts = []string{skipHooks, skipReinject, skipPrecommit}
 
 func Install(printer *output.Printer) *cobra.Command {
 	var dryRun, uninstall bool
@@ -67,7 +70,7 @@ func Install(printer *output.Printer) *cobra.Command {
 	flags := command.Flags()
 	flags.BoolVar(&dryRun, "dry-run", false, "show the changes without writing")
 	flags.BoolVar(&uninstall, "uninstall", false, "remove what install added")
-	flags.StringSliceVar(&skip, "skip", nil, "leave out hooks or reinject")
+	flags.StringSliceVar(&skip, "skip", nil, "leave out hooks, reinject or precommit")
 
 	return command
 }
@@ -77,7 +80,7 @@ func installOptions(
 	skip []string,
 ) (anchor.InstallOptions, *output.Failure) {
 	for _, part := range skip {
-		if part != skipHooks && part != skipReinject {
+		if !slices.Contains(skipParts, part) {
 			return anchor.InstallOptions{}, &output.Failure{
 				Code:    skipCode,
 				Message: skipMessage,
@@ -90,9 +93,10 @@ func installOptions(
 	hooks := !slices.Contains(skip, skipHooks)
 
 	return anchor.InstallOptions{
-		DryRun:   dryRun,
-		Hooks:    hooks,
-		Reinject: hooks && !slices.Contains(skip, skipReinject),
+		DryRun:    dryRun,
+		Hooks:     hooks,
+		Reinject:  hooks && !slices.Contains(skip, skipReinject),
+		Precommit: !slices.Contains(skip, skipPrecommit),
 	}, nil
 }
 

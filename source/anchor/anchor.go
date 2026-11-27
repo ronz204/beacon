@@ -7,15 +7,17 @@ import (
 	"github.com/ronz204/beacon/source/anchor/internal/action"
 	"github.com/ronz204/beacon/source/anchor/internal/agents"
 	"github.com/ronz204/beacon/source/anchor/internal/agents/claude"
+	"github.com/ronz204/beacon/source/anchor/internal/agents/git"
 	"github.com/ronz204/beacon/source/anchor/internal/assets"
 	"github.com/ronz204/beacon/source/anchor/internal/domain/blocks"
 	"github.com/ronz204/beacon/source/anchor/internal/driver/files"
 )
 
 type Anchor struct {
-	files   action.FileStore
-	planner action.Planner
-	lookup  func(string) (string, error)
+	files    action.FileStore
+	planner  action.Planner
+	lookup   func(string) (string, error)
+	hookPath string
 }
 
 func New(ctx context.Context, directory string) (Anchor, error) {
@@ -29,14 +31,21 @@ func New(ctx context.Context, directory string) (Anchor, error) {
 		return Anchor{}, err
 	}
 
+	hook, err := git.Contribute(repo.HookPath())
+	if err != nil {
+		return Anchor{}, err
+	}
+
 	return Anchor{
 		files: repo,
 		planner: action.Planner{
 			Files:  repo,
 			Shared: shared,
 			Agents: []agents.Agent{claude.Agent{}},
+			Git:    hook,
 		},
-		lookup: exec.LookPath,
+		lookup:   exec.LookPath,
+		hookPath: repo.HookPath(),
 	}, nil
 }
 

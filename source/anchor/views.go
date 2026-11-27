@@ -1,9 +1,11 @@
 package anchor
 
 type InstallOptions struct {
-	DryRun   bool
-	Hooks    bool
-	Reinject bool
+	DryRun    bool
+	Hooks     bool
+	Reinject  bool
+	Precommit bool
+	CI        string
 }
 
 type ChangeView struct {

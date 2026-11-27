@@ -10,7 +10,7 @@ func TestReviewWarnsWhenTheBinaryIsNotOnPath(t *testing.T) {
 		return "", errors.New("not found")
 	}
 
-	notes := reviewNotes(missing)
+	notes := Anchor{lookup: missing}.reviewNotes(InstallOptions{})
 	if len(notes) != 1 || notes[0] != missingBinaryNote {
 		t.Errorf("notes = %v", notes)
 	}
@@ -21,7 +21,8 @@ func TestReviewIsEmptyWhenTheBinaryIsOnPath(t *testing.T) {
 		return name, nil
 	}
 
-	if notes := reviewNotes(found); len(notes) != 0 {
+	notes := Anchor{lookup: found}.reviewNotes(InstallOptions{})
+	if len(notes) != 0 {
 		t.Errorf("notes = %v", notes)
 	}
 }

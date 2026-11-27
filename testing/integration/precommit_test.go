@@ -1,6 +1,10 @@
 package integration_test
 
 import (
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/ronz204/beacon/testing/utilities"
@@ -99,5 +103,105 @@ func TestPreCommitOnARepositoryWithoutCommitsOnlyWarns(t *testing.T) {
 
 	if result.Code != 0 || len(data.Warnings) != 1 {
 		t.Fatalf("code %d, data %+v", result.Code, data)
+	}
+}
+
+const hookFile = ".git/hooks/pre-commit"
+
+func TestInstallWritesTheHookAndABlockedCommitStaysOut(t *testing.T) {
+	root := passingRepository(t)
+	runInstall(t, root)
+	editByHand(t, root, "After 5 failed", "After 10 failed")
+
+	blocked, err := utilities.GitWithBeacon(
+		t,
+		root,
+		"commit", "-q", "-am", "weaken",
+	)
+	if err == nil || !strings.Contains(blocked, "level 3") {
+		t.Fatalf("the commit was not blocked: %v\n%s", err, blocked)
+	}
+
+	skipped, err := utilities.GitWithBeacon(
+		t,
+		root,
+		"commit", "-q", "--no-verify", "-am", "weaken",
+	)
+	if err != nil {
+		t.Fatalf("--no-verify failed: %v\n%s", err, skipped)
+	}
+}
+
+func TestInstallLeavesAnExecutableHook(t *testing.T) {
+	root := newBareRepository(t)
+	runInstall(t, root)
+
+	path := filepath.Join(root, filepath.FromSlash(hookFile))
+	text := utilities.ReadFile(t, path)
+	if !strings.HasPrefix(text, "#!/bin/sh\n") ||
+		!strings.Contains(text, "beacon snares pre-commit || exit $?") {
+		t.Errorf("hook = %q", text)
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if runtime.GOOS != "windows" && info.Mode()&0o111 == 0 {
+		t.Errorf("mode = %v", info.Mode())
+	}
+}
+
+func TestInstallTwiceKeepsTheHookAndSkipLeavesItOut(t *testing.T) {
+	root := newBareRepository(t)
+	runInstall(t, root)
+	again := runInstall(t, root)
+
+	if len(again.Changes) != 0 {
+		t.Errorf("second install changed %+v", again.Changes)
+	}
+
+	other := newBareRepository(t)
+	runInstall(t, other, "--skip", "precommit")
+	if present(other, hookFile) {
+		t.Error("--skip precommit still wrote the hook")
+	}
+}
+
+func TestUninstallRestoresAnExistingHook(t *testing.T) {
+	root := newBareRepository(t)
+	original := "#!/bin/sh\necho hello\nexit 0\n"
+	utilities.WriteFile(t, root, hookFile, original)
+
+	runInstall(t, root)
+	installed := utilities.ReadFile(
+		t,
+		filepath.Join(root, filepath.FromSlash(hookFile)),
+	)
+	if strings.Index(installed, "beacon snares") > strings.Index(
+		installed,
+		"exit 0",
+	) {
+		t.Errorf("the block must come before exit 0: %q", installed)
+	}
+
+	runInstall(t, root, "--uninstall")
+	restored := utilities.ReadFile(
+		t,
+		filepath.Join(root, filepath.FromSlash(hookFile)),
+	)
+	if restored != original {
+		t.Errorf("hook = %q", restored)
+	}
+}
+
+func TestUninstallRemovesAHookBeaconCreated(t *testing.T) {
+	root := newBareRepository(t)
+	runInstall(t, root)
+
+	runInstall(t, root, "--uninstall")
+
+	if present(root, hookFile) {
+		t.Error("the hook is still there")
 	}
 }

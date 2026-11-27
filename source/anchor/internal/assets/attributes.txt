@@ -1,3 +1,3 @@
 # BEGIN BEACON (managed block: do not edit inside)
-.beacon/** text eol=lf
+.beacon/** text eol=lf linguist-generated
 # END BEACON

@@ -25,17 +25,22 @@ const (
 	PartActor      Part = "actor"
 	PartHooks      Part = "hooks"
 	PartReinject   Part = "reinject"
+	PartPrecommit  Part = "precommit"
+	PartCI         Part = "ci"
 )
 
 type Options struct {
-	Hooks    bool
-	Reinject bool
+	Hooks     bool
+	Reinject  bool
+	Precommit bool
+	CI        string
 }
 
 type BlockFile struct {
-	Path  string
-	Part  Part
-	Block blocks.Block
+	Path     string
+	Part     Part
+	Block    blocks.Block
+	Preamble string
 }
 
 type EntryFile struct {
