@@ -35,7 +35,7 @@ Reglas de la inyección antes de editar, para que no se vuelva ruido:
 ## Instalación
 
 - Bloques **gestionados e idempotentes**: marcados, se reescriben sin duplicarse.
-- Al actualizar o desinstalar, borra **solo lo que coincide byte a byte** con lo instalado; lo que la persona editó se conserva.
+- Al actualizar o desinstalar, borra **solo lo que coincide byte a byte** con lo instalado; lo que la persona editó se conserva. Los archivos enteros de los packs no son bloques: su huella en el encabezado decide si alguien los editó (`packs`).
 - `beacon install` detecta qué agentes hay en el repo.
 - **`--preview`:** muestra qué archivos crearía o cambiaría y cómo quedarían, sin tocar nada.
 - **Copia de seguridad:** antes de modificar un archivo existente guarda una copia en `.git/beacon/backups/` (`layout`). Así una instalación que sale mal se deshace y no depende de que el archivo estuviera en git.

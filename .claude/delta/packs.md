@@ -1,6 +1,6 @@
 # Packs
 
-Las rules y skills propias de Beacon, que Anchor instala en cada agente. Aprobado el 2026-11-27; **sin construir** (Fase 4b, `status`). Lo no confirmado dice **Propuesta**.
+Las rules y skills propias de Beacon, que Anchor instala en cada agente. Aprobado el 2026-11-27; **en construcción** (Fase 4b, `status`): la mecánica de instalación y la rule `record` están hechas (K1). Lo no confirmado dice **Propuesta**.
 
 ## Qué son
 
@@ -128,12 +128,13 @@ Se aplica P4: cero comandos que aprender, valor en la primera sesión, ninguna c
 - **Cero preguntas por defecto:** `beacon install` instala `core`, detecta el stack y sigue. Lo opcional se pide con `--pack git` o `--pack arch`.
 - **Quién da el sí:** `packs:` es nivel 3. Una persona que ejecuta `install` en una terminal ya lo da, y se sella a su nombre (`ledger`, Actor); un agente sin terminal recibe el código 2 y pide el sí con `--approve`.
 - **Reproducible:** la primera vez, `install` escribe `packs:` explícito (`enabled`, `stacks`, `language`), así que quien clone el repo y ejecute `install` obtiene las mismas rules, aunque el escaneo cambie.
+- **Huella:** cada archivo instalado lleva en su encabezado una línea `beacon: <huella>`, los primeros 16 caracteres del SHA-256 del contenido sin esa línea y con saltos LF. Si coincide, nadie lo editó y `install` puede actualizarlo o `--uninstall` borrarlo; si no coincide, o si el archivo no la tiene (por ejemplo, uno propio con el mismo nombre), se conserva y se informa.
 - **Se ve antes de hacerse:** `--preview` muestra qué archivos crearía y cómo quedarían; la instalación termina con un resumen de lo instalado y de cómo quitarlo.
-- **Se quita por piezas o entero:** `--skip <pieza>`, que se guarda en `packs.skip` (hoy `--skip` solo acepta `hooks` y `reinject`, que valen para esa ejecución), y `--uninstall`, que borra solo lo que coincide byte a byte.
+- **Se quita por piezas o entero:** `--skip <pieza>`, que se guarda en `packs.skip` (hoy `--skip` solo acepta `hooks` y `reinject`, que valen para esa ejecución), y `--uninstall`, que borra solo lo que nadie editó.
 - **Actualizar es volver a instalar:** es idempotente. Lo que la persona editó se conserva y `doctor` avisa de que quedó atrás.
 - **Todo visible en `doctor`** (**Propuesta**): packs instalados y su versión, piezas editadas o desactualizadas, rules omitidas por falta de binding, skills que una señal nombra sin estar instaladas.
 - **Lo propio no se toca:** lo que no lleva el prefijo `beacon-` queda intacto.
-- **Windows:** la comparación byte a byte exige saltos de línea LF. `install` agrega a `.gitattributes` las líneas `text eol=lf` de los archivos de los packs, como ya hace con `.beacon/**` (`anchor`).
+- **Windows:** la huella ignora los saltos de línea, así que CRLF no cuenta como edición. Pero Claude Code podría no leer un encabezado con CRLF (sin confirmar), y la rule cargaría siempre. Por eso `install` agrega a `.gitattributes` las líneas `text eol=lf` de los archivos de los packs, como ya hace con `.beacon/**` (`anchor`).
 - **Sin sorpresas:** los hooks nunca fallan la sesión y toda instalación deja una copia de seguridad en `.git/beacon/backups/` (`anchor`, `layout`). Cada bloqueo dice qué hacer (P7).
 
 ## Medición
