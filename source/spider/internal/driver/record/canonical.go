@@ -78,26 +78,30 @@ var (
 		"origin", "refers",
 	}
 	configKeys = []string{
-		"schema", "runners", "review", "limits", "agents", "approved",
+		"schema", "runners", "review", "limits", "agents", "packs",
+		"approved",
 	}
 	reviewKeys = []string{
 		"convention", "architecture", "product", "domain", "runbook",
 		"decision",
 	}
 	limitKeys    = []string{"guide", "brief", "hook"}
+	packsKeys    = []string{"enabled", "skip", "stacks", "language", "commit"}
+	languageKeys = []string{"code", "ui"}
+	commitKeys   = []string{"min", "max"}
 	runnerKeys   = []string{"run", "baseline"}
 	approvedKeys = []string{"by", "at", "via", "n"}
 	attestedKeys = []string{"by", "at", "via", "commit", "evidence"}
 	checkKeys    = []string{"runner", "manual"}
 	flowLists    = []string{
 		"paths", "where", "blocks", "implements", "refers", "tags", "applies",
-		"run", "baseline", "agents",
+		"run", "baseline", "agents", "enabled", "skip", "stacks",
 	}
 	sortedLists = []string{"blocks", "implements", "refers"}
 	blockLists  = []string{"nongoals", "rejected", "log"}
 	typedFields = []string{
 		"created", "reviewed", "at", "always", "schema", "guide", "brief",
-		"hook", "n",
+		"hook", "n", "min", "max",
 	}
 )
 
@@ -240,6 +244,15 @@ func canonicalSection(name string, section *yaml.Node) {
 	case "limits":
 		section.Style = 0
 		canonicalMapping(section, limitKeys)
+	case "packs":
+		section.Style = 0
+		canonicalMapping(section, packsKeys)
+	case "language":
+		section.Style = 0
+		canonicalMapping(section, languageKeys)
+	case "commit":
+		section.Style = 0
+		canonicalMapping(section, commitKeys)
 	}
 }
 

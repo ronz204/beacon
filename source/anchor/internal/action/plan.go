@@ -214,7 +214,11 @@ func (w *workspace) contribute(
 		current.set(file.Part, after)
 	}
 
-	return w.offer(ctx, contribution.Files)
+	if err := w.offer(ctx, contribution.Files); err != nil {
+		return err
+	}
+
+	return w.release(ctx, contribution.Retired, false)
 }
 
 func (w *workspace) offer(
@@ -293,12 +297,13 @@ func (w *workspace) withdraw(
 		}
 	}
 
-	return w.release(ctx, contribution.Files)
+	return w.release(ctx, contribution.Files, true)
 }
 
 func (w *workspace) release(
 	ctx context.Context,
 	files []agents.ManagedFile,
+	report bool,
 ) error {
 	for _, file := range files {
 		current, err := w.load(ctx, file.Path)
@@ -310,7 +315,9 @@ func (w *workspace) release(
 		case !current.exists:
 			continue
 		case !ownsFile(current):
-			w.kept = append(w.kept, Kept{file.Path, file.Part})
+			if report {
+				w.kept = append(w.kept, Kept{file.Path, file.Part})
+			}
 		default:
 			current.set(file.Part, "")
 			current.gone = true

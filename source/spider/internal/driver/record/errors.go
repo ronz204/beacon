@@ -30,6 +30,7 @@ const (
 	RecordStampTarget        RecordCode = "record_stamp_target"
 	RecordChanged            RecordCode = "record_changed"
 	RecordRunnerInvalid      RecordCode = "record_runner_invalid"
+	RecordPacksInvalid       RecordCode = "record_packs_invalid"
 )
 
 type RecordError = kernel.Error[RecordCode]
@@ -61,6 +62,8 @@ var recordErrors = kernel.ErrorCatalog[RecordCode]{
 	RecordStampTarget:        "approval names an element not in the record",
 	RecordChanged:            "the record changed; read it again",
 	RecordRunnerInvalid:      "give each runner a non-empty run list",
+	RecordPacksInvalid: "use lowercase names, positive numbers and a " +
+		"commit min that does not pass max",
 }
 
 func failAt(code RecordCode, file string, line int) RecordError {

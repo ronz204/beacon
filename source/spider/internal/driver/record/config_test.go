@@ -169,3 +169,103 @@ func TestLoadConfigReportsMissingFile(t *testing.T) {
 		t.Fatalf("failures = %v", failures)
 	}
 }
+
+const packsConfig = `schema: 1
+packs:
+  enabled: [core, git]
+  skip: [refute]
+  stacks: [go]
+  language:
+    code: en
+    ui: es
+  commit:
+    min: 40
+    max: 50
+`
+
+func TestLoadConfigReadsThePacksSection(t *testing.T) {
+	config, failures := storeWithConfig(t, packsConfig).LoadConfig()
+
+	if failures != nil {
+		t.Fatalf("failures = %v", failures)
+	}
+
+	packs := config.Packs
+	if !packs.Present || len(packs.Enabled) != 2 || packs.Skip[0] != "refute" {
+		t.Fatalf("packs = %+v", packs)
+	}
+	if packs.Stacks[0] != "go" || packs.Language.UI != "es" {
+		t.Fatalf("packs = %+v", packs)
+	}
+	if packs.Commit.Min != 40 || packs.Commit.Max != 50 {
+		t.Fatalf("commit = %+v", packs.Commit)
+	}
+}
+
+func TestLoadConfigWithoutPacksIsNotPresent(t *testing.T) {
+	config, failures := storeWithConfig(t, "schema: 1\n").LoadConfig()
+
+	if failures != nil || config.Packs.Present {
+		t.Fatalf("packs = %+v, failures = %v", config.Packs, failures)
+	}
+}
+
+func TestLoadConfigRejectsInvalidPacks(t *testing.T) {
+	cases := []struct {
+		name string
+		text string
+		code record.RecordCode
+	}{
+		{"pack name", "schema: 1\npacks: {enabled: [Core]}\n", packsInvalid},
+		{"piece name", "schema: 1\npacks: {skip: [refute1]}\n", packsInvalid},
+		{"stack name", "schema: 1\npacks: {stacks: [Go]}\n", packsInvalid},
+		{
+			"language",
+			"schema: 1\npacks: {language: {code: EN}}\n",
+			packsInvalid,
+		},
+		{"commit zero", "schema: 1\npacks: {commit: {min: 0}}\n", packsField},
+		{
+			"commit inverted",
+			"schema: 1\npacks: {commit: {min: 60, max: 50}}\n",
+			packsInvalid,
+		},
+		{"not a mapping", "schema: 1\npacks: 3\n", packsField},
+		{"list not a list", "schema: 1\npacks: {enabled: core}\n", packsField},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, failures := storeWithConfig(t, c.text).LoadConfig()
+
+			if len(failures) != 1 || !is(c.code)(failures[0]) {
+				t.Fatalf("failures = %v", failures)
+			}
+		})
+	}
+}
+
+const (
+	packsInvalid = record.RecordPacksInvalid
+	packsField   = record.RecordFieldType
+)
+
+func TestFormatConfigPutsThePacksSectionInOrder(t *testing.T) {
+	input := "packs:\n  commit: {max: 50, min: 40}\n  stacks: [go]\n" +
+		"  enabled: [core]\nschema: 1\nrunners: {}\n"
+	want := "schema: 1\nrunners: {}\npacks:\n  enabled: [core]\n" +
+		"  stacks: [go]\n  commit:\n    min: 40\n    max: 50\n"
+
+	got, err := record.FormatConfig("config.yaml", []byte(input))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != want {
+		t.Fatalf("got:\n%s\nwant:\n%s", got, want)
+	}
+
+	again, err := record.FormatConfig("config.yaml", got)
+	if err != nil || string(again) != want {
+		t.Fatalf("not idempotent:\n%s", again)
+	}
+}

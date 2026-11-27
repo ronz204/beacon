@@ -64,7 +64,7 @@ func New(ctx context.Context, directory string) (Anchor, error) {
 			CI:     map[string]agents.Contribution{github.Name: workflow},
 		},
 		lookup:   exec.LookPath,
-		catalog:  catalog.New(packs, catalog.DefaultBinding()),
+		catalog:  catalog.New(packs),
 		hookPath: repo.HookPath(),
 		pinned:   pinned,
 	}, nil

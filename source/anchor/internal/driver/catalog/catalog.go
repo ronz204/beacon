@@ -44,25 +44,25 @@ func DefaultBinding() Binding {
 }
 
 type Catalog struct {
-	source  fs.FS
-	binding Binding
+	source fs.FS
 }
 
-func New(source fs.FS, binding Binding) Catalog {
-	return Catalog{source: source, binding: binding}
+func New(source fs.FS) Catalog {
+	return Catalog{source: source}
 }
 
-func (c Catalog) Everything() ([]agents.Piece, error) {
+func (c Catalog) Everything(binding Binding) ([]agents.Piece, error) {
 	packs, err := c.packNames()
 	if err != nil {
 		return nil, err
 	}
 
-	return c.piecesOf(packs)
+	return c.piecesOf(packs, binding)
 }
 
 func (c Catalog) Select(
 	packs, skip []string,
+	binding Binding,
 ) ([]agents.Piece, error) {
 	known, err := c.packNames()
 	if err != nil {
@@ -75,7 +75,7 @@ func (c Catalog) Select(
 		}
 	}
 
-	every, err := c.piecesOf(known)
+	every, err := c.piecesOf(known, binding)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (c Catalog) Select(
 		}
 	}
 
-	chosen, err := c.piecesOf(packs)
+	chosen, err := c.piecesOf(packs, binding)
 	if err != nil {
 		return nil, err
 	}
@@ -118,16 +118,19 @@ func (c Catalog) packNames() ([]string, error) {
 	return names, nil
 }
 
-func (c Catalog) piecesOf(packs []string) ([]agents.Piece, error) {
+func (c Catalog) piecesOf(
+	packs []string,
+	binding Binding,
+) ([]agents.Piece, error) {
 	var pieces []agents.Piece
 
 	for _, pack := range packs {
-		rules, err := c.rules(pack)
+		rules, err := c.rules(pack, binding)
 		if err != nil {
 			return nil, err
 		}
 
-		skills, err := c.skills(pack)
+		skills, err := c.skills(pack, binding)
 		if err != nil {
 			return nil, err
 		}
@@ -139,7 +142,10 @@ func (c Catalog) piecesOf(packs []string) ([]agents.Piece, error) {
 	return pieces, nil
 }
 
-func (c Catalog) rules(pack string) ([]agents.Piece, error) {
+func (c Catalog) rules(
+	pack string,
+	binding Binding,
+) ([]agents.Piece, error) {
 	folder := path.Join(pack, rulesFolder)
 
 	entries, err := readFolder(c.source, folder)
@@ -155,7 +161,7 @@ func (c Catalog) rules(pack string) ([]agents.Piece, error) {
 			continue
 		}
 
-		content, err := c.render(path.Join(folder, entry.Name()))
+		content, err := c.render(path.Join(folder, entry.Name()), binding)
 		if err != nil {
 			return nil, err
 		}
@@ -171,7 +177,10 @@ func (c Catalog) rules(pack string) ([]agents.Piece, error) {
 	return pieces, nil
 }
 
-func (c Catalog) skills(pack string) ([]agents.Piece, error) {
+func (c Catalog) skills(
+	pack string,
+	binding Binding,
+) ([]agents.Piece, error) {
 	folder := path.Join(pack, skillsFolder)
 
 	entries, err := readFolder(c.source, folder)
@@ -185,7 +194,10 @@ func (c Catalog) skills(pack string) ([]agents.Piece, error) {
 			continue
 		}
 
-		content, err := c.renderSkill(path.Join(folder, entry.Name()))
+		content, err := c.renderSkill(
+			path.Join(folder, entry.Name()),
+			binding,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -201,17 +213,20 @@ func (c Catalog) skills(pack string) ([]agents.Piece, error) {
 	return pieces, nil
 }
 
-func (c Catalog) renderSkill(folder string) (string, error) {
+func (c Catalog) renderSkill(
+	folder string,
+	binding Binding,
+) (string, error) {
 	target := path.Join(folder, skillFile)
 
 	if _, err := fs.Stat(c.source, target+templateSuffix); err == nil {
-		return c.render(target + templateSuffix)
+		return c.render(target+templateSuffix, binding)
 	}
 
-	return c.render(target)
+	return c.render(target, binding)
 }
 
-func (c Catalog) render(target string) (string, error) {
+func (c Catalog) render(target string, binding Binding) (string, error) {
 	data, err := fs.ReadFile(c.source, target)
 	if err != nil {
 		return "", assetFailure(target, err)
@@ -230,7 +245,7 @@ func (c Catalog) render(target string) (string, error) {
 	}
 
 	var rendered bytes.Buffer
-	if err := parsed.Execute(&rendered, c.binding); err != nil {
+	if err := parsed.Execute(&rendered, binding); err != nil {
 		return "", assetFailure(target, err)
 	}
 

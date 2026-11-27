@@ -51,6 +51,7 @@ type Options struct {
 	Precommit bool
 	CI        string
 	Pieces    []Piece
+	Retired   []Piece
 }
 
 type BlockFile struct {
@@ -76,6 +77,7 @@ type Contribution struct {
 	Blocks  []BlockFile
 	Entries []EntryFile
 	Files   []ManagedFile
+	Retired []ManagedFile
 }
 
 type Agent interface {

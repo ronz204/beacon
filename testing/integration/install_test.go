@@ -17,8 +17,9 @@ type installData struct {
 		Action string   `json:"action"`
 		Parts  []string `json:"parts"`
 	} `json:"changes"`
-	Skipped []string `json:"skipped"`
-	Kept    []struct {
+	Skipped  []string `json:"skipped"`
+	Recorded bool     `json:"recorded"`
+	Kept     []struct {
 		Path string `json:"path"`
 	} `json:"kept"`
 }
@@ -285,5 +286,149 @@ func TestInstallKeepsARuleEditedByHand(t *testing.T) {
 	}
 	if len(data.Kept) != 1 || data.Kept[0].Path != recordRule {
 		t.Errorf("kept = %+v", data.Kept)
+	}
+}
+
+const configFile = ".beacon/config.yaml"
+
+func configText(t *testing.T, root string) string {
+	t.Helper()
+
+	return utilities.ReadFile(t, filepath.Join(root, configFile))
+}
+
+func TestInstallAsksForAYesBeforeRecordingThePacks(t *testing.T) {
+	root := utilities.NewRepository(t)
+	before := configText(t, root)
+
+	result := utilities.Beacon(t, root, "install", "--json")
+
+	if result.Code != 2 || !strings.Contains(result.Stdout, "packs_changed") {
+		t.Fatalf("exit %d: %s", result.Code, result.Stdout)
+	}
+	if configText(t, root) != before {
+		t.Error("the config changed without a yes")
+	}
+	if present(root, "AGENTS.md") {
+		t.Error("files were written without the yes")
+	}
+}
+
+func TestInstallRecordsThePacksWithTheYesAndThenNeedsNone(t *testing.T) {
+	root := utilities.NewRepository(t)
+
+	first := runInstall(t, root, "--approve")
+	text := configText(t, root)
+
+	section := "packs:\n  enabled: [core]\n"
+
+	if !first.Recorded || !strings.Contains(text, section) {
+		t.Errorf("recorded = %v, config:\n%s", first.Recorded, text)
+	}
+	if !strings.Contains(text, "language:\n    code: en\n") {
+		t.Errorf("config:\n%s", text)
+	}
+	if !present(root, recordRule) {
+		t.Error("the rule was not installed")
+	}
+
+	second := runInstall(t, root)
+
+	if second.Recorded || len(second.Changes) != 0 {
+		t.Errorf("second install: %+v", second)
+	}
+}
+
+func TestAPersonAtTheTerminalGivesTheYesByRunningInstall(t *testing.T) {
+	root := utilities.NewRepository(t)
+
+	result := utilities.BeaconWith(
+		t,
+		root,
+		utilities.Options{Actor: "human:jane"},
+		"install",
+		"--json",
+	)
+
+	if result.Code != 0 {
+		t.Fatalf("exit %d: %s", result.Code, result.Stdout)
+	}
+	if !strings.Contains(configText(t, root), "human:jane") {
+		t.Errorf("the yes was not sealed:\n%s", configText(t, root))
+	}
+}
+
+func TestSkipIsRecordedAndRetiresTheInstalledRule(t *testing.T) {
+	root := utilities.NewRepository(t)
+	runInstall(t, root, "--approve")
+
+	runInstall(t, root, "--approve", "--skip", "record")
+
+	if present(root, recordRule) {
+		t.Error("the skipped rule is still installed")
+	}
+	if !strings.Contains(configText(t, root), "skip: [record]") {
+		t.Errorf("config:\n%s", configText(t, root))
+	}
+}
+
+func TestInstallPreviewDoesNotRecordThePacks(t *testing.T) {
+	root := utilities.NewRepository(t)
+	before := configText(t, root)
+
+	result := utilities.Beacon(t, root, "install", "--preview")
+
+	if !strings.Contains(result.Stdout, "would record packs in "+configFile) {
+		t.Errorf("stdout:\n%s", result.Stdout)
+	}
+	if configText(t, root) != before || present(root, "AGENTS.md") {
+		t.Error("the preview wrote something")
+	}
+}
+
+func TestAnUnknownPackFailsBeforeTheConfigChanges(t *testing.T) {
+	root := utilities.NewRepository(t)
+	before := configText(t, root)
+
+	result := utilities.Beacon(
+		t, root, "install", "--json", "--approve", "--pack", "nope",
+	)
+
+	if result.Code != 1 || !strings.Contains(result.Stdout, "pack_unknown") {
+		t.Errorf("exit %d: %s", result.Code, result.Stdout)
+	}
+	if configText(t, root) != before {
+		t.Error("the config changed for an unknown pack")
+	}
+}
+
+func TestUninstallKeepsThePacksAndInstallBringsThemBack(t *testing.T) {
+	root := utilities.NewRepository(t)
+	runInstall(t, root, "--approve")
+
+	runInstall(t, root, "--uninstall")
+
+	kept := strings.Contains(configText(t, root), "packs:")
+	left := present(root, recordRule)
+
+	if left || !kept {
+		t.Fatalf("rule left: %v, packs kept: %v", left, kept)
+	}
+
+	runInstall(t, root)
+
+	if !present(root, recordRule) {
+		t.Error("install did not bring the rule back")
+	}
+}
+
+func TestInstallRecordsTheStacksItDetects(t *testing.T) {
+	root := utilities.NewRepository(t)
+	utilities.WriteFile(t, root, "go.mod", "module sample\n")
+
+	runInstall(t, root, "--approve")
+
+	if !strings.Contains(configText(t, root), "stacks: [go]") {
+		t.Errorf("config:\n%s", configText(t, root))
 	}
 }

@@ -410,3 +410,85 @@ func TestInstallRejectsAnUnknownPackOrPiece(t *testing.T) {
 		}
 	}
 }
+
+func TestReconcileRemovesTheRuleAPackNoLongerSelects(t *testing.T) {
+	ctx := context.Background()
+	directory := newProject(t)
+	tool := newAnchor(t, directory)
+
+	if _, err := tool.Install(ctx, packOptions()); err != nil {
+		t.Fatal(err)
+	}
+
+	options := packOptions()
+	options.SkipPieces = []string{"record"}
+	options.Reconcile = true
+
+	view, err := tool.Install(ctx, options)
+	if err != nil || exists(directory, recordRule) {
+		t.Fatalf("the retired rule is still there, err %v", err)
+	}
+	if !hasChange(view, recordRule, "rule") || len(view.Kept) != 0 {
+		t.Errorf("changes = %+v, kept = %+v", view.Changes, view.Kept)
+	}
+}
+
+func TestWithoutReconcileSkippingDoesNotRemoveWhatIsInstalled(t *testing.T) {
+	ctx := context.Background()
+	directory := newProject(t)
+	tool := newAnchor(t, directory)
+
+	if _, err := tool.Install(ctx, packOptions()); err != nil {
+		t.Fatal(err)
+	}
+
+	options := packOptions()
+	options.SkipPieces = []string{"record"}
+
+	if _, err := tool.Install(ctx, options); err != nil {
+		t.Fatal(err)
+	}
+	if !exists(directory, recordRule) {
+		t.Error("the rule was removed without reconcile")
+	}
+}
+
+func TestReconcileLeavesAnEditedRetiredRuleAlone(t *testing.T) {
+	ctx := context.Background()
+	directory := newProject(t)
+	tool := newAnchor(t, directory)
+
+	if _, err := tool.Install(ctx, packOptions()); err != nil {
+		t.Fatal(err)
+	}
+
+	edited := readRule(t, directory) + "- mine\n"
+	writeRule(t, directory, edited)
+
+	options := packOptions()
+	options.SkipPieces = []string{"record"}
+	options.Reconcile = true
+
+	view, err := tool.Install(ctx, options)
+	if err != nil || readRule(t, directory) != edited {
+		t.Fatalf("an edited rule changed, err %v", err)
+	}
+	if len(view.Kept) != 0 {
+		t.Errorf("kept = %+v", view.Kept)
+	}
+}
+
+func TestValidateRejectsWhatInstallWouldReject(t *testing.T) {
+	directory := newProject(t)
+	tool := newAnchor(t, directory)
+
+	err := tool.Validate(anchor.InstallOptions{Packs: []string{"nope"}})
+
+	var failure action.InstallError
+	if !errors.As(err, &failure) || failure.Code != action.PackUnknown {
+		t.Errorf("err = %v", err)
+	}
+	if exists(directory, "AGENTS.md") {
+		t.Error("validate wrote files")
+	}
+}

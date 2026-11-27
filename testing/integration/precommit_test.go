@@ -111,7 +111,7 @@ const hookFile = ".git/hooks/pre-commit"
 
 func TestInstallWritesTheHookAndABlockedCommitStaysOut(t *testing.T) {
 	root := passingRepository(t)
-	runInstall(t, root)
+	runInstall(t, root, "--approve")
 	editByHand(t, root, "After 5 failed", "After 10 failed")
 
 	blocked, err := utilities.GitWithBeacon(
@@ -209,7 +209,7 @@ func TestUninstallRemovesAHookBeaconCreated(t *testing.T) {
 
 func TestHookLetsACommitPassWhenBeaconIsNotInstalled(t *testing.T) {
 	root := passingRepository(t)
-	runInstall(t, root)
+	runInstall(t, root, "--approve")
 	editByHand(t, root, "After 5 failed", "After 10 failed")
 
 	gitPath, err := exec.LookPath("git")

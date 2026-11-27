@@ -278,3 +278,22 @@ type RunnerConfig struct {
 	Run      []string `json:"run"`
 	Baseline []string `json:"baseline"`
 }
+
+type PacksLanguage struct {
+	Code string `json:"code,omitempty"`
+	UI   string `json:"ui,omitempty"`
+}
+
+type PacksCommit struct {
+	Min int `json:"min"`
+	Max int `json:"max"`
+}
+
+type PacksConfig struct {
+	Present  bool          `json:"-"`
+	Enabled  []string      `json:"enabled"`
+	Skip     []string      `json:"skip,omitempty"`
+	Stacks   []string      `json:"stacks,omitempty"`
+	Language PacksLanguage `json:"language,omitzero"`
+	Commit   PacksCommit   `json:"commit,omitzero"`
+}

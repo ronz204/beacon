@@ -28,7 +28,7 @@ func shipped(t *testing.T) []agents.Piece {
 		t.Fatal(err)
 	}
 
-	pieces, err := catalog.New(source, catalog.DefaultBinding()).Everything()
+	pieces, err := catalog.New(source).Everything(catalog.DefaultBinding())
 	if err != nil {
 		t.Fatal(err)
 	}

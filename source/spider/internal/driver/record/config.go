@@ -44,6 +44,7 @@ type Config struct {
 	Limits   ConfigLimits
 	Review   map[string]memory.ReviewSpan
 	Runners  map[string]Runner
+	Packs    ConfigPacks
 	Approved kernel.Approval
 }
 
@@ -81,6 +82,7 @@ func decodeConfig(file string, data []byte) (Config, []error) {
 		Limits:   configLimits(f),
 		Review:   configReview(f),
 		Runners:  configRunners(f),
+		Packs:    configPacks(f),
 		Approved: approval(f),
 	}
 

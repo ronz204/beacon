@@ -42,9 +42,9 @@ func codeOf(t *testing.T, err error) action.InstallCode {
 }
 
 func TestSelectReturnsOnlyThePacksAsked(t *testing.T) {
-	tool := catalog.New(sample(), catalog.DefaultBinding())
+	tool := catalog.New(sample())
 
-	pieces, err := tool.Select([]string{"core"}, nil)
+	pieces, err := tool.Select([]string{"core"}, nil, catalog.DefaultBinding())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,9 +62,9 @@ func TestSelectReturnsOnlyThePacksAsked(t *testing.T) {
 }
 
 func TestSelectRendersTemplatesWithTheBinding(t *testing.T) {
-	tool := catalog.New(sample(), catalog.DefaultBinding())
+	tool := catalog.New(sample())
 
-	pieces, err := tool.Select([]string{"core"}, nil)
+	pieces, err := tool.Select([]string{"core"}, nil, catalog.DefaultBinding())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,9 +79,13 @@ func TestSelectRendersTemplatesWithTheBinding(t *testing.T) {
 }
 
 func TestSelectLeavesOutTheSkippedPieces(t *testing.T) {
-	tool := catalog.New(sample(), catalog.DefaultBinding())
+	tool := catalog.New(sample())
 
-	pieces, err := tool.Select([]string{"core", "git"}, []string{"plain"})
+	pieces, err := tool.Select(
+		[]string{"core", "git"},
+		[]string{"plain"},
+		catalog.DefaultBinding(),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,31 +101,40 @@ func TestSelectLeavesOutTheSkippedPieces(t *testing.T) {
 }
 
 func TestSelectRejectsAnUnknownPackOrPiece(t *testing.T) {
-	tool := catalog.New(sample(), catalog.DefaultBinding())
+	tool := catalog.New(sample())
 
-	_, err := tool.Select([]string{"nope"}, nil)
+	_, err := tool.Select([]string{"nope"}, nil, catalog.DefaultBinding())
 	if codeOf(t, err) != action.PackUnknown {
 		t.Errorf("pack: err = %v", err)
 	}
 
-	_, err = tool.Select([]string{"core"}, []string{"nope"})
+	_, err = tool.Select(
+		[]string{"core"},
+		[]string{"nope"},
+		catalog.DefaultBinding(),
+	)
 	if codeOf(t, err) != action.PieceUnknown {
 		t.Errorf("piece: err = %v", err)
 	}
 }
 
 func TestSkippingAPieceOfAnotherPackIsAllowed(t *testing.T) {
-	tool := catalog.New(sample(), catalog.DefaultBinding())
+	tool := catalog.New(sample())
 
-	if _, err := tool.Select([]string{"core"}, []string{"fancy"}); err != nil {
+	_, err := tool.Select(
+		[]string{"core"},
+		[]string{"fancy"},
+		catalog.DefaultBinding(),
+	)
+	if err != nil {
 		t.Errorf("err = %v", err)
 	}
 }
 
 func TestEverythingReturnsEveryPack(t *testing.T) {
-	tool := catalog.New(sample(), catalog.DefaultBinding())
+	tool := catalog.New(sample())
 
-	pieces, err := tool.Everything()
+	pieces, err := tool.Everything(catalog.DefaultBinding())
 	if err != nil || len(pieces) != 4 {
 		t.Errorf("pieces = %v, err %v", names(pieces), err)
 	}
@@ -131,9 +144,9 @@ func TestATemplateWithAnUnknownKeyIsAnAssetFailure(t *testing.T) {
 	source := fstest.MapFS{
 		"core/rules/broken.md.tmpl": {Data: []byte("---\n---\n{{.Nope}}\n")},
 	}
-	tool := catalog.New(source, catalog.DefaultBinding())
+	tool := catalog.New(source)
 
-	_, err := tool.Everything()
+	_, err := tool.Everything(catalog.DefaultBinding())
 	if codeOf(t, err) != action.PackAssetInvalid {
 		t.Errorf("err = %v", err)
 	}

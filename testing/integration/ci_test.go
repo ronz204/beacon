@@ -99,6 +99,23 @@ func TestCIBlocksALevelThreeChangeWithoutAYes(t *testing.T) {
 	}
 }
 
+func TestCIBlocksAPacksChangeWithoutAYes(t *testing.T) {
+	root := passingRepository(t)
+	openPullRequest(t, root)
+
+	config := filepath.Join(root, filepath.FromSlash(configPath))
+	text := utilities.ReadFile(t, config)
+	packs := text + "packs:\n  enabled: [core]\n"
+	utilities.WriteFile(t, root, configPath, packs)
+	commitTracked(t, root, "choose the packs by hand")
+
+	result, data := runCI(t, root)
+
+	if result.Code != 2 || !slices.Contains(ciKinds(data), "unapproved_change") {
+		t.Fatalf("code %d, data %+v", result.Code, data)
+	}
+}
+
 func TestCIBlocksARedPromiseOutsideTheTouchedCapabilities(t *testing.T) {
 	root := repositoryWithRunner(t)
 	openPullRequest(t, root)

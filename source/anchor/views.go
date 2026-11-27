@@ -1,5 +1,12 @@
 package anchor
 
+type PackBinding struct {
+	Language  string
+	UI        string
+	CommitMin int
+	CommitMax int
+}
+
 type InstallOptions struct {
 	Preview    bool
 	Hooks      bool
@@ -8,6 +15,8 @@ type InstallOptions struct {
 	CI         string
 	Packs      []string
 	SkipPieces []string
+	Binding    PackBinding
+	Reconcile  bool
 }
 
 type ChangeView struct {

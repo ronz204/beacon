@@ -15,7 +15,6 @@ const (
 	skipHooks     = "hooks"
 	skipReinject  = "reinject"
 	skipPrecommit = "precommit"
-	defaultPack   = "core"
 	ciGithub      = "github"
 	ciCode        = "ci_invalid"
 	ciMessage     = "--ci accepts only github"
@@ -25,7 +24,7 @@ const (
 var skipParts = []string{skipHooks, skipReinject, skipPrecommit}
 
 func Install(printer *output.Printer) *cobra.Command {
-	var preview, uninstall bool
+	var preview, uninstall, approve bool
 	var skip, packs []string
 	var ci string
 
@@ -52,6 +51,25 @@ func Install(printer *output.Printer) *cobra.Command {
 				return fail(err)
 			}
 
+			project, inProject := foundProject()
+			saving := inProject && !uninstall
+			outcome := packsOutcome{}
+
+			if saving {
+				options, outcome, failure = resolvePacks(
+					command.Context(),
+					project,
+					tool,
+					options,
+					approve,
+				)
+			} else {
+				options.Packs = orDefault(options.Packs)
+			}
+			if failure != nil {
+				return output.Result{}, failure
+			}
+
 			run := tool.Install
 			if uninstall {
 				run = tool.Uninstall
@@ -62,10 +80,18 @@ func Install(printer *output.Printer) *cobra.Command {
 				return fail(err)
 			}
 
+			result := installResult{
+				InstallView: view,
+				Recorded:    outcome.recorded,
+			}
+			if saving {
+				result.Packs = &outcome.config
+			}
+
 			return output.Result{
-				Data:  view,
+				Data:  result,
 				Hint:  installHint(view),
-				Lines: installLines(view),
+				Lines: installLines(view, outcome),
 			}, nil
 		}),
 	}
@@ -79,6 +105,12 @@ func Install(printer *output.Printer) *cobra.Command {
 		"skip",
 		nil,
 		"leave out hooks, reinject, precommit or a piece by name",
+	)
+	flags.BoolVar(
+		&approve,
+		"approve",
+		false,
+		"pass the person's yes to a change of the packs",
 	)
 	flags.StringSliceVar(
 		&packs,
@@ -105,10 +137,6 @@ func installOptions(
 
 	hooks := !slices.Contains(skip, skipHooks)
 
-	if len(packs) == 0 {
-		packs = []string{defaultPack}
-	}
-
 	return anchor.InstallOptions{
 		Preview:    preview,
 		Hooks:      hooks,
@@ -134,7 +162,10 @@ func installHint(view anchor.InstallView) string {
 	return createProjectHint
 }
 
-func installLines(view anchor.InstallView) []string {
+func installLines(
+	view anchor.InstallView,
+	outcome packsOutcome,
+) []string {
 	var lines []string
 
 	if view.Preview {
@@ -151,6 +182,8 @@ func installLines(view anchor.InstallView) []string {
 	if len(view.Changes) == 0 {
 		lines = append(lines, "nothing to change")
 	}
+
+	lines = append(lines, packsLines(view.Preview, outcome)...)
 
 	for _, kept := range view.Kept {
 		lines = append(lines, fmt.Sprintf(

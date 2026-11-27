@@ -31,11 +31,12 @@ func (f Finding) because(
 
 var goalTextFields = []string{"statement", "success"}
 
-var configGuardedFields = []string{"runners", "schema"}
+var configGuardedFields = []string{"runners", "schema", "packs"}
 
 var configReasons = map[string]ChangeReason{
 	"runners": ReasonRunnersChanged,
 	"schema":  ReasonSchemaChanged,
+	"packs":   ReasonPacksChanged,
 }
 
 func NormalizeText(text string) string {

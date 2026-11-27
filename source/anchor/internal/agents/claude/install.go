@@ -63,6 +63,11 @@ func (Agent) Contribute(
 
 	contribution.Entries = append(contribution.Entries, files...)
 	contribution.Files, err = pieceFiles(options.Pieces)
+	if err != nil {
+		return agents.Contribution{}, err
+	}
+
+	contribution.Retired, err = pieceFiles(options.Retired)
 
 	return contribution, err
 }

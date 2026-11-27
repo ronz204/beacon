@@ -90,6 +90,10 @@ func TestClassifyChangeFollowsTheLevelTable(t *testing.T) {
 	schemaB := configOf(map[string]string{"schema": "2"})
 	limitsA := configOf(map[string]string{"limits": "1"})
 	limitsB := configOf(map[string]string{"limits": "2"})
+	packsA := configOf(map[string]string{"packs": "a"})
+	packsB := configOf(map[string]string{"packs": "b"})
+	agentsA := configOf(map[string]string{"agents": "a"})
+	agentsB := configOf(map[string]string{"agents": "b"})
 
 	tests := []levelCase{
 		{"active text", "modified", caps(active), caps(tenTries), 3, true},
@@ -120,6 +124,8 @@ func TestClassifyChangeFollowsTheLevelTable(t *testing.T) {
 		{"runners", "modified", runnersA, runnersB, 3, true},
 		{"schema", "modified", schemaA, schemaB, 3, true},
 		{"limits", "modified", limitsA, limitsB, 1, false},
+		{"packs", "modified", packsA, packsB, 3, true},
+		{"agents", "modified", agentsA, agentsB, 1, false},
 	}
 
 	for _, test := range tests {
