@@ -73,8 +73,9 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 | Archivo | Adelantado a la Fase 2, porque `close` lo necesita; una línea JSON por registro cerrado | `layout` |
 | Detalle de Weaver | Aprobado el 2026-11-25: frontera pública de Spider con tipos planos, forma del payload, nivel de cada cambio, promesas que no se borran por omisión, regla del sí fresco y cómo se corren los checks (D15 a D20) | Historial de git (plan de la Fase 2) |
 | Packs | Rules y skills propias que Anchor instala en tres packs (`core` por defecto, `git` y `arch` a petición): 11 rules y 9 skills, nombres de seis letras con prefijo `beacon-` y plantillas que el binario rellena con un binding por stack. Aprobado el 2026-11-27, sin construir | `packs` |
-| `packs:` | Sección de `config.yaml` de nivel 3; una persona que ejecuta `install` en una terminal da el sí, y un agente sin terminal recibe el código 2 | `packs`, `deltas`, `ledger` |
+| `packs:` | Sección de `config.yaml` de nivel 3 con `enabled`, `skip`, `stacks`, `language` y `commit`, todo explícito desde el primer `install`; una persona que ejecuta `install` en una terminal da el sí, y un agente sin terminal recibe el código 2 | `packs`, `deltas`, `ledger` |
 | Señales y skills | Un mensaje de Beacon nombra una skill solo si está instalada | `packs`, `weaver` |
+| Invocación de skills | El modelo invoca `elicit`, `ensure`, `locate`, `finish`, `digest`, `review` y `divide`; `tailor` y `refute` solo la persona | `packs` |
 | Rules de este repo | Salen de los packs (criterio D9); la que no encaje se queda a mano | `packs` |
 | Benchmark de fricción | Protocolo aprobado: condiciones A (sin Beacon), B (solo guía), C (completo) y D (C sin reinyección); piloto de 10 tareas, 3 repeticiones y un agente (90 sesiones); métricas de proceso, integridad, fricción, resultado y costo. **El arnés está construido (Fase 3)**: lee transcripts de Claude Code, arma las cuatro condiciones con el binario real y resume con intervalos de Wilson; se probó con transcripts simulados y uno real. Las 10 tareas del piloto y correrlo son de la Fase 6 | `survey` 7.6 |
 
@@ -87,7 +88,7 @@ El detalle de cada una vive en su archivo; aquí solo el mapa.
 - Si el hook de cierre (`Stop`) puede ser útil sin ser ruido: dispara al terminar cada respuesta (Fase 4, con `attest`).
 - Los campos del payload de `merge_group` de GitHub (`base_sha`, `base_ref`): el evento y sus reglas están verificados, el payload no (`snares`).
 - Si el nivel 3 de las capturas base resulta demasiado ruidoso; se mide en la fricción y se afina el `baseline`.
-- **Packs (`packs`):** qué skills puede invocar el modelo y si eso quita su descripción del contexto (paso K4); la forma exacta de `packs:` (paso K2).
+- **Packs (`packs`):** dos verificaciones en el paso K4: si un hook puede hacer que el modelo invoque una skill por su nombre, y si una skill con `disable-model-invocation` conserva su descripción en el contexto.
 
 ## Diferido
 

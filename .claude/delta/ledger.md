@@ -152,7 +152,7 @@ runners:
 | `review` | Plazo de revisión por tipo de guide y de decisión (`guides`) | Nivel 1 |
 | `limits` | Largo máximo en líneas de una guide, del `brief` y de lo que un hook inyecta a mitad de sesión (`spider`, `anchor`); valores iniciales que se ajustan con el uso | Nivel 1 |
 | `agents` | Agentes instalados (`anchor`) | Nivel 1 |
-| `packs` | Packs de rules y skills instalados y el binding de su stack (`packs`). Su forma exacta está por fijar | Nivel 3 |
+| `packs` | Packs de rules y skills activos, sus stacks, el idioma y el largo de los commits (`packs`) | Nivel 3 |
 | `approved` | `{by, at, via}`: el sí al último cambio de `runners`, `schema` o `packs` (`deltas`). Lo escribe solo el binario | — |
 
 `runners` y `schema` son sensibles porque solo los ejecutores corren código en CI (`deltas`, `snares`); `packs` lo es porque decide qué reglas y skills recibe el agente (`packs`). Cambiar los archivos que cubre un `baseline` también es de nivel 3, pero se detecta en el diff del repo y no en `config.yaml` (`deltas`).

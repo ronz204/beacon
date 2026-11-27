@@ -46,16 +46,29 @@ El miedo es que cada lenguaje exija reescribir cada rule. Se separa **la intenci
 
 **Por qué no que el agente reescriba la rule:** cada proyecto acabaría con una rule irreproducible, no habría forma de actualizarla sin pisar lo editado, y se rompería la separación entre lo que decide el modelo y lo que decide el código.
 
-**`packs:` en `config.yaml` es de nivel 3** (`deltas`, `ledger`): decide qué reglas y skills recibe el agente y cambia pocas veces, solo al configurar el proyecto. Su forma exacta es **Propuesta** y se fija en el paso K2 del plan:
+**`packs:` en `config.yaml` es de nivel 3** (`deltas`, `ledger`): decide qué reglas y skills recibe el agente y cambia pocas veces, solo al configurar el proyecto. Su forma, fijada el 2026-11-27:
 
 ```yaml
 packs:
   enabled: [core, git]
   skip: [refute]
-  binding:
-    stack: go
-    language: {code: en, ui: es}
+  stacks: [go]
+  language:
+    code: en
+    ui: es
+  commit:
+    min: 40
+    max: 50
 ```
+
+- `enabled`: todos los packs activos. La primera vez, `install` lo escribe explícito.
+- `skip`: piezas que no se instalan (opcional). Lo escribe `--skip <pieza>`.
+- `stacks`: lista con los nombres que ya detecta `init` (`go`, `bun`, `node`, `python`). Cada stack aporta su binding y los `paths:` de sus rules. Al principio solo Go trae binding: los demás stacks reciben solo las rules universales y paramétricas.
+- `language`: `code` (`en` por defecto) y `ui` (opcional; lo añade `tailor` o la persona).
+- `commit`: opcional; por defecto `min: 40` y `max: 50`, y solo importa con `git` activo.
+- **Validación:** un pack, una pieza o un stack desconocido falla al cargar; `min` y `max` son positivos y `min` no supera a `max`.
+- **Orden canónico:** `enabled`, `skip`, `stacks`, `language`, `commit`; las listas van en línea.
+- Lo que no está aquí (el largo de línea de `format`, la forma del dominio) viene en el binding que trae Beacon para cada stack y no se configura todavía.
 
 ## Las rules (11)
 
@@ -63,8 +76,8 @@ packs:
 |---|---|---|---|
 | `record` | Universal | Nunca editar los registros a mano; usar `beacon record` | Al tocar `.beacon/**` |
 | `pledge` | Paramétrica | El test cita el id de su promesa; nunca debilitar ni borrar una promesa para que algo pase | Archivos de test del stack |
-| `frugal` | Universal | La escalera de lo más barato primero y el cierre de lo omitido; los atajos con límite se anotan con `beacon record` | Al escribir código |
-| `locale` | Paramétrica | Un idioma para identificadores y errores, otro para la UI | Código y UI del stack |
+| `frugal` | Universal | La escalera de lo más barato primero y el cierre de lo omitido; los atajos con límite se anotan con `beacon record` | Código del stack; sin binding, siempre |
+| `locale` | Paramétrica | Un idioma para identificadores y errores, otro para la UI | Código del stack; sin binding, siempre |
 | `vendor` | Paramétrica | Una dependencia nueva se justifica con la escalera y queda como `decision` con sus alternativas descartadas | Solo manifiestos (`go.mod`, `package.json`, `pyproject.toml`...) |
 | `format` | Ligada al stack | Vertical sobre horizontal, sin comentarios, datos de prueba ficticios | Código del stack |
 | `errors` | Ligada al stack | Códigos estables, mensajes fijos, detalle estructurado | Código de errores |
@@ -72,6 +85,8 @@ packs:
 | `commit` | Paramétrica | Conventional Commits, atómicos, por fase | Siempre |
 | `branch` | Paramétrica | `<tipo>/<slug>` corto | Siempre |
 | `domain` | Ligada al stack | Dominio puro, contratos hacia adentro | Dominio, según el binding |
+
+Una rule sin `paths:` carga al empezar la sesión, y una con `paths:` carga cuando el agente lee o edita un archivo que coincide (documentación de Claude Code). `commit` y `branch` no llevan `paths:`; las demás usan los de su binding. Si el YAML del encabezado no se puede leer, la rule queda sin `paths:` y carga siempre, así que una prueba renderiza cada rule y comprueba el encabezado.
 
 ## Las skills (9)
 
@@ -89,11 +104,11 @@ packs:
 
 `elicit` y `digest` se escriben desde cero; si la persona encuentra sus skills antiguas de Delta, se ajustan.
 
-**Invocación (Propuesta):** `ensure`, `locate` y `finish` pueden ser invocables por el modelo; las demás las invoca la persona o una señal. Falta confirmar si desactivar la invocación del modelo quita también la descripción del contexto.
+**Invocación:** el modelo puede invocar `elicit`, `ensure`, `locate`, `finish`, `digest`, `review` y `divide`. `tailor` y `refute` llevan `disable-model-invocation: true` y solo las invoca la persona: `tailor` cambia la configuración y `refute` lanza un revisor aparte que gasta tokens. La documentación de Claude Code se contradice sobre si una skill desactivada conserva su descripción en el contexto; se mide con `/context` en K4. El costo de las nueve descripciones es bajo: el listado admite hasta 1.536 caracteres por entrada y usa el 1% de la ventana de contexto, y el tope de estas es de unos 120.
 
 ## Señales que apuntan a skills
 
-El texto de la skill no se inyecta: solo una línea con su nombre, para no saturar. **Condición de P7:** un mensaje solo nombra una skill si está instalada, y `doctor` lo comprueba.
+El texto de la skill no se inyecta: solo una línea con su nombre, para no saturar. **Condición de P7:** un mensaje solo nombra una skill si está instalada, y `doctor` lo comprueba. **Sin confirmar:** la documentación no dice que un hook pueda hacer que el modelo invoque una skill por su nombre; se prueba en un spike en K4, y si no funciona el mensaje pide a la persona que ejecute el comando. Los mensajes se redactan como hechos y no como órdenes, y los de `tailor` y `refute` van dirigidos a la persona.
 
 | Señal | Mensaje |
 |---|---|
@@ -112,8 +127,9 @@ Se aplica P4: cero comandos que aprender, valor en la primera sesión, ninguna c
 
 - **Cero preguntas por defecto:** `beacon install` instala `core`, detecta el stack y sigue. Lo opcional se pide con `--pack git` o `--pack arch`.
 - **Quién da el sí:** `packs:` es nivel 3. Una persona que ejecuta `install` en una terminal ya lo da, y se sella a su nombre (`ledger`, Actor); un agente sin terminal recibe el código 2 y pide el sí con `--approve`.
+- **Reproducible:** la primera vez, `install` escribe `packs:` explícito (`enabled`, `stacks`, `language`), así que quien clone el repo y ejecute `install` obtiene las mismas rules, aunque el escaneo cambie.
 - **Se ve antes de hacerse:** `--preview` muestra qué archivos crearía y cómo quedarían; la instalación termina con un resumen de lo instalado y de cómo quitarlo.
-- **Se quita por piezas o entero:** `--skip <pieza>` (**Propuesta**: hoy `--skip` solo acepta `hooks` y `reinject`) y `--uninstall`, que borra solo lo que coincide byte a byte.
+- **Se quita por piezas o entero:** `--skip <pieza>`, que se guarda en `packs.skip` (hoy `--skip` solo acepta `hooks` y `reinject`, que valen para esa ejecución), y `--uninstall`, que borra solo lo que coincide byte a byte.
 - **Actualizar es volver a instalar:** es idempotente. Lo que la persona editó se conserva y `doctor` avisa de que quedó atrás.
 - **Todo visible en `doctor`** (**Propuesta**): packs instalados y su versión, piezas editadas o desactualizadas, rules omitidas por falta de binding, skills que una señal nombra sin estar instaladas.
 - **Lo propio no se toca:** lo que no lleva el prefijo `beacon-` queda intacto.
