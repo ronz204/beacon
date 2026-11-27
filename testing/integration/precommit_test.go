@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -139,7 +140,7 @@ func TestInstallLeavesAnExecutableHook(t *testing.T) {
 	path := filepath.Join(root, filepath.FromSlash(hookFile))
 	text := utilities.ReadFile(t, path)
 	if !strings.HasPrefix(text, "#!/bin/sh\n") ||
-		!strings.Contains(text, "beacon snares pre-commit || exit $?") {
+		!strings.Contains(text, "  beacon snares pre-commit || exit $?") {
 		t.Errorf("hook = %q", text)
 	}
 
@@ -203,5 +204,33 @@ func TestUninstallRemovesAHookBeaconCreated(t *testing.T) {
 
 	if present(root, hookFile) {
 		t.Error("the hook is still there")
+	}
+}
+
+func TestHookLetsACommitPassWhenBeaconIsNotInstalled(t *testing.T) {
+	root := passingRepository(t)
+	runInstall(t, root)
+	editByHand(t, root, "After 5 failed", "After 10 failed")
+
+	gitPath, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	command := exec.Command(gitPath, "commit", "-q", "-am", "weaken")
+	command.Dir = root
+	shellPath, err := exec.LookPath("sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	command.Env = append(
+		os.Environ(),
+		"PATH="+filepath.Dir(gitPath)+string(os.PathListSeparator)+
+			filepath.Dir(shellPath),
+	)
+
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("the commit failed: %v\n%s", err, output)
 	}
 }

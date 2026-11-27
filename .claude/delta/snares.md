@@ -8,6 +8,8 @@ Git hooks y CI. Es la capa más fuerte: no depende de que el agente coopere (`de
 - Compara contra la versión de git y detecta cambios de nivel 3, incluidas las ediciones manuales y las capturas base (`deltas`).
 - Corre los checks relacionados con lo que cambió (`pledge`).
 
+**El hook no depende de que Beacon esté instalado:** si `beacon` no está en el `PATH` de quien commitea, el hook no hace nada y el commit sigue. La garantía real es el CI.
+
 ## CI
 
 Snares no se ata a una plataforma: el binario trae **un comando genérico, `beacon snares ci`**, que cualquier CI puede correr, y se entrega con **una plantilla de GitHub Actions** (la primera plataforma). Otras plataformas, como GitLab, son otra plantilla y no tocan el binario.

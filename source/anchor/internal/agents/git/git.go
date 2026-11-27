@@ -8,7 +8,9 @@ import (
 const (
 	shebang = "#!/bin/sh"
 	block   = "# BEGIN BEACON (managed block: do not edit inside)\n" +
-		"beacon snares pre-commit || exit $?\n" +
+		"if command -v beacon >/dev/null 2>&1; then\n" +
+		"  beacon snares pre-commit || exit $?\n" +
+		"fi\n" +
 		"# END BEACON"
 )
 
