@@ -86,7 +86,7 @@ func Covers(text string, block Block) bool {
 	inner = inner[1 : len(inner)-1]
 
 	present := map[string]bool{}
-	for _, line := range strings.Split(text, "\n") {
+	for line := range strings.SplitSeq(text, "\n") {
 		present[strings.TrimSuffix(line, "\r")] = true
 	}
 

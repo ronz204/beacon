@@ -138,7 +138,7 @@ func TestStatusSummarisesTheCountsAndNeverBlocks(t *testing.T) {
 	if result.Code != 0 {
 		t.Fatalf("status only informs: %+v", result)
 	}
-	first := strings.SplitN(result.Stdout, "\n", 2)[0]
+	first, _, _ := strings.Cut(result.Stdout, "\n")
 	if !strings.Contains(first, "1 red") {
 		t.Fatalf("first line = %q", first)
 	}

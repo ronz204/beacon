@@ -134,8 +134,7 @@ func parseDocument(file, text string, offset int) (*yaml.Node, error) {
 func syntaxFailure(file string, cause error, offset int) RecordError {
 	line := 1
 
-	var located *yaml.LoadError
-	if errors.As(cause, &located) {
+	if located, ok := errors.AsType[*yaml.LoadError](cause); ok {
 		line = max(located.Mark.Line, 1)
 	}
 

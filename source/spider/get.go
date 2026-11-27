@@ -33,8 +33,8 @@ func (p Project) Get(ctx context.Context, id string) (StoredRecord, error) {
 	}
 
 	return StoredRecord{
-		Record: Record{Type: document.Kind, Data: document.JSON},
-		File:   p.relative(file),
+		Type: document.Kind, Data: document.JSON,
+		File: p.relative(file),
 	}, nil
 }
 
@@ -57,7 +57,7 @@ func (p Project) archived(
 	}
 
 	return StoredRecord{
-		Record:   Record{Type: entry.Type, Data: entry.Record},
+		Type: entry.Type, Data: entry.Record,
 		File:     p.relative(entry.File),
 		Archived: true,
 	}, nil

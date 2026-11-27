@@ -3,6 +3,7 @@ package blocks
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"slices"
 	"sort"
@@ -237,7 +238,7 @@ func parseDocument(text string) (document, error) {
 }
 
 func trailingData(err error) error {
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		return nil
 	}
 	if err == nil {
@@ -304,7 +305,7 @@ func parseArray(decoder *json.Decoder) (*node, error) {
 }
 
 func detectIndent(text string) string {
-	for _, line := range strings.Split(text, "\n") {
+	for line := range strings.SplitSeq(text, "\n") {
 		trimmed := strings.TrimLeft(line, " \t")
 		if trimmed == "" || trimmed == line {
 			continue

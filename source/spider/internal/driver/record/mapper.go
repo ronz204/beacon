@@ -183,8 +183,7 @@ func openRecord(file string, data []byte) (*fields, []error) {
 func parseFailure(file string, err error) []error {
 	line := 0
 
-	var located RecordError
-	if errors.As(err, &located) {
+	if located, ok := errors.AsType[RecordError](err); ok {
 		line, _ = located.Details["line"].(int)
 	}
 

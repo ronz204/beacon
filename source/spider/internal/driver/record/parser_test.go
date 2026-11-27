@@ -209,8 +209,7 @@ func TestParseRecordNamesTheFile(t *testing.T) {
 func TestParseRecordKeepsSyntaxCause(t *testing.T) {
 	_, err := record.ParseRecord("sample.yaml", []byte("a: [x\n"))
 
-	var cause *yaml.LoadError
-	if !errors.As(err, &cause) {
+	if _, ok := errors.AsType[*yaml.LoadError](err); !ok {
 		t.Fatalf("cause is not reachable: %v", err)
 	}
 }

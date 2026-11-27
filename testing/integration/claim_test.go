@@ -3,6 +3,7 @@ package integration_test
 import (
 	"encoding/json"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -94,13 +95,7 @@ func TestClaimWritesTheLocalClaimAndTheRecord(t *testing.T) {
 }
 
 func slicesContain(values []string, value string) bool {
-	for _, candidate := range values {
-		if candidate == value {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(values, value)
 }
 
 func TestSecondWorktreeCannotClaimAndDoesNotSeeTheTask(t *testing.T) {

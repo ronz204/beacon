@@ -1,6 +1,9 @@
 package blocks
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 type markerStyle struct {
 	begin string
@@ -47,13 +50,7 @@ func hasMarkers(lines []string, style markerStyle) bool {
 			return false
 		}
 	}
-	for _, line := range lines[:len(lines)-1] {
-		if line == style.end {
-			return false
-		}
-	}
-
-	return true
+	return !slices.Contains(lines[:len(lines)-1], style.end)
 }
 
 func (b Block) String() string {

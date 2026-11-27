@@ -342,7 +342,7 @@ func (r Repository) git(ctx context.Context, args ...string) (string, error) {
 func parseCommits(output string) ([]memory.CodeCommit, error) {
 	var commits []memory.CodeCommit
 
-	for _, block := range strings.Split(output, commitMark) {
+	for block := range strings.SplitSeq(output, commitMark) {
 		blockLines := lines(block)
 		if len(blockLines) == 0 {
 			continue
