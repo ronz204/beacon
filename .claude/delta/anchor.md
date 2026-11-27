@@ -9,7 +9,7 @@ Adaptadores que instalan Beacon en cada agente. Son **transporte opaco**: no tom
 3. **Permiso para `beacon`:** la regla que evita que el agente pida aprobación en cada comando. En Claude Code son dos, una por herramienta de shell (`Bash(beacon *)` y `PowerShell(beacon *)`). Un comando compuesto o una tubería hacia `beacon` sigue pidiendo permiso (ver "Hooks de Claude Code").
 4. **Nombre del agente para el sello:** no se instala nada. Cada `beacon hook` anota qué agente corrió en el worktree y el binario lo usa como `via` cuando el sí llega sin terminal (`ledger`, sección Actor). Es un marcado, no una prueba (`deltas`).
 5. **Comandos** nativos si el agente los admite.
-6. **Packs de rules y skills:** rules con `paths:` y skills propias, con el prefijo `beacon-` (`packs`). Aprobado, sin construir (`status`, Fase 4b).
+6. **Packs de rules y skills:** rules con `paths:` y skills propias, con el prefijo `beacon-` (`packs`). Aprobado; en construcción, con la instalación y `packs:` hechas (`status`, Fase 4b).
 
 ## Hooks y reinyección
 

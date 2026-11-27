@@ -1,6 +1,6 @@
 # Packs
 
-Las rules y skills propias de Beacon, que Anchor instala en cada agente. Aprobado el 2026-11-27; **en construcción** (Fase 4b, `status`): la mecánica de instalación y la rule `record` están hechas (K1). Lo no confirmado dice **Propuesta**.
+Las rules y skills propias de Beacon, que Anchor instala en cada agente. Aprobado el 2026-11-27; **en construcción** (Fase 4b, `status`): la mecánica de instalación y la rule `record` están hechas (K1 y K2: `packs:` en `config.yaml`, el sí y la conciliación). Lo no confirmado dice **Propuesta**.
 
 ## Qué son
 
@@ -66,7 +66,7 @@ packs:
 - `stacks`: lista con los nombres que ya detecta `init` (`go`, `bun`, `node`, `python`). Cada stack aporta su binding y los `paths:` de sus rules. Al principio solo Go trae binding: los demás stacks reciben solo las rules universales y paramétricas.
 - `language`: `code` (`en` por defecto) y `ui` (opcional; lo añade `tailor` o la persona).
 - `commit`: opcional; por defecto `min: 40` y `max: 50`, y solo importa con `git` activo.
-- **Validación:** un pack, una pieza o un stack desconocido falla al cargar; `min` y `max` son positivos y `min` no supera a `max`.
+- **Validación:** Al cargar se valida la forma: nombres en minúsculas, números positivos y `min` sin pasar de `max`. Un pack o una pieza que no existen fallan al instalar (`pack_unknown`, `piece_unknown`) y `doctor` los cruzará en K7; un stack desconocido no falla, solo no trae binding.
 - **Orden canónico:** `enabled`, `skip`, `stacks`, `language`, `commit`; las listas van en línea.
 - Lo que no está aquí (el largo de línea de `format`, la forma del dominio) viene en el binding que trae Beacon para cada stack y no se configura todavía.
 
