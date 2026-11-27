@@ -320,3 +320,17 @@ func TestInspectSeesAWeakenedPromiseWaitingForAYes(t *testing.T) {
 		t.Errorf("the weakened promise should be pending: %+v", outcome)
 	}
 }
+
+func TestParseSkipsLinesWhoseMessageIsPlainText(t *testing.T) {
+	lines := `{"type":"user","message":"plain text, not a block list"}` + "\n" +
+		`{"type":"result","num_turns":3,"duration_ms":10,"total_cost_usd":0.5}`
+
+	session, err := bench.ParseTranscript(strings.NewReader(lines))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if session.Turns != 3 || len(session.Edits) != 0 {
+		t.Errorf("session = %+v", session)
+	}
+}

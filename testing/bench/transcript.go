@@ -28,16 +28,14 @@ const (
 )
 
 type streamLine struct {
-	Type       string  `json:"type"`
-	Subtype    string  `json:"subtype"`
-	HookName   string  `json:"hook_name"`
-	Stdout     string  `json:"stdout"`
-	NumTurns   int     `json:"num_turns"`
-	DurationMS int     `json:"duration_ms"`
-	CostUSD    float64 `json:"total_cost_usd"`
-	Message    struct {
-		Content json.RawMessage `json:"content"`
-	} `json:"message"`
+	Type       string          `json:"type"`
+	Subtype    string          `json:"subtype"`
+	HookName   string          `json:"hook_name"`
+	Stdout     string          `json:"stdout"`
+	NumTurns   int             `json:"num_turns"`
+	DurationMS int             `json:"duration_ms"`
+	CostUSD    float64         `json:"total_cost_usd"`
+	Message    json.RawMessage `json:"message"`
 }
 
 type contentBlock struct {
@@ -138,7 +136,7 @@ func additionalContext(stdout string) string {
 }
 
 func (r *reader) readAssistant(line streamLine) {
-	for _, block := range blocksOf(line.Message.Content) {
+	for _, block := range blocksOf(contentOf(line.Message)) {
 		if block.Type != "tool_use" {
 			continue
 		}
@@ -210,7 +208,7 @@ func (r *reader) mentioned(file string) bool {
 }
 
 func (r *reader) readResults(line streamLine) {
-	for _, block := range blocksOf(line.Message.Content) {
+	for _, block := range blocksOf(contentOf(line.Message)) {
 		if block.Type != "tool_result" {
 			continue
 		}
@@ -225,6 +223,18 @@ func (r *reader) readResults(line streamLine) {
 			r.session.BlockedByPermission++
 		}
 	}
+}
+
+func contentOf(message json.RawMessage) json.RawMessage {
+	var parsed struct {
+		Content json.RawMessage `json:"content"`
+	}
+
+	if err := json.Unmarshal(message, &parsed); err != nil {
+		return nil
+	}
+
+	return parsed.Content
 }
 
 func blocksOf(raw json.RawMessage) []contentBlock {
