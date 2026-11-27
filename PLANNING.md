@@ -2,7 +2,7 @@
 
 Plan de ejecución de los packs descritos en `KETSET.md` (qué es y por qué) y en `.claude/delta/packs.md` (el diseño vigente). Aquí va el cómo, el orden y la verificación. Rama: `feat/add-skills-and-rules`.
 
-**Estado:** propuesta y plan aprobados por la persona dueña el 2026-11-27, con el nombre `packs`. D5 quedó en nivel 3 y los packs se redujeron a tres. K0 se cerró el mismo día, D16 y D17 cerraron las dos preguntas que quedaban y K1 se hizo ese día (commit `5a2a167`). Los planes anteriores (Fases 1 a 4) están en el historial de git: `PLANNING.md` hasta el commit `7895362`.
+**Estado:** propuesta y plan aprobados por la persona dueña el 2026-11-27, con el nombre `packs`. D5 quedó en nivel 3 y los packs se redujeron a tres. K0 se cerró el mismo día, D16 y D17 cerraron las dos preguntas que quedaban, y K1 y K2 se hicieron ese día (commits `5a2a167` y `dc66f2e`). Los planes anteriores (Fases 1 a 4) están en el historial de git: `PLANNING.md` hasta el commit `7895362`.
 
 ---
 
@@ -125,7 +125,7 @@ packs:
 ```
 
 - `install` escribe todo explícito la primera vez, para que dos clones obtengan las mismas rules. `stacks` es una lista (admite monorepos) con los nombres que ya detecta `init`: `go`, `bun`, `node` y `python`. `commit` es opcional y por defecto vale 40 y 50.
-- Un pack, una pieza o un stack desconocido falla al cargar; `min` y `max` son positivos y `min` no supera a `max`.
+- Al cargar se valida la forma: nombres en minúsculas, números positivos y `min` sin pasar de `max`. Un pack o una pieza que no existen fallan al instalar (`pack_unknown`, `piece_unknown`) y `doctor` los cruzará en K7; un stack desconocido no falla, solo no trae binding.
 - El orden canónico es `enabled`, `skip`, `stacks`, `language`, `commit`, con las listas en línea.
 - **Dónde toca el código (K2):** decodificar y validar en `source/spider/internal/driver/record/config.go`; el orden en `canonical.go` (`configKeys` y las listas en línea); y el nivel 3 en `source/weaver/internal/domain/deltas` (`configGuardedFields`, un `ReasonPacksChanged` nuevo y `configReasons`). El CI solo trata `runners_changed` aparte; un cambio de `packs:` debe pasar por `unapproved_change`.
 
@@ -159,7 +159,7 @@ Cada paso deja el repositorio funcionando. El tamaño es relativo: S pequeño, M
 |---|---|---|---|---|
 | **K0** | S | Aprobar `KETSET.md`, este plan y la KB, y resolver las preguntas que bloqueaban (hecho el 2026-11-27) | La persona dice sí (hecho) | `docs(packs): record packs proposal and its plan` |
 | **K1 (hecho)** | L | Mecánica de instalación de rules y skills en Anchor, solo Claude Code: plantilla, instalar, `--preview`, `--uninstall`, copia de seguridad, prefijo `beacon-`, `--pack`, `--skip <pieza>` y las líneas de `.gitattributes` (D13). Con una rule y una skill mínimas de prueba | Pruebas de `install` con archivos de referencia; idempotencia; desinstalar borra solo lo idéntico; D14 | `feat(anchor): install pack rules and skills` |
-| **K2** | M | Sección `packs:` con la forma de D17: decodificar y validar, orden canónico y nivel 3; detección de stack con el escaneo de `init`; el sello del sí desde una terminal y el código 2 sin ella, con `--approve` (D5) | Pruebas del esquema; `fmt` estable; un `packs:` inválido falla al cargar; un cambio sin sí se bloquea en `record` y se comprueba que el CI lo trate por `unapproved_change` | `feat(anchor): add pack config and stack scan` |
+| **K2 (hecho)** | M | Sección `packs:` con la forma de D17: decodificar y validar, orden canónico y nivel 3; detección de stack con el escaneo de `init`; el sello del sí desde una terminal y el código 2 sin ella, con `--approve` (D5) | Pruebas del esquema; `fmt` estable; un `packs:` inválido falla al cargar; un cambio sin sí se bloquea en `record` y se comprueba que el CI lo trate por `unapproved_change` | `feat(anchor): add pack config and stack scan` |
 | **K3** | M | Rules universales y paramétricas (`record` se hizo en K1): `pledge`, `frugal`, `locale`, `vendor`, `commit`, `branch`; `frugal` y `locale` con los `paths:` del binding, `commit` y `branch` sin ellos | La prueba de D9 sobre las rules que ya existen; la prueba de nombres y topes (D2, D8); una prueba renderiza cada rule y comprueba que su encabezado se lee (si no, carga siempre) | `feat(anchor): add core and git pack rules` |
 | **K4** | M | Skills `elicit`, `ensure`, `finish`: las que ya tienen comandos que las respaldan; `elicit` se escribe desde cero. Antes, un spike en el proyecto de pruebas: ¿un hook que nombra una skill hace que el modelo la invoque?, y ¿una skill con `disable-model-invocation` conserva su descripción en `/context`? | Una sesión real en el proyecto de pruebas por skill | `feat(anchor): add elicit ensure finish skills` |
 | **K5** | M | Skills `locate`, `digest`, `tailor`; `digest` se escribe desde cero | Ídem; `tailor` produce un cambio de `config.yaml` que pasa por `record` | `feat(anchor): add locate digest tailor skills` |
@@ -179,15 +179,19 @@ Cada paso deja el repositorio funcionando. El tamaño es relativo: S pequeño, M
 - K9 necesita al menos K4, K5 y K6. K10 y K11 son independientes entre sí.
 - K12 es el último y depende de que lo construido esté estable.
 
-### Lo que K1 dejó y sus límites
+### Lo que K1 y K2 dejaron y sus límites
 
-Hecho el 2026-11-27 (commit `5a2a167`), con las pruebas unitarias y de integración y `golangci-lint` en verde. Los atajos tienen un límite conocido y una fecha para dejarlos:
+K1 se hizo el 2026-11-27 (commit `5a2a167`) y K2 el mismo día (commit `dc66f2e`), con las pruebas unitarias y de integración y `golangci-lint` en verde. Los atajos tienen un límite conocido y un paso para dejarlos:
 
-- **`--skip <pieza>` solo evita instalar.** Quitar una pieza ya instalada llega con la conciliación de K2, cuando `packs:` guarde lo elegido. Hoy se usa `--uninstall` o se borra el archivo.
-- **Sin `packs:` mandan las flags.** `--pack git` instala solo `git`, sin `core`. K2 lo vuelve explícito con `enabled`.
+- **Resueltos en K2:** `--skip <pieza>` ahora se guarda en `packs.skip` y retira lo ya instalado (la conciliación); `enabled` hace explícito qué packs hay; el binding sale de `config.yaml`.
+- **`stacks` se guarda, pero nada lo lee todavía.** Lo usan las rules ligadas al stack (K3 y K8).
+- **Los packs y los skips solo crecen con las flags.** Quitar uno se hace editando `packs:` con `beacon record` (nivel 3); el siguiente `install` concilia.
+- **`doctor` no cruza aún los nombres de `packs:` con los packs que existen.** Llega con K7.
+- **`language.ui` y `commit` no los escribe `install`.** Los añade `tailor` (K5) o la persona.
+- **Sin proyecto Beacon, mandan las flags** y no se guarda nada (el modo de K1: `core` por defecto).
+- **Cambio de comportamiento:** la primera instalación en un proyecto Beacon, ejecutada por un agente sin terminal, sale con código 2 hasta recibir `--approve`. Es D5; dos pruebas de integración existentes pasan ahora `--approve`.
 - **Al desinstalar una skill queda su carpeta vacía.** Se limpia cuando exista la primera skill (K4).
 - **La prueba de choque con los comandos de Beacon** (D2) llega con la primera skill (K4); hoy solo hay una rule.
-- **El binding es un defecto fijo** (`DefaultBinding`: idioma `en`, commits de 40 a 50). K2 lo llena desde `config.yaml`.
 - **La prueba de topes no tiene excepciones.** `domain` entra con la suya en K8.
 
 ### Cómo se escribe cada skill y cada rule
@@ -223,7 +227,7 @@ Resueltas el 2026-11-27: el nivel de `packs:` (3), los tres packs, la fase (4b),
 
 | Hito | Se alcanza cuando | Pasos |
 |---|---|---|
-| **Instala** | `beacon install --pack core --preview` y su desinstalación funcionan en Claude Code | K1 y K2 |
+| **Instala** | `beacon install --pack core --preview` y su desinstalación funcionan en Claude Code (alcanzado el 2026-11-27) | K1 y K2 |
 | **Rules** | Las rules de este repo se reproducen desde los packs | K3 y K8 |
 | **Skills** | Las nueve skills probadas en sesiones reales | K4 a K6 |
 | **Guía** | Las señales nombran la skill que resuelve | K7 |
