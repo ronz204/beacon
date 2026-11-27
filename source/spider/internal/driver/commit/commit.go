@@ -292,6 +292,10 @@ func (r Repository) ConfigAt(
 	spec := revision + ":./" + configPath
 	_, err := system.Git(ctx, r.root, "cat-file", "-e", spec)
 	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, false, kernel.FailHistory(ctxErr)
+		}
+
 		return nil, false, nil
 	}
 
