@@ -1,8 +1,19 @@
 # KETSET: los packs propios de Beacon (rules y skills)
 
-**Estado:** propuesta aprobada por la persona dueña el 2026-11-27, con el nombre `packs`. No hay código. Las preguntas abiertas (sección 13) siguen abiertas. Rama de trabajo: `feat/add-skills-and-rules`. El plan de ejecución está en `PLANNING.md`.
+**Estado:** propuesta aprobada por la persona dueña el 2026-11-27, con el nombre `packs`. No hay código. Las decisiones ya están sincronizadas en la KB (`.claude/delta/packs.md` y los archivos que lo citan); este documento conserva el razonamiento y se retira al cerrar el plan (paso K12). Rama de trabajo: `feat/add-skills-and-rules`. El plan de ejecución está en `PLANNING.md`.
 **Origen:** idea de la persona dueña del proyecto, 2026-11-27, tras revisar las skills de Matt Pocock. Ese mismo día se investigaron otras colecciones y la persona adoptó todas las candidatas.
-**Nombre:** `packs`, decidido el 2026-11-27 (antes de esa fecha se llamaba "kit"). Un pack es un grupo con nombre de rules y skills que Beacon instala; el conjunto de todos los packs es lo que describe este documento.
+**Nombre:** `packs`, decidido el 2026-11-27 (antes se llamaba "kit"). Un pack es un grupo con nombre de rules y skills que Beacon instala; el conjunto de todos los packs es lo que describe este documento.
+
+## Decisiones del 2026-11-27
+
+| Tema | Decisión |
+|---|---|
+| Nombre | `packs` |
+| Alcance | 11 rules y 9 skills; se adoptaron todas las candidatas |
+| Agrupación | Tres packs: `core` por defecto, `git` y `arch` a petición (antes eran cinco) |
+| `packs:` en `config.yaml` | Nivel 3. Antes se propuso nivel 2, que no existe para configuración |
+| Fase | Propuesta: Fase 4b, entre la 4 y la 5 (`status`) |
+| Nombres | Rules y skills de seis letras; los packs, cortos |
 
 ---
 
@@ -31,7 +42,7 @@ Todo va con prefijo `beacon-` para no chocar con lo del usuario: `.claude/rules/
 
 ### Una convención de nombres
 
-Siguiendo la regla de `code-domain-layer` y los nombres del proyecto (spider, weaver, anchor, snares, ledger, pledge), **todo nombre de rule y de skill es una palabra en minúsculas de seis letras**. Una skill no puede llamarse como un comando de Beacon (`verify`, `close`, `brief`, `attest`...), porque se invoca como `/beacon-<nombre>`; una rule sí puede, porque no se invoca.
+Siguiendo la regla de `code-domain-layer` y los nombres del proyecto (spider, weaver, anchor, snares, ledger, pledge), **todo nombre de rule y de skill es una palabra en minúsculas de seis letras**. Los packs tienen nombres cortos a propósito, porque se escriben en `--pack`. Una skill no puede llamarse como un comando de Beacon (`verify`, `close`, `brief`, `attest`...), porque se invoca como `/beacon-<nombre>`; una rule sí puede, porque no se invoca.
 
 ### Una anatomía común
 
@@ -48,7 +59,7 @@ El miedo es que cada lenguaje exija reescribir cada rule. Se evita separando **l
 
 1. **Universal:** un archivo fijo, sin huecos.
 2. **Paramétrica:** una plantilla con huecos `{{clave}}`. **El binario la rellena** con `text/template` de la biblioteca estándar, a partir de una sección `packs:` de `.beacon/config.yaml` y de lo que ya detecta `beacon init` (por ejemplo, los archivos de test o los manifiestos de dependencias de cada stack, que entran en el `paths:` de la rule). Sin agente: el resultado es determinista, así que `install`, `--preview`, actualizar y desinstalar siguen siendo idempotentes, byte a byte.
-3. **Ligada al stack:** aquí entra la idea de que el agente adapte, pero **acotada**. El agente no escribe la rule. Propone el *binding* (unas pocas claves) leyendo el repo; el cambio a `config.yaml` entra por `beacon record` y espera el sí de la persona; el binario renderiza la rule. Así el agente aporta juicio donde hace falta y la rule resultante sigue siendo auditable. Para los stacks con binding ya incluido (Go primero) no hay adaptación, solo selección.
+3. **Ligada al stack:** aquí entra la idea de que el agente adapte, pero **acotada**. El agente no escribe la rule. Propone el *binding* (unas pocas claves) leyendo el repo; el cambio a `config.yaml` entra por `beacon record` y espera el sí de la persona; el binario renderiza la rule. Así el agente aporta juicio donde hace falta y la rule resultante sigue siendo auditable. Para los stacks con binding ya incluido (Go primero) no hay adaptación, solo selección. Sin binding, esas rules se omiten y `doctor` lo dice.
 
 **Por qué no la otra opción (que el agente reescriba la rule entera):** cada proyecto acabaría con una rule distinta e irreproducible, no habría forma de actualizarla sin pisar lo editado, y rompe la separación entre lo que decide el modelo y lo que decide el código.
 
@@ -60,29 +71,29 @@ El miedo es que cada lenguaje exija reescribir cada rule. Se evita separando **l
 | `pledge` | Regla 5 de la guía y `deltas` | Paramétrica | El test cita el id de su promesa. Nunca debilitar ni borrar una promesa para que algo pase. | Archivos de test del stack |
 | `frugal` | `code-change-size` | Universal | La escalera de lo más barato primero, con el cierre de lo omitido. Los atajos con límite se anotan con `beacon record`. | Al escribir código |
 | `locale` | `code-english-only` | Paramétrica | Un idioma para identificadores y errores, otro para la UI. | Código y UI del stack |
-| `commit` | `git-commit-policy` | Paramétrica | Conventional Commits, atómicos, por fase. | Siempre, como hoy |
-| `branch` | `git-branch-policy` | Paramétrica | `<tipo>/<slug>` corto. | Siempre, como hoy |
 | `vendor` | `code-change-size` y la decisión de dependencias de `status.md` | Paramétrica | Una dependencia nueva se justifica con la escalera y queda como `decision` con sus alternativas descartadas. | Solo manifiestos (`go.mod`, `package.json`, `pyproject.toml`...) |
 | `format` | `code-golang-style` | Ligada al stack | Vertical sobre horizontal, sin comentarios, datos de prueba ficticios. | Código del stack |
 | `errors` | Parte de `code-domain-layer` | Ligada al stack | Códigos estables, mensajes fijos, detalle estructurado. | Código de errores |
 | `secure` | `security-and-hardening` de Osmani | Ligada al stack | Validar en los bordes de confianza y mantener los secretos fuera del código. Lo crítico va además como reglas `deny`, no solo en prosa. | Handlers, CLI y lectores de datos |
-| `domain` | `code-domain-layer` | Ligada al stack, opt-in | Dominio puro que solo mira hacia adentro. | `source/*/internal/domain/**` según el binding |
+| `commit` | `git-commit-policy` | Paramétrica | Conventional Commits, atómicos, por fase. | Siempre, como hoy |
+| `branch` | `git-branch-policy` | Paramétrica | `<tipo>/<slug>` corto. | Siempre, como hoy |
+| `domain` | `code-domain-layer` | Ligada al stack | Dominio puro que solo mira hacia adentro. | Dominio, según el binding |
 
 `domain` pesa 87 líneas hoy. Al sacar `errors` baja, pero seguirá sobre el tope de 40: es la única excepción documentada, porque carga solo al tocar el dominio. Se revisa en el paso K8.
 
 ## 6. Packs
 
-`beacon install --pack <nombre>` y `--preview` para ver qué se escribiría. Por defecto, solo `core`.
+`beacon install --pack <nombre>` y `--preview` para ver qué se escribiría. Sin `--pack`, se instala `core`.
 
 | Pack | Contenido | Por defecto |
 |---|---|---|
-| `core` | Rules `record` y `pledge`; skills `elicit`, `ensure`, `locate`, `finish`, `digest` y `tailor` | Sí |
-| `flow` | Skills `review`, `refute` y `divide` | Se ofrece |
-| `code` | Rules `frugal`, `locale`, `format`, `errors`, `secure` y `vendor` | Se ofrece |
-| `git` | Rules `commit` y `branch`, más `deny` de `git push` y `git pull` en los permisos | Se ofrece |
-| `arch` | Rule `domain` | Solo si se pide |
+| `core` | Rules `record`, `pledge`, `frugal`, `locale` y `vendor`; las ligadas al stack (`format`, `errors`, `secure`) cuando hay binding; las nueve skills | Sí |
+| `git` | Rules `commit` y `branch`, más `deny` de `git push` y `git pull` en los permisos | Solo con `--pack git` |
+| `arch` | Rule `domain` | Solo con `--pack arch` |
 
-`flow` se separa de `core` solo para poder medir su efecto con el benchmark. Todas las skills están adoptadas.
+**Por qué tres y no cinco.** La primera propuesta separaba `flow` (`review`, `refute`, `divide`) y `code` (las rules de código) para cuidar el contexto. Ese argumento es débil: las rules con `paths:` solo cargan al tocar sus archivos y nueve descripciones de skills pesan poco. Lo que sí justifica un pack aparte son las opiniones fuertes: `git` impone un estilo y cambia permisos, y `arch` impone una arquitectura. Medir `flow` se resuelve en el arnés del benchmark, no en la instalación.
+
+Para quitar una pieza suelta: `--skip <pieza>`. **Ojo:** hoy `--skip` solo acepta `hooks` y `reinject`, así que habría que extenderlo.
 
 ## 7. Las skills (9)
 
@@ -102,9 +113,26 @@ Las dos que se conocían de Delta reaparecen: la entrevista para dejar specs cla
 
 Invocación (a confirmar): `ensure`, `locate` y `finish` pueden ser invocables por el modelo, porque aparecen en el trabajo normal. Las demás se invocan por la persona o por una señal.
 
-## 8. Lo nuevo y potente
+## 8. Experiencia de desarrollo
 
-### 8.1 Las señales apuntan a la skill
+Es el criterio de diseño que más pesa en la instalación y en el uso diario. Se aplica P4: cero comandos que aprender para el usuario, valor en la primera sesión, ninguna ceremonia.
+
+| Qué | Cómo |
+|---|---|
+| **Cero preguntas por defecto** | `beacon install` instala `core`, detecta el stack y sigue. Lo opcional se pide con `--pack git` o `--pack arch`. |
+| **Se ve antes de hacerse** | `--preview` muestra los archivos y cómo quedarían. Al terminar, un resumen de lo instalado y de cómo quitarlo. |
+| **Se quita por piezas o entero** | `--skip <pieza>` y `--uninstall`, que borra solo lo que coincide byte a byte. |
+| **Actualizar es volver a instalar** | Idempotente. Lo que la persona editó se conserva y `doctor` avisa de que quedó atrás. |
+| **Todo visible en `doctor`** | Packs instalados y su versión, piezas editadas o desactualizadas, rules omitidas por falta de binding, skills nombradas por una señal pero no instaladas. |
+| **Lo propio no se toca** | Lo que la persona escribe sin el prefijo `beacon-` queda intacto. |
+| **No hay que recordar nombres** | La persona no tiene que memorizar skills: las señales las nombran cuando hacen falta (sección 9.1). |
+| **Windows** | La comparación byte a byte exige LF. `install` agrega a `.gitattributes` las líneas `text eol=lf` de los archivos de los packs, como ya hace con `.beacon/**`. Esto se vio con el aviso de git de CRLF en este mismo repo. |
+| **Sin sorpresas** | Los hooks nunca fallan la sesión; toda instalación deja copia de seguridad; cada bloqueo dice qué hacer (P7). |
+| **Se mide** | El benchmark de fricción ya cuenta callejones sin salida, síes pedidos por sesión y texto inyectado. El resultado decide qué se queda. |
+
+## 9. Lo nuevo y potente
+
+### 9.1 Las señales apuntan a la skill
 
 P7 dice que un mensaje de Beacon lleva a una salida. Hoy las salidas son comandos. Con los packs, también pueden ser skills. El texto de la skill no se inyecta: solo una línea con su nombre. Así el contexto no se satura y la skill se descubre justo cuando hace falta.
 
@@ -121,7 +149,7 @@ P7 dice que un mensaje de Beacon lleva a una salida. Hoy las salidas son comando
 
 **Condición de P7:** un mensaje solo nombra una skill si está instalada; `doctor` lo comprueba.
 
-### 8.2 Reglas que se compilan en comprobaciones
+### 9.2 Reglas que se compilan en comprobaciones
 
 La tesis de Beacon es que lo que se puede verificar con código no debe depender de la obediencia. Aplicada a los packs: una rule que el binario o el CI pueden comprobar no debería quedarse en prosa.
 
@@ -136,17 +164,17 @@ La tesis de Beacon es que lo que se puede verificar con código no debe depender
 
 Cada una se vuelve una promesa con ejecutor, y la rule en prosa se reduce a lo que de verdad es juicio. Es la fase más ambiciosa y se deja para el final.
 
-### 8.3 Se mide con el benchmark que ya existe
+### 9.3 Se mide con el benchmark que ya existe
 
-El arnés de `testing/benchmark/` tiene las condiciones A, B, C y D. Se añade **E: C más `core`** y **F: E más `flow`**. Si una rule o skill no mejora ninguna métrica de proceso, integridad o fricción, se borra. Importante: el arnés está construido pero **el piloto aún no se ha corrido** (Fase 6), así que hoy no hay línea base contra la cual medir.
+El arnés de `testing/benchmark/` tiene las condiciones A, B, C y D. Se añade **E: C más `core`**. La ablación de una pieza se hace con `--skip` en el arnés. Si una rule o skill no mejora ninguna métrica de proceso, integridad o fricción, se borra. Importante: el arnés está construido pero **el piloto aún no se ha corrido** (Fase 6), así que hoy no hay línea base contra la cual medir.
 
-### 8.4 Esta rama se prueba con este repo
+### 9.4 Esta rama se prueba con este repo
 
 Criterio de aceptación: renderizar los packs con el binding de Beacon debe **reproducir las seis rules actuales de `.claude/rules/`**, salvo las diferencias que se decidan. Si no las reproduce, la plantilla está mal o la rule era demasiado específica.
 
-## 9. Lo aprendido de otras colecciones
+## 10. Lo aprendido de otras colecciones
 
-Se leyeron 6 de las 20 skills de Superpowers, 3 de las 26 de Osmani, y 4 de las de Pocock. De Anthropic solo la lista.
+Se leyeron 6 de las 20 skills de Superpowers, 3 de las 26 de Osmani, y 4 de las de Pocock. De Anthropic solo la lista. El detalle vive en `survey`, sección 8.
 
 **Adoptado:**
 
@@ -163,9 +191,9 @@ Se leyeron 6 de las 20 skills de Superpowers, 3 de las 26 de Osmani, y 4 de las 
 - El tamaño: las skills de Superpowers rondan 1.400 a 2.300 palabras, muy por encima del tope de 60 líneas.
 - Las skills que Beacon ya cubre con estado: `handoff`, `triage`, `to-spec`, `wayfinder`, `setup`, `finishing-a-development-branch`.
 
-**Sobre saturar:** las descripciones de todas las skills se cargan en cada sesión. Hay guías que recomiendan pocas y bien acotadas, y un paper (SkillReducer, arXiv) reporta que recortar mejora la calidad. Las cifras son de blogs y de un paper no revisado, así que es una dirección y no un dato firme. Con 9 descripciones cortas estamos lejos del problema que describen (decenas de skills), pero se mide con F.
+**Sobre saturar:** las descripciones de todas las skills se cargan en cada sesión. Hay guías que recomiendan pocas y bien acotadas, y un paper (SkillReducer, arXiv) reporta que recortar mejora la calidad. Las cifras son de blogs y de un paper no revisado, así que es una dirección y no un dato firme. Con 9 descripciones cortas estamos lejos del problema que describen (decenas de skills), y se mide con E.
 
-## 10. Estructura propuesta
+## 11. Estructura propuesta
 
 ```text
 source/anchor/internal/assets/packs/
@@ -178,42 +206,44 @@ source/anchor/internal/assets/packs/
 - Las rules y skills se escriben en inglés, como la guía del método; la persona recibe respuestas en su idioma.
 - Cada archivo instalado lleva la versión del CLI en su marca para saber si está desactualizado.
 
-## 11. Plan
+## 12. Plan
 
-Está en `PLANNING.md`: decisiones, pasos K0 a K11, verificación de cada uno y commits sugeridos.
+Está en `PLANNING.md`: decisiones, pasos K0 a K12, verificación de cada uno y commits sugeridos.
 
-## 12. Riesgos
+## 13. Riesgos
 
 | Riesgo | Qué hacer |
 |---|---|
-| **Saturar al agente** | Topes de tamaño, `paths:`, señales de una línea, packs y la condición F del benchmark. |
-| La obediencia decae (`survey`, E7 y E8) | Skills y rules son recordatorio, no garantía. Lo importante sigue en promesas con ejecutor (8.2). |
+| **Saturar al agente** | Topes de tamaño, `paths:`, señales de una línea, packs y la condición E del benchmark. |
+| La obediencia decae (`survey`, E7 y E8) | Skills y rules son recordatorio, no garantía. Lo importante sigue en promesas con ejecutor (9.2). |
 | Las plantillas se vuelven un mini lenguaje | Solo sustitución y secciones opcionales con `text/template`; si hace falta más, la rule no es agnóstica y pasa al nivel 3. |
 | El agente propone un binding malo | Entra por `record` y exige un sí; el binding es corto y se revisa de un vistazo. |
 | `paths:` en rules es de Claude Code | Los otros agentes lo resuelven en K11; el tope de 32 KiB de `AGENTS.md` en Codex limita meter todo ahí. |
 | Choques con rules o skills del usuario | Prefijo `beacon-` y borrado solo de lo que coincide byte a byte. |
+| Los saltos de línea rompen la comparación byte a byte en Windows | `.gitattributes` con `text eol=lf` para los archivos de los packs. |
 | Los packs crecen más rápido que su valor | Todo lo que no mejore una métrica se borra; los packs son parte del benchmark. |
 | Algunas compuertas son prosa (`refute`, `locate`) | Se dicen como tales; no se vende como verificado lo que no lo es. |
 | **Evidencia débil** | Nada demuestra aún que estos packs mejoren resultados, igual que `code-change-size` admite sobre sí mismo. Esta propuesta es una hipótesis hasta correr K9. |
 | Licencia | El repo de Pocock es MIT; se reescribe desde las ideas, no se copia texto. |
 
-## 13. Preguntas abiertas
+## 14. Preguntas abiertas
 
-1. **¿Qué nivel de cambio tiene la sección `packs:` de `config.yaml`?** Hoy solo `runners` y `schema` son nivel 3. Una rule cambia el comportamiento del agente, pero no ejecuta nada. Mi inclinación: nivel 2, a confirmar con `deltas`.
-2. **¿Qué contenían las skills de Delta?** Para `elicit` y `digest` conviene partir de ellas.
-3. **¿Las rules de este repo (para construir Beacon) pasan a ser la salida de los packs?** Mi propuesta: sí, con 8.4 como criterio. Si no encaja, se mantienen aparte.
-4. **¿`git` se ofrece al instalar o solo bajo petición?** Son opiniones fuertes (40 a 50 caracteres, commit por fase).
-5. **¿Qué skills son invocables por el modelo?** Propuesta en la sección 7. Falta confirmar si desactivar la invocación del modelo quita también la descripción del contexto.
-6. **¿Fase propia o dentro de la 6?** Los packs tocan a Anchor, y la Fase 6 trae la segunda ola de agentes y el piloto del benchmark.
+1. **¿Qué contenían las skills de Delta?** Para `elicit` y `digest` conviene partir de ellas.
+2. **¿Las rules de este repo (para construir Beacon) pasan a ser la salida de los packs?** Mi propuesta: sí, con 9.4 como criterio. Si no encaja, se mantienen aparte.
+3. **¿Qué skills son invocables por el modelo?** Propuesta en la sección 7. Falta confirmar si desactivar la invocación del modelo quita también la descripción del contexto.
+4. **¿Cómo se sella el sí cuando la persona ejecuta `install` y cambia `packs:`?** Al ser nivel 3, hay que fijar en K2, con `ledger` y `deltas`, cómo se reconoce el sí de quien escribe el comando en una terminal.
+5. **¿Cuál es la forma exacta de `packs:`?** Se fija en K2.
 
-## 14. Fuera de alcance
+Resueltas el 2026-11-27: el nivel de `packs:` (3), la agrupación en tres packs y la fase (4b).
+
+## 15. Fuera de alcance
 
 - Un registro de skills de terceros ni un instalador de skills ajenas.
 - Un lenguaje de plantillas propio.
 - Skills que dupliquen comandos de Beacon.
-- Cualquier cambio de código en esta rama hasta que este documento y `PLANNING.md` se aprueben.
+- Cualquier cambio de código en esta rama hasta que se cierre K0.
 
-## 15. Fuentes
+## 16. Fuentes
 
 - Pocock: <https://www.aihero.dev/skills> y <https://github.com/mattpocock/skills>
 - Superpowers: <https://github.com/obra/superpowers>
@@ -221,4 +251,4 @@ Está en `PLANNING.md`: decisiones, pasos K0 a K11, verificación de cada uno y 
 - Anthropic: <https://github.com/anthropics/skills>
 - Rules por path: <https://ytrofr.github.io/claude-code-guide/docs/guide/part4-context-engineering/02-rules-system.html>
 - Saturación de skills: <https://developer.microsoft.com/blog/stop-skillmaxxing-save-your-tokens/> y <https://arxiv.org/html/2603.29919>
-- Lo de Beacon: `.claude/delta/anchor.md`, `status.md`, `tenets.md`, `spider.md` y las seis rules de `.claude/rules/`.
+- Lo de Beacon: `.claude/delta/` (`packs`, `anchor`, `status`, `deltas`, `weaver`) y las seis rules de `.claude/rules/`.
