@@ -289,7 +289,7 @@ func (c Catalog) render(target string, binding Binding) (string, error) {
 		return "", assetFailure(target, err)
 	}
 
-	text := string(data)
+	text := strings.ReplaceAll(string(data), "\r\n", "\n")
 	if !strings.HasSuffix(target, templateSuffix) {
 		return text, nil
 	}

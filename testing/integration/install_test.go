@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -471,3 +472,71 @@ func TestUninstallRemovesTheSkillFoldersToo(t *testing.T) {
 		t.Error("uninstall left the skill folder")
 	}
 }
+
+func commandNames(t *testing.T, root string) []string {
+	t.Helper()
+
+	help := utilities.Beacon(t, root, "--help").Stdout
+	_, listing, found := strings.Cut(help, "Available Commands:\n")
+	if !found {
+		t.Fatalf("no command list in:\n%s", help)
+	}
+
+	var names []string
+	for line := range strings.SplitSeq(listing, "\n") {
+		if strings.TrimSpace(line) == "" {
+			break
+		}
+
+		names = append(names, strings.Fields(line)[0])
+	}
+
+	return names
+}
+
+func TestNoInstalledSkillIsNamedLikeABeaconCommand(t *testing.T) {
+	root := newBareRepository(t)
+	commands := commandNames(t, root)
+
+	data := runInstall(t, root, "--preview")
+
+	skills := 0
+	for _, change := range data.Changes {
+		name, found := strings.CutPrefix(change.Path, ".claude/skills/beacon-")
+		if !found {
+			continue
+		}
+
+		skills++
+		name = strings.TrimSuffix(name, "/SKILL.md")
+		if slices.Contains(commands, name) {
+			t.Errorf("skill %s collides with a command", name)
+		}
+	}
+	if skills == 0 || len(commands) < 10 {
+		t.Errorf("skills %d, commands %v", skills, commands)
+	}
+}
+
+func TestTheGitPackDeniesPushAndPullInTheSettings(t *testing.T) {
+	root := newBareRepository(t)
+
+	runInstall(t, root)
+	plain := utilities.ReadFile(t, filepath.Join(root, settingsFile))
+	if strings.Contains(plain, "git push") {
+		t.Errorf("core alone denied git:\n%s", plain)
+	}
+
+	runInstall(t, root, "--pack", "git")
+	settings := utilities.ReadFile(t, filepath.Join(root, settingsFile))
+	if !strings.Contains(settings, "Bash(git push *)") {
+		t.Errorf("git push is not denied:\n%s", settings)
+	}
+
+	runInstall(t, root, "--uninstall")
+	if present(root, settingsFile) {
+		t.Error("uninstall left the settings")
+	}
+}
+
+const settingsFile = ".claude/settings.json"

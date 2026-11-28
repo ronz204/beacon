@@ -1,3 +1,4 @@
 .beacon/** text eol=lf
 **/testdata/** text eol=lf
 *.go text eol=lf
+source/anchor/internal/assets/packs/** text eol=lf

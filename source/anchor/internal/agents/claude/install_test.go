@@ -13,6 +13,7 @@ import (
 type settings struct {
 	Permissions struct {
 		Allow []string `json:"allow"`
+		Deny  []string `json:"deny"`
 	} `json:"permissions"`
 	Hooks map[string][]struct {
 		Matcher string `json:"matcher"`
@@ -212,5 +213,39 @@ func TestWithoutPiecesNoFilesAreContributed(t *testing.T) {
 
 	if err != nil || len(contribution.Files) != 0 {
 		t.Errorf("files = %+v, err %v", contribution.Files, err)
+	}
+}
+
+const emptyHead = "---\n---\n"
+
+func TestTheGitPackDeniesPushAndPullAndOthersDoNot(t *testing.T) {
+	plain := installed(t, agents.Options{
+		Pieces: []agents.Piece{{
+			Pack:    "core",
+			Name:    "frugal",
+			Content: emptyHead,
+		}},
+	})
+	if len(plain.Permissions.Deny) != 0 {
+		t.Errorf("deny = %v", plain.Permissions.Deny)
+	}
+
+	withGit := installed(t, agents.Options{
+		Pieces: []agents.Piece{{
+			Pack:    "git",
+			Name:    "commit",
+			Content: emptyHead,
+		}},
+	})
+	want := []string{
+		"Bash(git push *)",
+		"Bash(git pull *)",
+		"PowerShell(git push *)",
+		"PowerShell(git pull *)",
+	}
+	for _, rule := range want {
+		if !slices.Contains(withGit.Permissions.Deny, rule) {
+			t.Errorf("missing %s in %v", rule, withGit.Permissions.Deny)
+		}
 	}
 }

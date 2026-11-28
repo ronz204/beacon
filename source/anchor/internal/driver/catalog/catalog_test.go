@@ -2,6 +2,7 @@ package catalog_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -149,5 +150,25 @@ func TestATemplateWithAnUnknownKeyIsAnAssetFailure(t *testing.T) {
 	_, err := tool.Everything(catalog.DefaultBinding())
 	if codeOf(t, err) != action.PackAssetInvalid {
 		t.Errorf("err = %v", err)
+	}
+}
+
+func TestRenderedPiecesAlwaysUseLineFeeds(t *testing.T) {
+	source := fstest.MapFS{
+		"core/rules/plain.md": {Data: []byte("---\r\n---\r\n# Plain\r\n")},
+		"core/rules/limit.md.tmpl": {
+			Data: []byte("---\r\n---\r\nmax {{.Commit.Max}}\r\n"),
+		},
+	}
+
+	pieces, err := catalog.New(source).Everything(catalog.DefaultBinding())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, piece := range pieces {
+		if strings.Contains(piece.Content, "\r") {
+			t.Errorf("%s kept a carriage return", piece.Name)
+		}
 	}
 }
