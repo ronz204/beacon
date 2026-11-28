@@ -161,7 +161,7 @@ Cada paso deja el repositorio funcionando. El tamaño es relativo: S pequeño, M
 | **K1 (hecho)** | L | Mecánica de instalación de rules y skills en Anchor, solo Claude Code: plantilla, instalar, `--preview`, `--uninstall`, copia de seguridad, prefijo `beacon-`, `--pack`, `--skip <pieza>` y las líneas de `.gitattributes` (D13). Con una rule y una skill mínimas de prueba | Pruebas de `install` con archivos de referencia; idempotencia; desinstalar borra solo lo idéntico; D14 | `feat(anchor): install pack rules and skills` |
 | **K2 (hecho)** | M | Sección `packs:` con la forma de D17: decodificar y validar, orden canónico y nivel 3; detección de stack con el escaneo de `init`; el sello del sí desde una terminal y el código 2 sin ella, con `--approve` (D5) | Pruebas del esquema; `fmt` estable; un `packs:` inválido falla al cargar; un cambio sin sí se bloquea en `record` y se comprueba que el CI lo trate por `unapproved_change` | `feat(anchor): add pack config and stack scan` |
 | **K3 (hecho)** | M | Rules universales y paramétricas (`record` se hizo en K1): `pledge`, `frugal`, `locale`, `vendor`, `commit`, `branch`; `frugal` y `locale` con los `paths:` del binding, `commit` y `branch` sin ellos | La prueba de D9 sobre las rules que ya existen; la prueba de nombres y topes (D2, D8); una prueba renderiza cada rule y comprueba que su encabezado se lee (si no, carga siempre) | `feat(anchor): add core and git pack rules` |
-| **K4** | M | Skills `elicit`, `ensure`, `finish`: las que ya tienen comandos que las respaldan; `elicit` se escribe desde cero. Antes, un spike en el proyecto de pruebas: ¿un hook que nombra una skill hace que el modelo la invoque?, y ¿una skill con `disable-model-invocation` conserva su descripción en `/context`? | Una sesión real en el proyecto de pruebas por skill | `feat(anchor): add elicit ensure finish skills` |
+| **K4 (hecho)** | M | Skills `elicit`, `ensure`, `finish`: las que ya tienen comandos que las respaldan; `elicit` se escribe desde cero. Antes, un spike en el proyecto de pruebas: ¿un hook que nombra una skill hace que el modelo la invoque?, y ¿una skill con `disable-model-invocation` conserva su descripción en `/context`? | Una sesión real en el proyecto de pruebas por skill | `feat(anchor): add elicit ensure finish skills` |
 | **K5** | M | Skills `locate`, `digest`, `tailor`; `digest` se escribe desde cero | Ídem; `tailor` produce un cambio de `config.yaml` que pasa por `record` | `feat(anchor): add locate digest tailor skills` |
 | **K6** | M | Skills `review`, `refute`, `divide` | Ídem | `feat(anchor): add review refute divide skills` |
 | **K7** | M | Solo si el spike de K4 funciona (si no, los mensajes piden a la persona que ejecute el comando): señales que apuntan a skills en `brief`, `check` y `context`, y la comprobación en `doctor` (avisos de piezas editadas, rules omitidas y skills no instaladas) | Una prueba por mensaje: nombra una skill solo si está instalada (D7) | `feat(weaver): point signals to pack skills` |
@@ -179,9 +179,9 @@ Cada paso deja el repositorio funcionando. El tamaño es relativo: S pequeño, M
 - K9 necesita al menos K4, K5 y K6. K10 y K11 son independientes entre sí.
 - K12 es el último y depende de que lo construido esté estable.
 
-### Lo que K1 a K3 dejaron y sus límites
+### Lo que K1 a K4 dejaron y sus límites
 
-K1 se hizo el 2026-11-27 (commit `5a2a167`), K2 el mismo día (commit `dc66f2e`) y K3 también, con las pruebas unitarias y de integración y `golangci-lint` en verde. Los atajos tienen un límite conocido y un paso para dejarlos:
+K1 se hizo el 2026-11-27 (commit `5a2a167`), K2 el mismo día (commit `dc66f2e`), y K3 y K4 también, con las pruebas unitarias y de integración y `golangci-lint` en verde. Los atajos tienen un límite conocido y un paso para dejarlos:
 
 - **Resueltos en K2:** `--skip <pieza>` ahora se guarda en `packs.skip` y retira lo ya instalado (la conciliación); `enabled` hace explícito qué packs hay; el binding sale de `config.yaml`.
 - **Resuelto en K3:** `stacks` ya se lee. El catálogo traduce cada stack a rutas (`Binding.Code`, `Tests`, `Manifests`) y las rules `frugal`, `locale` (código), `pledge` (pruebas) y `vendor` (manifiestos) cargan solo al tocar esos archivos; sin stack conocido cargan siempre. `commit` y `branch` no llevan `paths:`.
@@ -193,8 +193,10 @@ K1 se hizo el 2026-11-27 (commit `5a2a167`), K2 el mismo día (commit `dc66f2e`)
 - **`language.ui` y `commit` no los escribe `install`.** Los añade `tailor` (K5) o la persona.
 - **Sin proyecto Beacon, mandan las flags** y no se guarda nada (el modo de K1: `core` por defecto).
 - **Cambio de comportamiento:** la primera instalación en un proyecto Beacon, ejecutada por un agente sin terminal, sale con código 2 hasta recibir `--approve`. Es D5; dos pruebas de integración existentes pasan ahora `--approve`.
-- **Al desinstalar una skill queda su carpeta vacía.** Se limpia cuando exista la primera skill (K4).
-- **La prueba de choque con los comandos de Beacon** (D2) llega con la primera skill (K4); hoy solo hay una rule.
+- **Resuelto en K4:** al quitar el `SKILL.md` de una skill se borra su carpeta si queda vacía (solo bajo `skills/`).
+- **La prueba de choque con los comandos de Beacon** (D2) existe desde K4, pero compara con una lista de nombres escrita en la prueba; si aparece un comando nuevo hay que añadirlo a mano.
+- **Spike de K4 (una corrida por caso, `claude -p` en un proyecto de prueba con `core` instalado):** las tres skills se listan con su sello en el encabezado. Con un hook `UserPromptSubmit` cuyo `additionalContext` dice que la skill `beacon-elicit` atiende el caso, el modelo abrió su `SKILL.md` (con `Read`, no con la herramienta `Skill`); sin el hook no lo abrió. Es una señal de que el texto empuja, no una prueba. Queda sin medir si una skill con `disable-model-invocation` conserva su descripción en `/context` (llega con `tailor` y `refute`, K5 y K6).
+- **Las tres skills no se probaron en una sesión real de trabajo completa,** solo que se listan y que la señal las abre. El benchmark (K9) decide si se quedan.
 - **La prueba de topes no tiene excepciones.** `domain` entra con la suya en K8.
 
 ### Cómo se escribe cada skill y cada rule

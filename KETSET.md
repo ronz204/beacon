@@ -145,7 +145,7 @@ Las dos que se conocían de Delta reaparecen: la entrevista para dejar specs cla
 | `refute` | Un revisor con contexto limpio ataca una decisión no trivial. Máximo 3 ciclos. El resultado es una `decision` con sus `rejected`. | `beacon record` de la decisión. El tope de ciclos es prosa, no se puede comprobar | `doubt-driven-development` de Osmani |
 | `divide` | Parte un `work` en tareas, cada una con un resultado comprobable y sus `blocks`. | `beacon doctor` valida la jerarquía y `beacon ready` muestra qué sigue | `writing-plans` de Superpowers, `to-tickets` de Pocock y `planning-and-task-breakdown` de Osmani |
 
-**Invocación (decidida el 2026-11-27):** el modelo puede invocar `elicit`, `ensure`, `locate`, `finish`, `digest`, `review` y `divide`. `tailor` (cambia la configuración) y `refute` (lanza un revisor aparte y gasta tokens) llevan `disable-model-invocation: true`: solo las invoca la persona, y sus señales se lo piden a ella. Si el modelo intenta invocar una skill desactivada sin que la persona la nombre, Claude Code lo bloquea. La documentación se contradice sobre si una skill desactivada conserva su descripción en el contexto; se mide con `/context` en K4.
+**Invocación (decidida el 2026-11-27):** el modelo puede invocar `elicit`, `ensure`, `locate`, `finish`, `digest`, `review` y `divide`. `tailor` (cambia la configuración) y `refute` (lanza un revisor aparte y gasta tokens) llevan `disable-model-invocation: true`: solo las invoca la persona, y sus señales se lo piden a ella. Si el modelo intenta invocar una skill desactivada sin que la persona la nombre, Claude Code lo bloquea. La documentación se contradice sobre si una skill desactivada conserva su descripción en el contexto; se mide con `/context` cuando existan las dos skills desactivadas (K5 y K6).
 
 ## 8. Experiencia de desarrollo
 
@@ -183,7 +183,7 @@ P7 dice que un mensaje de Beacon lleva a una salida. Hoy las salidas son comando
 
 **Condición de P7:** un mensaje solo nombra una skill si está instalada; `doctor` lo comprueba.
 
-**Sin confirmar:** la documentación no dice que un hook pueda hacer que el modelo invoque una skill por su nombre. En K4 se prueba con un spike en el proyecto de pruebas; si no funciona, el mensaje pide a la persona que escriba el comando. Los mensajes se redactan como hechos ("la skill `beacon-elicit` atiende esto") y no como órdenes, porque la documentación desaconseja el texto imperativo en `additionalContext`. Las señales de `tailor` y `refute` van dirigidas a la persona.
+**Sin confirmar:** la documentación no dice que un hook pueda hacer que el modelo invoque una skill por su nombre. El spike de K4 (una corrida por caso) mostró que un `additionalContext` que nombra la skill hizo que el modelo abriera su `SKILL.md` con `Read` y que sin él no lo hizo: empuja, pero no invoca la herramienta `Skill`. K7 redacta los mensajes con esa expectativa y K9 lo mide. Los mensajes se redactan como hechos ("la skill `beacon-elicit` atiende esto") y no como órdenes, porque la documentación desaconseja el texto imperativo en `additionalContext`. Las señales de `tailor` y `refute` van dirigidas a la persona.
 
 ### 9.2 Reglas que se compilan en comprobaciones
 
@@ -274,7 +274,7 @@ Está en `PLANNING.md`: decisiones, pasos K0 a K12, verificación de cada uno y 
 
 ## 14. Preguntas abiertas
 
-No quedan preguntas abiertas. Quedan dos verificaciones al construir, ambas en K4: si un hook puede hacer que el modelo invoque una skill, y si una skill desactivada conserva su descripción en el contexto.
+No quedan preguntas abiertas. Queda una verificación: si una skill desactivada conserva su descripción en el contexto (K5 y K6). La del hook se hizo en K4: la señal empuja al modelo hacia la skill.
 
 Resueltas el 2026-11-27: el nivel de `packs:` (3), la agrupación en tres packs, la fase (4b), el sello del sí de `install`, las skills de Delta (desde cero), las rules de este repo como salida de los packs, la invocación de skills (7 el modelo, 2 la persona) y la forma de `packs:` (sección 4).
 
