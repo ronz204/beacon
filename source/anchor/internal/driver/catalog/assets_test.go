@@ -3,6 +3,7 @@ package catalog_test
 import (
 	"io/fs"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -179,6 +180,45 @@ func TestLocaleRuleAddsTheInterfaceOnlyWithAUILanguage(t *testing.T) {
 		hasUI := strings.Contains(piece.Content, "interface")
 		if piece.Name == "locale" && hasUI {
 			t.Errorf("ui section without a ui language: %s", piece.Content)
+		}
+	}
+}
+
+var commandNames = []string{
+	"attest", "brief", "check", "claim", "close", "context", "diff",
+	"doctor", "find", "fmt", "get", "help", "hook", "init", "install",
+	"ready", "record", "snares", "status", "verify",
+}
+
+func TestNoSkillIsNamedLikeABeaconCommand(t *testing.T) {
+	for _, piece := range shipped(t) {
+		if piece.Kind != agents.PieceSkill {
+			continue
+		}
+
+		if slices.Contains(commandNames, piece.Name) {
+			t.Errorf("skill %s collides with a command", piece.Name)
+		}
+	}
+}
+
+func TestEverySkillDescriptionFitsTheListingBudget(t *testing.T) {
+	for _, piece := range shipped(t) {
+		if piece.Kind != agents.PieceSkill {
+			continue
+		}
+
+		var head struct {
+			Description string `yaml:"description"`
+		}
+		text := frontmatter(piece.Content)
+		if err := yaml.Unmarshal([]byte(text), &head); err != nil {
+			t.Fatalf("%s: %v", piece.Name, err)
+		}
+
+		if len(head.Description) == 0 || len(head.Description) > 140 {
+			t.Errorf("%s description has %d chars", piece.Name,
+				len(head.Description))
 		}
 	}
 }

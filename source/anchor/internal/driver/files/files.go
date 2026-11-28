@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	skillsFolder  = "skills"
 	stateFolder   = "beacon"
 	backupsFolder = "backups"
 	directoryMode = 0o755
@@ -115,7 +116,16 @@ func (r Repo) Remove(_ context.Context, path string) error {
 		return action.FailInstall(action.FileRemoveFailed, path, err)
 	}
 
+	dropEmptySkillFolder(target)
+
 	return nil
+}
+
+func dropEmptySkillFolder(file string) {
+	folder := filepath.Dir(file)
+	if filepath.Base(filepath.Dir(folder)) == skillsFolder {
+		_ = os.Remove(folder)
+	}
 }
 
 func (r Repo) Backup(

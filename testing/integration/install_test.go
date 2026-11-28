@@ -44,7 +44,7 @@ func TestInstallPreviewListsTheFilesAndWritesNothing(t *testing.T) {
 
 	data := runInstall(t, root, "--preview")
 
-	if !data.Preview || len(data.Changes) != 10 {
+	if !data.Preview || len(data.Changes) != 13 {
 		t.Fatalf("data = %+v", data)
 	}
 	if present(root, "AGENTS.md") || present(root, ".gitattributes") {
@@ -86,7 +86,7 @@ func TestUninstallLeavesTheRepositoryAsItWas(t *testing.T) {
 	runInstall(t, root)
 	data := runInstall(t, root, "--uninstall")
 
-	if !data.Uninstall || len(data.Changes) != 10 {
+	if !data.Uninstall || len(data.Changes) != 13 {
 		t.Fatalf("data = %+v", data)
 	}
 	if utilities.ReadFile(t, filepath.Join(root, "AGENTS.md")) != "# Mine\n" {
@@ -454,5 +454,20 @@ func TestInstallScopesTheRulesToTheStackAndLeavesGitAlwaysOn(t *testing.T) {
 	}
 	if !strings.Contains(commit, "between 40 and 50") {
 		t.Errorf("commit lost its limits:\n%s", commit)
+	}
+}
+
+func TestUninstallRemovesTheSkillFoldersToo(t *testing.T) {
+	root := newBareRepository(t)
+
+	runInstall(t, root)
+	if !present(root, ".claude/skills/beacon-elicit/SKILL.md") {
+		t.Fatal("the skill was not installed")
+	}
+
+	runInstall(t, root, "--uninstall")
+
+	if present(root, ".claude/skills/beacon-elicit") {
+		t.Error("uninstall left the skill folder")
 	}
 }
