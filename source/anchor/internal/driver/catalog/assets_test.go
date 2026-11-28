@@ -203,3 +203,25 @@ func TestEverySkillDescriptionFitsTheListingBudget(t *testing.T) {
 		}
 	}
 }
+
+func TestOnlyTailorAndRefuteAreLeftToThePerson(t *testing.T) {
+	personOnly := map[string]bool{"tailor": true, "refute": true}
+
+	for _, piece := range shipped(t) {
+		if piece.Kind != agents.PieceSkill {
+			continue
+		}
+
+		var head struct {
+			Disabled bool `yaml:"disable-model-invocation"`
+		}
+		text := frontmatter(piece.Content)
+		if err := yaml.Unmarshal([]byte(text), &head); err != nil {
+			t.Fatalf("%s: %v", piece.Name, err)
+		}
+
+		if head.Disabled != personOnly[piece.Name] {
+			t.Errorf("%s disabled = %v", piece.Name, head.Disabled)
+		}
+	}
+}
