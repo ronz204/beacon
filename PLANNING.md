@@ -186,7 +186,7 @@ K1 se hizo el 2026-11-27 (commit `5a2a167`), K2 el mismo día (commit `dc66f2e`)
 - **Resueltos en K2:** `--skip <pieza>` ahora se guarda en `packs.skip` y retira lo ya instalado (la conciliación); `enabled` hace explícito qué packs hay; el binding sale de `config.yaml`.
 - **Resuelto en K3:** `stacks` ya se lee. El catálogo traduce cada stack a rutas (`Binding.Code`, `Tests`, `Manifests`) y las rules `frugal`, `locale` (código), `pledge` (pruebas) y `vendor` (manifiestos) cargan solo al tocar esos archivos; sin stack conocido cargan siempre. `commit` y `branch` no llevan `paths:`.
 - **Las rutas por stack viven en una tabla del catálogo** (`go`, `bun`, `node`, `python`), no en `config.yaml`. Se mueve a la config si alguien necesita otras rutas.
-- **`commit` y `branch` aún no traen el `deny` de `git push` y `git pull`** que KETSET asigna al pack `git`; queda para quien lo pida o K7.
+- **El `deny` de `git push` y `git pull` llegó con la revisión posterior a K4:** el pack `git` lo añade a `.claude/settings.json` (Bash y PowerShell) y `--uninstall` lo quita. Límite: si se quita el pack `git` de `packs:` el `deny` se queda, porque la conciliación solo retira archivos; se quita a mano o con `--uninstall`.
 - **D9 (aceptación contra este repo) se cumple a medias:** las rules de los packs son versiones condensadas a 40 líneas o menos, no copias; `code-change-size` se redujo (quita el cierre largo y los no-objetivos) y `branch` omite la variante `phase-<n>`. La comparación línea a línea se cierra en K8 con `golang-style` y `domain-layer`.
 - **Los packs y los skips solo crecen con las flags.** Quitar uno se hace editando `packs:` con `beacon record` (nivel 3); el siguiente `install` concilia.
 - **`doctor` no cruza aún los nombres de `packs:` con los packs que existen.** Llega con K7.
@@ -194,9 +194,11 @@ K1 se hizo el 2026-11-27 (commit `5a2a167`), K2 el mismo día (commit `dc66f2e`)
 - **Sin proyecto Beacon, mandan las flags** y no se guarda nada (el modo de K1: `core` por defecto).
 - **Cambio de comportamiento:** la primera instalación en un proyecto Beacon, ejecutada por un agente sin terminal, sale con código 2 hasta recibir `--approve`. Es D5; dos pruebas de integración existentes pasan ahora `--approve`.
 - **Resuelto en K4:** al quitar el `SKILL.md` de una skill se borra su carpeta si queda vacía (solo bajo `skills/`).
-- **La prueba de choque con los comandos de Beacon** (D2) existe desde K4, pero compara con una lista de nombres escrita en la prueba; si aparece un comando nuevo hay que añadirlo a mano.
+- **La prueba de choque con los comandos de Beacon** (D2) es de integración y lee la lista de comandos del binario real, así que no se desactualiza.
 - **Spike de K4 (una corrida por caso, `claude -p` en un proyecto de prueba con `core` instalado):** las tres skills se listan con su sello en el encabezado. Con un hook `UserPromptSubmit` cuyo `additionalContext` dice que la skill `beacon-elicit` atiende el caso, el modelo abrió su `SKILL.md` (con `Read`, no con la herramienta `Skill`); sin el hook no lo abrió. Es una señal de que el texto empuja, no una prueba. Queda sin medir si una skill con `disable-model-invocation` conserva su descripción en `/context` (llega con `tailor` y `refute`, K5 y K6).
-- **Las tres skills no se probaron en una sesión real de trabajo completa,** solo que se listan y que la señal las abre. El benchmark (K9) decide si se quedan.
+- **Las tres skills no se probaron en una sesión de trabajo completa,** solo que se listan y que la señal las abre. El benchmark (K9) decide si se quedan.
+- **Rules por `paths:`, comprobado en una sesión real (`claude -p`, una corrida por caso):** al empezar solo cargaron `commit` y `branch`; tras leer un `.go` cargaron además `frugal` y `locale`, y `pledge` y `vendor` siguieron fuera. Un encabezado vacío (`---` y `---`) es válido.
+- **CRLF (corregido tras K4):** con `autocrlf`, un clon en Windows dejaba las plantillas con CRLF y las rules instaladas heredaban el CRLF que D13 quería evitar. Ahora el catálogo normaliza a LF al renderizar y `.gitattributes` fija LF para los packs.
 - **La prueba de topes no tiene excepciones.** `domain` entra con la suya en K8.
 
 ### Cómo se escribe cada skill y cada rule
