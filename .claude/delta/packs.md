@@ -1,6 +1,6 @@
 # Packs
 
-Las rules y skills propias de Beacon, que Anchor instala en cada agente. Aprobado el 2026-11-27; **en construcción** (Fase 4b, `status`): la mecánica de instalación, `packs:` en `config.yaml` y siete de las once rules y seis de las nueve skills están hechas (K1 a K5: rules `record`, `pledge`, `frugal`, `locale`, `vendor`, `commit` y `branch`; skills `elicit`, `ensure`, `locate`, `finish`, `digest` y `tailor`). Lo no confirmado dice **Propuesta**.
+Las rules y skills propias de Beacon, que Anchor instala en cada agente. Aprobado el 2026-11-27; **en construcción** (Fase 4b, `status`): la mecánica de instalación, `packs:` en `config.yaml` y siete de las once rules y las nueve skills están hechas (K1 a K6: rules `record`, `pledge`, `frugal`, `locale`, `vendor`, `commit` y `branch`; skills `elicit`, `ensure`, `locate`, `finish`, `digest`, `tailor`, `review`, `refute` y `divide`). Lo no confirmado dice **Propuesta**.
 
 ## Qué son
 
@@ -104,7 +104,7 @@ Una rule sin `paths:` carga al empezar la sesión, y una con `paths:` carga cuan
 
 `elicit` y `digest` se escriben desde cero; si la persona encuentra sus skills antiguas de Delta, se ajustan.
 
-**Invocación:** el modelo puede invocar `elicit`, `ensure`, `locate`, `finish`, `digest`, `review` y `divide`. `tailor` y `refute` llevan `disable-model-invocation: true` y solo las invoca la persona: `tailor` cambia la configuración y `refute` lanza un revisor aparte que gasta tokens. Medido en K5 (una corrida): una skill con `disable-model-invocation` **no aparece** en el listado del modelo, así que no gasta contexto, y la persona sí la invoca con `/beacon-tailor`. Falta `refute` (K6). El costo de las nueve descripciones es bajo: el listado admite hasta 1.536 caracteres por entrada y usa el 1% de la ventana de contexto, y el tope de estas es de unos 120.
+**Invocación:** el modelo puede invocar `elicit`, `ensure`, `locate`, `finish`, `digest`, `review` y `divide`. `tailor` y `refute` llevan `disable-model-invocation: true` y solo las invoca la persona: `tailor` cambia la configuración y `refute` lanza un revisor aparte que gasta tokens. Medido en K5 y K6 (una corrida por caso): `tailor` y `refute`, con `disable-model-invocation`, **no aparecen** en el listado del modelo, así que no gastan contexto, y la persona sí las invoca con `/beacon-tailor` y `/beacon-refute`; las otras siete sí aparecen. El costo de las nueve descripciones es bajo: el listado admite hasta 1.536 caracteres por entrada y usa el 1% de la ventana de contexto, y el tope de estas es de unos 120.
 
 ## Señales que apuntan a skills
 
