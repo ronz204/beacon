@@ -49,18 +49,18 @@ Sin `--json`, la salida es texto breve para personas. Con `--json`, **todos los 
 | `beacon attest [promesa...] [--evidence <ref>] [--base <ref>]` | Sin ids lista las promesas **manuales** de las capabilities tocadas desde la base que no están atestiguadas o tienen deriva, con sus pasos; el agente le pregunta a la persona de una en una. Con ids las atestigua con el commit `HEAD`, quién dijo sí (`by`) y quién lo transmitió (`via`); `--evidence` guarda la referencia a lo revisado. Falla con `attest_uncommitted` si el código de la promesa tiene cambios sin commitear, y con `attest_not_manual` si la promesa es automática (`pledge`) |
 | `beacon stale` | Guides y decisiones desactualizadas |
 | `beacon fmt` | Formato canónico de los registros |
-| `beacon doctor` | Valida el estado, ayuda con conflictos, avisa de guides largas y limpia claims de ramas que ya no existen. Un conflicto de git sin resolver sale como `record_conflict` (archivo y línea del primer marcador); un registro con saltos de línea CRLF, como `record_line_endings`, con el `hint` de agregar `.beacon/** text eol=lf` a `.gitattributes` y correr `beacon fmt` |
+| `beacon doctor` | Valida el estado, ayuda con conflictos, avisa de guides largas y limpia claims de ramas que ya no existen. **Propuesta (Fase 4b):** con packs instalados, avisa de piezas editadas o desactualizadas, de rules omitidas por falta de binding y de skills que una señal nombra sin estar instaladas (`packs`). Un conflicto de git sin resolver sale como `record_conflict` (archivo y línea del primer marcador); un registro con saltos de línea CRLF, como `record_line_endings`, con el `hint` de agregar `.beacon/** text eol=lf` a `.gitattributes` y correr `beacon fmt` |
 | `beacon migrate` | Migra el esquema |
 | `beacon stats` | Métricas locales de fricción |
 | `beacon snares ci` | Todo lo que corre el CI en una llamada (`snares`) |
-| `beacon install [--preview] [--uninstall] [--skip hooks\|reinject]` | Instala en Claude Code el bloque de guía, `CLAUDE.md`, los permisos y los hooks, con copia de seguridad; `--preview` muestra qué cambiaría y `--uninstall` quita solo lo que coincide byte a byte (`anchor`) |
+| `beacon install [--preview] [--uninstall] [--pack <nombre>] [--skip hooks\|reinject\|<pieza>] [--approve]` | Instala en Claude Code el bloque de guía, `CLAUDE.md`, los permisos y los hooks, con copia de seguridad; `--preview` muestra qué cambiaría y `--uninstall` quita solo lo que coincide byte a byte (`anchor`). `--pack` instala los packs de rules y skills (`core` por defecto) y `--skip` acepta también el nombre de una pieza. En un proyecto Beacon, `install` lee `packs:` de `config.yaml`, le suma las flags (`--skip <pieza>` queda en `packs.skip`), valida los nombres, lo guarda y concilia: retira las piezas que ya no elige. Guardar es un cambio de nivel 3: una persona en una terminal da el sí al ejecutar el comando, y un agente sin terminal sale con código 2 hasta recibir `--approve`. Sin proyecto, mandan las flags y no se guarda nada (`packs`) |
 | `beacon hook <evento> --agent <nombre>` | Lo llaman los hooks del agente, no la persona. Lee por stdin el JSON del agente y responde en su formato: `start` entrega el `brief` y `edit` el contexto del archivo que se va a editar. **Sale siempre con código 0**: un fallo va a stderr y no inyecta nada (`anchor`) |
 
 **Rama base:** `check` y `diff` comparan contra `git merge-base HEAD <base>`, donde `<base>` es `origin/HEAD` si existe y, si no, `main` o `master`. `--base <ref>` la fuerza. Es el punto de origen de la rama, así que también sirve para ramas largas (`method`).
 
 ## Mensajes (P7)
 
-Cada bloqueo dice exactamente qué hacer, y lo que dice funciona. Un mensaje solo nombra un comando si ejecutarlo resuelve el bloqueo (`tenets`). Ese texto va en `hint`.
+Cada bloqueo dice exactamente qué hacer, y lo que dice funciona. Un mensaje solo nombra un comando si ejecutarlo resuelve el bloqueo (`tenets`). Ese texto va en `hint`. Un `hint` también puede nombrar una skill de los packs (`/beacon-<nombre>`), y solo si está instalada (`packs`).
 
 ## Fricción
 

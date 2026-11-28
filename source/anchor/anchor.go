@@ -2,6 +2,7 @@ package anchor
 
 import (
 	"context"
+	"io/fs"
 	"os/exec"
 	"runtime/debug"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/ronz204/beacon/source/anchor/internal/agents/github"
 	"github.com/ronz204/beacon/source/anchor/internal/assets"
 	"github.com/ronz204/beacon/source/anchor/internal/domain/blocks"
+	"github.com/ronz204/beacon/source/anchor/internal/driver/catalog"
 	"github.com/ronz204/beacon/source/anchor/internal/driver/files"
 )
 
@@ -20,6 +22,7 @@ type Anchor struct {
 	files    action.FileStore
 	planner  action.Planner
 	lookup   func(string) (string, error)
+	catalog  catalog.Catalog
 	hookPath string
 	pinned   bool
 }
@@ -46,6 +49,11 @@ func New(ctx context.Context, directory string) (Anchor, error) {
 		return Anchor{}, err
 	}
 
+	packs, err := fs.Sub(assets.Packs, packsRoot)
+	if err != nil {
+		return Anchor{}, err
+	}
+
 	return Anchor{
 		files: repo,
 		planner: action.Planner{
@@ -56,6 +64,7 @@ func New(ctx context.Context, directory string) (Anchor, error) {
 			CI:     map[string]agents.Contribution{github.Name: workflow},
 		},
 		lookup:   exec.LookPath,
+		catalog:  catalog.New(packs),
 		hookPath: repo.HookPath(),
 		pinned:   pinned,
 	}, nil

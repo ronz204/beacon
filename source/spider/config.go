@@ -1,7 +1,9 @@
 package spider
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"maps"
 	"os"
 	"slices"
@@ -71,4 +73,40 @@ func (p Project) Config() (StoredRecord, error) {
 		Type: document.Kind, Data: document.JSON,
 		File: p.relative(file),
 	}, nil
+}
+
+func (p Project) Packs() (PacksConfig, []Finding) {
+	config, failures := p.store.LoadConfig()
+	packs := config.Packs
+
+	return PacksConfig{
+		Present:  packs.Present,
+		Enabled:  packs.Enabled,
+		Skip:     packs.Skip,
+		Stacks:   packs.Stacks,
+		Language: PacksLanguage(packs.Language),
+		Commit:   PacksCommit(packs.Commit),
+	}, p.findings(failures)
+}
+
+func (p Project) PacksPayload(next PacksConfig) ([]byte, error) {
+	stored, err := p.Config()
+	if err != nil {
+		return nil, err
+	}
+
+	values := map[string]any{}
+	decoder := json.NewDecoder(bytes.NewReader(stored.Data))
+	decoder.UseNumber()
+
+	if err := decoder.Decode(&values); err != nil {
+		return nil, err
+	}
+
+	values["packs"] = next
+
+	return json.Marshal(map[string]any{
+		"type":   record.ConfigKind,
+		"record": values,
+	})
 }

@@ -3,11 +3,13 @@ package anchor
 import (
 	"context"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/ronz204/beacon/source/anchor/internal/action"
 	"github.com/ronz204/beacon/source/anchor/internal/agents"
+	"github.com/ronz204/beacon/source/anchor/internal/driver/catalog"
 	"github.com/ronz204/beacon/source/anchor/internal/driver/files"
 )
 
@@ -16,6 +18,7 @@ const (
 	actionUpdate = "update"
 	actionDelete = "delete"
 	binaryName   = "beacon"
+	packsRoot    = "packs"
 	configPath   = ".beacon/config.yaml"
 
 	missingBinaryNote = "beacon is not on PATH; the agent calls it by " +
@@ -32,7 +35,12 @@ func (a Anchor) Install(
 	ctx context.Context,
 	options InstallOptions,
 ) (InstallView, error) {
-	plan, err := a.planner.Plan(ctx, agentOptions(options))
+	pieces, retired, err := a.selection(options)
+	if err != nil {
+		return InstallView{}, err
+	}
+
+	plan, err := a.planner.Plan(ctx, agentOptions(options, pieces, retired))
 	if err != nil {
 		return InstallView{}, err
 	}
@@ -59,7 +67,15 @@ func (a Anchor) Uninstall(
 		Precommit: true,
 	}
 
-	plan, err := a.planner.Withdraw(ctx, agentOptions(everything))
+	pieces, err := a.catalog.Everything(options.Binding.resolved())
+	if err != nil {
+		return InstallView{}, err
+	}
+
+	plan, err := a.planner.Withdraw(
+		ctx,
+		agentOptions(everything, pieces, nil),
+	)
 	if err != nil {
 		return InstallView{}, err
 	}
@@ -100,12 +116,17 @@ func (a Anchor) finish(
 	return view, nil
 }
 
-func agentOptions(options InstallOptions) agents.Options {
+func agentOptions(
+	options InstallOptions,
+	pieces, retired []agents.Piece,
+) agents.Options {
 	return agents.Options{
 		Hooks:     options.Hooks,
 		Reinject:  options.Reinject,
 		Precommit: options.Precommit,
 		CI:        options.CI,
+		Pieces:    pieces,
+		Retired:   retired,
 	}
 }
 
@@ -126,7 +147,7 @@ func skippedParts(options InstallOptions) []string {
 		skipped = append(skipped, string(agents.PartPrecommit))
 	}
 
-	return skipped
+	return append(skipped, options.SkipPieces...)
 }
 
 func (a Anchor) reviewNotes(options InstallOptions) []string {
@@ -216,4 +237,54 @@ func momentNames(moments []agents.Moment) []string {
 	}
 
 	return names
+}
+
+func (a Anchor) Validate(options InstallOptions) error {
+	_, _, err := a.selection(options)
+
+	return err
+}
+
+func (a Anchor) selection(
+	options InstallOptions,
+) ([]agents.Piece, []agents.Piece, error) {
+	binding := options.Binding.resolved()
+
+	pieces, err := a.catalog.Select(options.Packs, options.SkipPieces, binding)
+	if err != nil || !options.Reconcile {
+		return pieces, nil, err
+	}
+
+	every, err := a.catalog.Everything(binding)
+
+	return pieces, retiredFrom(every, pieces), err
+}
+
+func retiredFrom(every, chosen []agents.Piece) []agents.Piece {
+	chosenSomewhere := func(piece agents.Piece) bool {
+		return slices.ContainsFunc(chosen, func(other agents.Piece) bool {
+			return other.Pack == piece.Pack && other.Name == piece.Name
+		})
+	}
+
+	return slices.DeleteFunc(slices.Clone(every), chosenSomewhere)
+}
+
+func (b PackBinding) resolved() catalog.Binding {
+	binding := catalog.DefaultBinding()
+
+	if b.Language != "" {
+		binding.Language.Code = b.Language
+	}
+	if b.UI != "" {
+		binding.Language.UI = b.UI
+	}
+	if b.CommitMin > 0 {
+		binding.Commit.Min = b.CommitMin
+	}
+	if b.CommitMax > 0 {
+		binding.Commit.Max = b.CommitMax
+	}
+
+	return binding.ForStacks(b.Stacks)
 }

@@ -22,6 +22,9 @@
 | **Claim** | Reserva consultiva de una tarea (`method`) |
 | **Nivel 1, 2, 3** | Clasificación de cambios por riesgo (`deltas`) |
 | **Spider, Weaver, Anchor, Snares** | Componentes (`design`) |
+| **Pack** | Grupo con nombre de rules y skills que Anchor instala: `core`, `git` o `arch` (`packs`) |
+| **Binding** | Los valores de un stack (idioma, archivos de test, manifiestos, forma del dominio) con los que el binario rellena las plantillas de las rules (`packs`) |
+| **Skill** | Procedimiento que el agente carga bajo demanda y que termina en un comando de Beacon que decide (`packs`) |
 | **ODD** | Organic Driven Development, el método de guía de Gentle-AI según su README actual |
 | **RDD** | Receipt-Driven Development, el flujo de revisión de Gentle-AI donde el binario decide el siguiente paso |
 | **SDD** | Desarrollo guiado por specs; Böckeler distingue spec-first, spec-anchored y spec-as-source (`survey`) |
@@ -72,3 +75,4 @@ Confianza según `survey`. Las citas vienen de documentación de proyectos, blog
 | Fitness functions | Thoughtworks Technology Radar; InfoQ. No se leyó *Building Evolutionary Architectures*. Ronda 2026-11-22 | Media |
 | Living documentation | Adzic, *Specification by Example*, a través de InfoQ y resúmenes. Ronda 2026-11-22 | Media |
 | Promise Theory | Burgess y Bergstra, a través de Wikipedia y arXiv 2604.10505. Ronda 2026-11-22: solo resultados de búsqueda | Media |
+| Colecciones de skills y rules | Repos de Pocock, Superpowers (obra), Osmani y Anthropic; guías de rules por path; escritos sobre saturación de skills y el paper SkillReducer (arXiv 2603.29919). Ronda 2026-11-27: se leyeron pocas skills de cada colección | Media-baja |

@@ -88,6 +88,7 @@ const (
 	ReasonGoalClosed       ChangeReason = "goal_closed"
 	ReasonRunnersChanged   ChangeReason = "runners_changed"
 	ReasonSchemaChanged    ChangeReason = "schema_changed"
+	ReasonPacksChanged     ChangeReason = "packs_changed"
 	ReasonBaselineChanged  ChangeReason = "baseline_changed"
 )
 

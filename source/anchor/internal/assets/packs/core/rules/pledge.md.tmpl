@@ -1,0 +1,27 @@
+---
+{{if .Tests}}paths:
+{{range .Tests}}  - "{{.}}"
+{{end}}{{end}}---
+
+# Beacon Pledge Conventions
+
+This governs the tests that back a promise. Beacon runs them to decide whether the project still does what it says, so a test that is weakened breaks the promise silently.
+
+---
+
+## A test names its promise
+
+- A test that checks a promise carries the promise id in its name or its first line, because `beacon verify` finds the code that backs a promise by that id.
+- A new promise gets its test in the same change, and the test fails before the code exists.
+
+## Never weaken to pass
+
+- Do not rewrite, loosen, skip or delete a promise, a check or a baseline to make something pass. Fix the code, or stop and ask the person.
+- A promise that no longer holds is changed with `beacon record`, and the person gives the yes.
+
+---
+
+## Non-goals
+
+- Does not decide what a project promises.
+- Does not choose the test framework.

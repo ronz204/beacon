@@ -1,11 +1,23 @@
 package anchor
 
+type PackBinding struct {
+	Language  string
+	UI        string
+	CommitMin int
+	CommitMax int
+	Stacks    []string
+}
+
 type InstallOptions struct {
-	Preview   bool
-	Hooks     bool
-	Reinject  bool
-	Precommit bool
-	CI        string
+	Preview    bool
+	Hooks      bool
+	Reinject   bool
+	Precommit  bool
+	CI         string
+	Packs      []string
+	SkipPieces []string
+	Binding    PackBinding
+	Reconcile  bool
 }
 
 type ChangeView struct {

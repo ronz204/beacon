@@ -51,3 +51,7 @@ func Scan(directory string) (ScanView, error) {
 
 	return view, nil
 }
+
+func (p Project) Scan() (ScanView, error) {
+	return Scan(p.root)
+}

@@ -12,7 +12,7 @@ No todo cambio merece pedir permiso, solo los que podrían **debilitar lo que ya
 |---|---|---|---|
 | 1 | Mantenimiento | Responder una pregunta abierta, agregar detalle a una guide, marcar una guide como revisada, cambiar `review`, `limits` o `agents` en `config.yaml`, anotar `rejected` o `nongoals` | El agente lo hace |
 | 2 | Agregar | Una promesa nueva (`proposed`), una decisión nueva | El agente lo hace y aparece en el resumen de la sesión |
-| 3 | Debilitar o cambiar lo verificado | Editar el texto de una promesa activa, borrarla, cambiar su check, cambiar la meta, cambiar los `runners` o el `schema` de `config.yaml`, **actualizar una captura base de un ejecutor visual** | Beacon lo detecta y pregunta "¿sí o no?" antes de guardarlo |
+| 3 | Debilitar o cambiar lo verificado | Editar el texto de una promesa activa, borrarla, cambiar su check, cambiar la meta, cambiar los `runners`, el `schema` o los `packs` de `config.yaml`, **actualizar una captura base de un ejecutor visual** | Beacon lo detecta y pregunta "¿sí o no?" antes de guardarlo |
 
 Pasar una promesa de `proposed` a `active` también requiere un sí de la persona. Lo mismo vale para una promesa que nace ya `active`.
 
@@ -20,7 +20,7 @@ Otros casos que la regla no nombra: borrar un goal pide sí; cerrar o editar una
 
 ## Regla mecánica del nivel 3
 
-*Cambiar el texto o el check de una promesa `active`, sacarla de `active`, borrarla, cambiar la meta, cambiar los `runners` o el `schema` de `config.yaml`, o modificar, añadir o borrar un archivo que cubra el `baseline` de un ejecutor es nivel 3.*
+*Cambiar el texto o el check de una promesa `active`, sacarla de `active`, borrarla, cambiar la meta, cambiar los `runners`, el `schema` o los `packs` de `config.yaml`, o modificar, añadir o borrar un archivo que cubra el `baseline` de un ejecutor es nivel 3.*
 
 Es conservadora: puede pedir un sí por un typo, pero nunca deja pasar un debilitamiento.
 
@@ -69,7 +69,7 @@ El sí se reconoce porque el `approved` cambió desde la base. Si el mismo actor
 
 ## Los ejecutores son código sensible
 
-Los `runners` de `config.yaml` contienen lo que el CI ejecuta. Cambiarlos, igual que el `schema`, es de nivel 3, y en CI se usan los `runners` de la rama base hasta que alguien apruebe el cambio (`snares`). Las demás claves de `config.yaml` no ejecutan nada y son de nivel 1, para no gastar síes en cambios inofensivos.
+Los `runners` de `config.yaml` contienen lo que el CI ejecuta. Cambiarlos, igual que el `schema`, es de nivel 3, y en CI se usan los `runners` de la rama base hasta que alguien apruebe el cambio (`snares`). Las demás claves de `config.yaml`, salvo `packs`, no ejecutan nada y son de nivel 1, para no gastar síes en cambios inofensivos. `packs` tampoco ejecuta nada, pero decide qué reglas y skills recibe el agente y cambia pocas veces, solo al configurar el proyecto, así que su sí no gasta fatiga (`packs`).
 
 ## Medir la fricción
 

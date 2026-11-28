@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -17,8 +18,9 @@ type installData struct {
 		Action string   `json:"action"`
 		Parts  []string `json:"parts"`
 	} `json:"changes"`
-	Skipped []string `json:"skipped"`
-	Kept    []struct {
+	Skipped  []string `json:"skipped"`
+	Recorded bool     `json:"recorded"`
+	Kept     []struct {
 		Path string `json:"path"`
 	} `json:"kept"`
 }
@@ -43,7 +45,7 @@ func TestInstallPreviewListsTheFilesAndWritesNothing(t *testing.T) {
 
 	data := runInstall(t, root, "--preview")
 
-	if !data.Preview || len(data.Changes) != 5 {
+	if !data.Preview || len(data.Changes) < 6 {
 		t.Fatalf("data = %+v", data)
 	}
 	if present(root, "AGENTS.md") || present(root, ".gitattributes") {
@@ -85,7 +87,7 @@ func TestUninstallLeavesTheRepositoryAsItWas(t *testing.T) {
 	runInstall(t, root)
 	data := runInstall(t, root, "--uninstall")
 
-	if !data.Uninstall || len(data.Changes) != 5 {
+	if !data.Uninstall || len(data.Changes) < 6 {
 		t.Fatalf("data = %+v", data)
 	}
 	if utilities.ReadFile(t, filepath.Join(root, "AGENTS.md")) != "# Mine\n" {
@@ -123,12 +125,12 @@ func TestInstallSkipHooksReportsWhatItLeftOut(t *testing.T) {
 	}
 }
 
-func TestInstallRejectsAnUnknownSkipPart(t *testing.T) {
+func TestInstallRejectsAnUnknownSkipPiece(t *testing.T) {
 	root := newBareRepository(t)
 
 	result := utilities.Beacon(t, root, "install", "--json", "--skip", "x")
 
-	if result.Code != 1 || !strings.Contains(result.Stdout, "skip_invalid") {
+	if result.Code != 1 || !strings.Contains(result.Stdout, "piece_unknown") {
 		t.Errorf("exit %d: %s", result.Code, result.Stdout)
 	}
 }
@@ -183,7 +185,9 @@ func TestInstallDoesNotDuplicateTheLineEndingRuleWrittenByHand(t *testing.T) {
 		t,
 		root,
 		".gitattributes",
-		".beacon/** text eol=lf linguist-generated\n",
+		".beacon/** text eol=lf linguist-generated\n"+
+			".claude/rules/beacon-*.md text eol=lf\n"+
+			".claude/skills/beacon-*/SKILL.md text eol=lf\n",
 	)
 
 	data := runInstall(t, root)
@@ -216,3 +220,323 @@ func TestInstallOverAnOldGuideOnlyReplacesTheGuideBlock(t *testing.T) {
 		t.Error("the guide block was not restored")
 	}
 }
+
+const recordRule = ".claude/rules/beacon-record.md"
+
+func TestInstallWritesTheCoreRulesByDefaultAndUninstallRemovesThem(
+	t *testing.T,
+) {
+	root := newBareRepository(t)
+
+	runInstall(t, root)
+	rule := utilities.ReadFile(t, filepath.Join(root, recordRule))
+
+	if !strings.HasPrefix(rule, "---\nbeacon: ") {
+		t.Errorf("the rule has no stamp: %q", rule)
+	}
+	if !strings.Contains(rule, "paths:") {
+		t.Errorf("the rule lost its paths: %q", rule)
+	}
+
+	runInstall(t, root, "--uninstall")
+
+	if present(root, recordRule) {
+		t.Error("uninstall left the rule")
+	}
+}
+
+func TestInstallSkipsARuleByName(t *testing.T) {
+	root := newBareRepository(t)
+
+	data := runInstall(t, root, "--skip", "record")
+
+	if present(root, recordRule) {
+		t.Error("--skip record still wrote the rule")
+	}
+	if len(data.Skipped) != 1 || data.Skipped[0] != "record" {
+		t.Errorf("skipped = %v", data.Skipped)
+	}
+}
+
+func TestInstallRejectsAnUnknownPack(t *testing.T) {
+	root := newBareRepository(t)
+
+	result := utilities.Beacon(t, root, "install", "--json", "--pack", "nope")
+
+	if result.Code != 1 || !strings.Contains(result.Stdout, "pack_unknown") {
+		t.Errorf("exit %d: %s", result.Code, result.Stdout)
+	}
+	if present(root, "AGENTS.md") {
+		t.Error("a failed install wrote files")
+	}
+}
+
+func TestInstallKeepsARuleEditedByHand(t *testing.T) {
+	root := newBareRepository(t)
+	runInstall(t, root)
+
+	original := utilities.ReadFile(t, filepath.Join(root, recordRule))
+	edited := original + "- mine\n"
+	utilities.WriteFile(t, root, recordRule, edited)
+
+	data := runInstall(t, root)
+	again := utilities.ReadFile(t, filepath.Join(root, recordRule))
+
+	if again != edited {
+		t.Error("an edited rule was overwritten")
+	}
+	if len(data.Kept) != 1 || data.Kept[0].Path != recordRule {
+		t.Errorf("kept = %+v", data.Kept)
+	}
+}
+
+const configFile = ".beacon/config.yaml"
+
+func configText(t *testing.T, root string) string {
+	t.Helper()
+
+	return utilities.ReadFile(t, filepath.Join(root, configFile))
+}
+
+func TestInstallAsksForAYesBeforeRecordingThePacks(t *testing.T) {
+	root := utilities.NewRepository(t)
+	before := configText(t, root)
+
+	result := utilities.Beacon(t, root, "install", "--json")
+
+	if result.Code != 2 || !strings.Contains(result.Stdout, "packs_changed") {
+		t.Fatalf("exit %d: %s", result.Code, result.Stdout)
+	}
+	if configText(t, root) != before {
+		t.Error("the config changed without a yes")
+	}
+	if present(root, "AGENTS.md") {
+		t.Error("files were written without the yes")
+	}
+}
+
+func TestInstallRecordsThePacksWithTheYesAndThenNeedsNone(t *testing.T) {
+	root := utilities.NewRepository(t)
+
+	first := runInstall(t, root, "--approve")
+	text := configText(t, root)
+
+	section := "packs:\n  enabled: [core]\n"
+
+	if !first.Recorded || !strings.Contains(text, section) {
+		t.Errorf("recorded = %v, config:\n%s", first.Recorded, text)
+	}
+	if !strings.Contains(text, "language:\n    code: en\n") {
+		t.Errorf("config:\n%s", text)
+	}
+	if !present(root, recordRule) {
+		t.Error("the rule was not installed")
+	}
+
+	second := runInstall(t, root)
+
+	if second.Recorded || len(second.Changes) != 0 {
+		t.Errorf("second install: %+v", second)
+	}
+}
+
+func TestAPersonAtTheTerminalGivesTheYesByRunningInstall(t *testing.T) {
+	root := utilities.NewRepository(t)
+
+	result := utilities.BeaconWith(
+		t,
+		root,
+		utilities.Options{Actor: "human:jane"},
+		"install",
+		"--json",
+	)
+
+	if result.Code != 0 {
+		t.Fatalf("exit %d: %s", result.Code, result.Stdout)
+	}
+	if !strings.Contains(configText(t, root), "human:jane") {
+		t.Errorf("the yes was not sealed:\n%s", configText(t, root))
+	}
+}
+
+func TestSkipIsRecordedAndRetiresTheInstalledRule(t *testing.T) {
+	root := utilities.NewRepository(t)
+	runInstall(t, root, "--approve")
+
+	runInstall(t, root, "--approve", "--skip", "record")
+
+	if present(root, recordRule) {
+		t.Error("the skipped rule is still installed")
+	}
+	if !strings.Contains(configText(t, root), "skip: [record]") {
+		t.Errorf("config:\n%s", configText(t, root))
+	}
+}
+
+func TestInstallPreviewDoesNotRecordThePacks(t *testing.T) {
+	root := utilities.NewRepository(t)
+	before := configText(t, root)
+
+	result := utilities.Beacon(t, root, "install", "--preview")
+
+	if !strings.Contains(result.Stdout, "would record packs in "+configFile) {
+		t.Errorf("stdout:\n%s", result.Stdout)
+	}
+	if configText(t, root) != before || present(root, "AGENTS.md") {
+		t.Error("the preview wrote something")
+	}
+}
+
+func TestAnUnknownPackFailsBeforeTheConfigChanges(t *testing.T) {
+	root := utilities.NewRepository(t)
+	before := configText(t, root)
+
+	result := utilities.Beacon(
+		t, root, "install", "--json", "--approve", "--pack", "nope",
+	)
+
+	if result.Code != 1 || !strings.Contains(result.Stdout, "pack_unknown") {
+		t.Errorf("exit %d: %s", result.Code, result.Stdout)
+	}
+	if configText(t, root) != before {
+		t.Error("the config changed for an unknown pack")
+	}
+}
+
+func TestUninstallKeepsThePacksAndInstallBringsThemBack(t *testing.T) {
+	root := utilities.NewRepository(t)
+	runInstall(t, root, "--approve")
+
+	runInstall(t, root, "--uninstall")
+
+	kept := strings.Contains(configText(t, root), "packs:")
+	left := present(root, recordRule)
+
+	if left || !kept {
+		t.Fatalf("rule left: %v, packs kept: %v", left, kept)
+	}
+
+	runInstall(t, root)
+
+	if !present(root, recordRule) {
+		t.Error("install did not bring the rule back")
+	}
+}
+
+func TestInstallRecordsTheStacksItDetects(t *testing.T) {
+	root := utilities.NewRepository(t)
+	utilities.WriteFile(t, root, "go.mod", "module sample\n")
+
+	runInstall(t, root, "--approve")
+
+	if !strings.Contains(configText(t, root), "stacks: [go]") {
+		t.Errorf("config:\n%s", configText(t, root))
+	}
+}
+
+func TestInstallScopesTheRulesToTheStackAndLeavesGitAlwaysOn(t *testing.T) {
+	root := utilities.NewRepository(t)
+	utilities.WriteFile(t, root, "go.mod", "module sample\n")
+
+	runInstall(t, root, "--approve", "--pack", "core", "--pack", "git")
+
+	frugal := utilities.ReadFile(
+		t, filepath.Join(root, ".claude/rules/beacon-frugal.md"),
+	)
+	commit := utilities.ReadFile(
+		t, filepath.Join(root, ".claude/rules/beacon-commit.md"),
+	)
+
+	if !strings.Contains(frugal, `- "**/*.go"`) {
+		t.Errorf("frugal is not scoped to Go:\n%s", frugal)
+	}
+	if strings.Contains(commit, "paths:") {
+		t.Errorf("commit must load always:\n%s", commit)
+	}
+	if !strings.Contains(commit, "between 40 and 50") {
+		t.Errorf("commit lost its limits:\n%s", commit)
+	}
+}
+
+func TestUninstallRemovesTheSkillFoldersToo(t *testing.T) {
+	root := newBareRepository(t)
+
+	runInstall(t, root)
+	if !present(root, ".claude/skills/beacon-elicit/SKILL.md") {
+		t.Fatal("the skill was not installed")
+	}
+
+	runInstall(t, root, "--uninstall")
+
+	if present(root, ".claude/skills/beacon-elicit") {
+		t.Error("uninstall left the skill folder")
+	}
+}
+
+func commandNames(t *testing.T, root string) []string {
+	t.Helper()
+
+	help := utilities.Beacon(t, root, "--help").Stdout
+	_, listing, found := strings.Cut(help, "Available Commands:\n")
+	if !found {
+		t.Fatalf("no command list in:\n%s", help)
+	}
+
+	var names []string
+	for line := range strings.SplitSeq(listing, "\n") {
+		if strings.TrimSpace(line) == "" {
+			break
+		}
+
+		names = append(names, strings.Fields(line)[0])
+	}
+
+	return names
+}
+
+func TestNoInstalledSkillIsNamedLikeABeaconCommand(t *testing.T) {
+	root := newBareRepository(t)
+	commands := commandNames(t, root)
+
+	data := runInstall(t, root, "--preview")
+
+	skills := 0
+	for _, change := range data.Changes {
+		name, found := strings.CutPrefix(change.Path, ".claude/skills/beacon-")
+		if !found {
+			continue
+		}
+
+		skills++
+		name = strings.TrimSuffix(name, "/SKILL.md")
+		if slices.Contains(commands, name) {
+			t.Errorf("skill %s collides with a command", name)
+		}
+	}
+	if skills == 0 || len(commands) < 10 {
+		t.Errorf("skills %d, commands %v", skills, commands)
+	}
+}
+
+func TestTheGitPackDeniesPushAndPullInTheSettings(t *testing.T) {
+	root := newBareRepository(t)
+
+	runInstall(t, root)
+	plain := utilities.ReadFile(t, filepath.Join(root, settingsFile))
+	if strings.Contains(plain, "git push") {
+		t.Errorf("core alone denied git:\n%s", plain)
+	}
+
+	runInstall(t, root, "--pack", "git")
+	settings := utilities.ReadFile(t, filepath.Join(root, settingsFile))
+	if !strings.Contains(settings, "Bash(git push *)") {
+		t.Errorf("git push is not denied:\n%s", settings)
+	}
+
+	runInstall(t, root, "--uninstall")
+	if present(root, settingsFile) {
+		t.Error("uninstall left the settings")
+	}
+}
+
+const settingsFile = ".claude/settings.json"

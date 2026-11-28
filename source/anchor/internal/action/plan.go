@@ -214,7 +214,40 @@ func (w *workspace) contribute(
 		current.set(file.Part, after)
 	}
 
+	if err := w.offer(ctx, contribution.Files); err != nil {
+		return err
+	}
+
+	return w.release(ctx, contribution.Retired, false)
+}
+
+func (w *workspace) offer(
+	ctx context.Context,
+	files []agents.ManagedFile,
+) error {
+	for _, file := range files {
+		current, err := w.load(ctx, file.Path)
+		if err != nil {
+			return err
+		}
+
+		if !ownsFile(current) {
+			w.kept = append(w.kept, Kept{file.Path, file.Part})
+			continue
+		}
+
+		current.set(file.Part, file.Content)
+	}
+
 	return nil
+}
+
+func ownsFile(current *draft) bool {
+	if !current.exists {
+		return true
+	}
+
+	return blocks.InspectManaged(current.before) == blocks.OwnershipManaged
 }
 
 func (w *workspace) withdraw(
@@ -261,6 +294,33 @@ func (w *workspace) withdraw(
 		current.gone, err = blocks.IsEmptyDocument(after)
 		if err != nil {
 			return err
+		}
+	}
+
+	return w.release(ctx, contribution.Files, true)
+}
+
+func (w *workspace) release(
+	ctx context.Context,
+	files []agents.ManagedFile,
+	report bool,
+) error {
+	for _, file := range files {
+		current, err := w.load(ctx, file.Path)
+		if err != nil {
+			return err
+		}
+
+		switch {
+		case !current.exists:
+			continue
+		case !ownsFile(current):
+			if report {
+				w.kept = append(w.kept, Kept{file.Path, file.Part})
+			}
+		default:
+			current.set(file.Part, "")
+			current.gone = true
 		}
 	}
 

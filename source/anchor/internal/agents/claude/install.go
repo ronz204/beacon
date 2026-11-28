@@ -2,6 +2,7 @@ package claude
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/ronz204/beacon/source/anchor/internal/agents"
 	"github.com/ronz204/beacon/source/anchor/internal/domain/blocks"
@@ -20,7 +21,12 @@ const (
 	editTimeout     = 10
 )
 
-var shellTools = []string{"Bash", "PowerShell"}
+const gitPack = "git"
+
+var (
+	shellTools = []string{"Bash", "PowerShell"}
+	deniedGit  = []string{"push", "pull"}
+)
 
 func (Agent) Moments() []agents.Moment {
 	return []agents.Moment{
@@ -38,7 +44,7 @@ func (Agent) Contribute(
 		return agents.Contribution{}, err
 	}
 
-	allow, err := permissionEntries()
+	allow, err := permissionEntries(options.Pieces)
 	if err != nil {
 		return agents.Contribution{}, err
 	}
@@ -57,12 +63,22 @@ func (Agent) Contribute(
 	}
 
 	files, err := hookFiles(options)
+	if err != nil {
+		return agents.Contribution{}, err
+	}
+
 	contribution.Entries = append(contribution.Entries, files...)
+	contribution.Files, err = pieceFiles(options.Pieces)
+	if err != nil {
+		return agents.Contribution{}, err
+	}
+
+	contribution.Retired, err = pieceFiles(options.Retired)
 
 	return contribution, err
 }
 
-func permissionEntries() ([]blocks.Entry, error) {
+func permissionEntries(pieces []agents.Piece) ([]blocks.Entry, error) {
 	var entries []blocks.Entry
 
 	for _, tool := range shellTools {
@@ -78,7 +94,33 @@ func permissionEntries() ([]blocks.Entry, error) {
 		entries = append(entries, entry)
 	}
 
+	if !hasPack(pieces, gitPack) {
+		return entries, nil
+	}
+
+	for _, tool := range shellTools {
+		for _, verb := range deniedGit {
+			entry, err := blocks.ParseEntry(
+				blocks.EntryAppend,
+				tool+"(git "+verb+" *)",
+				"permissions",
+				"deny",
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			entries = append(entries, entry)
+		}
+	}
+
 	return entries, nil
+}
+
+func hasPack(pieces []agents.Piece, pack string) bool {
+	return slices.ContainsFunc(pieces, func(piece agents.Piece) bool {
+		return piece.Pack == pack
+	})
 }
 
 func hookFiles(options agents.Options) ([]agents.EntryFile, error) {

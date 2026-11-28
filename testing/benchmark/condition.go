@@ -33,11 +33,11 @@ func (c Condition) InstallArgs() ([]string, error) {
 	case ConditionWithout:
 		return nil, nil
 	case ConditionGuide:
-		return []string{"install", "--skip", "hooks"}, nil
+		return []string{"install", "--approve", "--skip", "hooks"}, nil
 	case ConditionFull:
-		return []string{"install"}, nil
+		return []string{"install", "--approve"}, nil
 	case ConditionNoReinject:
-		return []string{"install", "--skip", "reinject"}, nil
+		return []string{"install", "--approve", "--skip", "reinject"}, nil
 	default:
 		return nil, fmt.Errorf("unknown condition %q", c)
 	}

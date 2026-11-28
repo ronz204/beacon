@@ -115,3 +115,40 @@ func TestBackupsOlderThanThirtyDaysArePruned(t *testing.T) {
 		t.Errorf("backups = %v", names)
 	}
 }
+
+func TestRemovingASkillFileDropsItsEmptyFolder(t *testing.T) {
+	ctx := context.Background()
+	repo, root := newRepo(t)
+	file := ".claude/skills/beacon-sample/SKILL.md"
+
+	if err := repo.Write(ctx, file, "x"); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.Remove(ctx, file); err != nil {
+		t.Fatal(err)
+	}
+
+	folder := filepath.Join(root, ".claude/skills/beacon-sample")
+	if _, err := os.Stat(folder); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("the folder is still there: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, ".claude/skills")); err != nil {
+		t.Errorf("the skills folder must stay: %v", err)
+	}
+}
+
+func TestRemovingARuleFileKeepsItsFolder(t *testing.T) {
+	ctx := context.Background()
+	repo, root := newRepo(t)
+
+	if err := repo.Write(ctx, ".claude/rules/beacon-a.md", "x"); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.Remove(ctx, ".claude/rules/beacon-a.md"); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Stat(filepath.Join(root, ".claude/rules")); err != nil {
+		t.Errorf("the rules folder must stay: %v", err)
+	}
+}

@@ -134,3 +134,43 @@ func TestStateChangesSeeConfigAndBaselines(t *testing.T) {
 		t.Fatalf("changes = %v", kinds)
 	}
 }
+
+func TestPacksAreAbsentUntilTheSectionIsWritten(t *testing.T) {
+	project, _ := newProject(t)
+
+	packs, findings := project.Packs()
+
+	requireNoFindings(t, findings)
+	if packs.Present {
+		t.Errorf("packs = %+v", packs)
+	}
+}
+
+func TestPacksPayloadAddsTheSectionAndKeepsTheRest(t *testing.T) {
+	project, root := newProject(t)
+	next := spider.PacksConfig{
+		Enabled:  []string{"core", "git"},
+		Stacks:   []string{"go"},
+		Language: spider.PacksLanguage{Code: "en"},
+	}
+
+	payload, err := project.PacksPayload(next)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	save(t, project, payload)
+	got, findings := project.Packs()
+
+	requireNoFindings(t, findings)
+	if !got.Present || len(got.Enabled) != 2 || got.Language.Code != "en" {
+		t.Fatalf("packs = %+v", got)
+	}
+
+	text := readFile(t, root, configFile)
+	want := "packs:\n  enabled: [core, git]\n  stacks: [go]\n" +
+		"  language:\n    code: en\n"
+	if !strings.Contains(text, want) || !strings.Contains(text, "runners:") {
+		t.Errorf("config.yaml:\n%s", text)
+	}
+}

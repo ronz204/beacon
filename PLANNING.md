@@ -1,454 +1,249 @@
-# Plan de construcción: Fase 4 (Snares)
+# Plan: los packs de rules y skills
 
-Este plan cubre solo la fase en curso: en qué orden se construye y qué archivos salen. El detalle funcional vive en la KB (`.claude/delta/`), y todas las fases, en `status`.
+Plan de ejecución de los packs descritos en `KETSET.md` (qué es y por qué) y en `.claude/delta/packs.md` (el diseño vigente). Aquí va el cómo, el orden y la verificación. Rama: `feat/add-skills-and-rules`.
 
-La numeración de pasos, decisiones y hitos **se reinicia** en esta fase. Las referencias de la KB y de los commits anteriores apuntan a los planes de las fases cerradas, que están en el historial de git: la Fase 1 (Spider) con `git show 967f5aa:PLANNING.md`, la Fase 2 (Weaver) con `git show 9e5ed52:PLANNING.md` y la Fase 3 (Anchor) con `git show 8457fc7:PLANNING.md`.
+**Estado:** propuesta y plan aprobados por la persona dueña el 2026-11-27, con el nombre `packs`. D5 quedó en nivel 3 y los packs se redujeron a tres. K0 se cerró el mismo día, D16 y D17 cerraron las dos preguntas que quedaban, y K1 y K2 se hicieron ese día (commits `5a2a167` y `dc66f2e`). Los planes anteriores (Fases 1 a 4) están en el historial de git: `PLANNING.md` hasta el commit `7895362`.
 
-> **Estado: por empezar (2026-11-27).** D1 a D19 las aprobó la persona el mismo día. Las verificaciones previas (GitHub, Bun, Python y la versión que estampa Go) están hechas y quedan en los pasos 6, 7 y 8.
+---
 
 ## 1. Panorama
 
-### Qué es Snares
+### Qué se construye
 
-Snares es la capa que **no depende de que el agente coopere**: un git hook que corre antes de cada commit y un comando de CI que corre en cada PR y sobre la fusión. Es lo que atrapa un debilitamiento que el agente se saltó, y la garantía en equipo sigue siendo la review del PR por una persona (`snares`, `deltas`).
+Anchor aprende a instalar dos cosas nuevas en el agente, además del bloque de guía, los hooks y el permiso:
 
-La fase trae también lo que Weaver todavía no tiene (`attest` y `verify`, con el riesgo) y lo que hace que Beacon sea fácil de empezar en un repo existente (`beacon init`). Por eso son cuatro bloques y no uno.
+- **Rules** con `paths:` que cargan solo al tocar los archivos que les corresponden.
+- **Skills** que cargan bajo demanda, y a las que las señales de Beacon apuntan con una línea.
 
-| Tema | Archivo de la KB |
-|---|---|
-| Pre-commit, CI, fusión, equipos, seguridad | `.claude/delta/snares.md` |
-| Atestaciones, estados, promesas manuales y de UI, ejecutores | `.claude/delta/pledge.md` |
-| Niveles, aprobación, riesgo y revisión independiente | `.claude/delta/deltas.md` |
-| Arranque en un repo existente, `work` y `task` | `.claude/delta/method.md` |
-| Comandos y sobre `--json` | `.claude/delta/weaver.md` |
-| Campos (`attested`), `config.yaml`, esquema | `.claude/delta/ledger.md` |
-| Estado local, formato y mediciones | `.claude/delta/layout.md` |
-| Qué instala Anchor y la guía del método | `.claude/delta/anchor.md` |
-
-### Alcance
-
-**Entra en la Fase 4** (`status`):
-
-| Qué | Cómo queda al cerrar la fase |
-|---|---|
-| `beacon record --file <ruta>` | El agente pasa el payload por un archivo, sin tubería (D9) |
-| `beacon attest [promesas] [--evidence <ref>]` | Sin argumentos lista las promesas manuales cuyo código cambió; con ids las atestigua (D11) |
-| `beacon verify` | Corre los checks relacionados, calcula el riesgo y, si es alto, arma el paquete de revisión independiente (D2, D12) |
-| `beacon snares pre-commit` | Bloquea el commit con un nivel 3 sin sello, un registro inválido o un check en rojo (D3, D15) |
-| `beacon snares ci` | Recalcula los checks, usa los ejecutores de la base, verifica los síes y escribe el comentario del PR (D8, D13, D14) |
-| `beacon install` | Instala además el pre-commit (D3) y, con `--ci github`, la plantilla de GitHub Actions (D5) |
-| `beacon init` | Escaneo mecánico de Go, Bun, Node y Python; escribe `config.yaml`, la pregunta de la meta y las capabilities candidatas (D6, D7) |
-| Guía y ejemplos de UI | El bloque de guía suma `attest` y `--file`; los ejecutores de ejemplo para UI quedan documentados (D16, D17) |
-| Beacon en Beacon | Este repo con `init` e `install` y su meta y capabilities reales (D10) |
-
-**Queda fuera:**
-- La segunda ola de agentes (Fase 6) y el hook de cierre `Stop`, que sigue siendo ruido (`anchor`).
-- `stale` y la frescura de guides (Fase 5), y el lint de tests que citan promesas inexistentes (`pledge`), que se evalúa con ellos.
-- `stats` y correr el benchmark de fricción (Fase 6).
-- Etiquetas, Releases, Homebrew y Scoop (distribución, sin fase todavía; la persona agregará las etiquetas más adelante) y plantillas de CI distintas de GitHub (`snares`).
+Todo se renderiza con una plantilla y un binding, para que sirva en cualquier stack.
 
 ### Qué existirá al terminar
 
-| Al cerrar | Qué se puede hacer |
-|---|---|
-| **Bloque 1: atestar y verificar** | `record --file`, `attest` y `verify` con riesgo y paquete de revisión |
-| **Bloque 2: Snares** | Un commit con un nivel 3 sin sello se bloquea en local, y un PR igual se bloquea en el CI, con el comentario clasificado por nivel |
-| **Bloque 3: arranque** | `beacon init` deja un repo existente listo para empezar a preguntar, sin inventar nada |
-| **Bloque 4: uso propio y cierre** | Beacon se usa en su propio repo, con tiempos medidos y la KB sincronizada |
+- `beacon install --pack <nombre>` con `--preview`, `--uninstall`, copias de seguridad y borrado solo de lo que nadie editó. `--skip` acepta el nombre de una pieza.
+- 11 rules y 9 skills en tres packs (`core`, `git`, `arch`).
+- Una sección `packs:` en `.beacon/config.yaml` (nivel 3) y un binding de Go incluido.
+- Señales de `brief`, `check` y `doctor` que nombran la skill que resuelve el problema.
+- Una condición nueva del benchmark de fricción para medir los packs.
+- La KB y el README al día, sin documentos huérfanos.
 
-### Cómo fluye la información
+### Qué no se hace
 
-```text
-router (handle/*)          lee argumentos, stdin y archivos; imprime el sobre
-        │
-        ├── attest, verify, record ───────→ weaver.go     clasifica, comprueba y sella
-        ├── init ─────────────────────────→ spider.go     escanea y escribe registros
-        ├── snares pre-commit | ci ───────→ snares.go ──→ weaver.go ──→ spider.go
-        └── install (pre-commit, --ci) ───→ anchor.go     escribe archivos del repo y de .git
-
-snares.go                  la única puerta de Snares: orquesta, no calcula
-        │
-        ▼
-action/*                   precommit, ci, comment
-        │
-        └──→ weaver.go     pendientes de sí, checks, riesgo; spider.go para el estado
-```
-
-### Quién llama a quién
-
-- La dependencia sigue siendo `router → snares → weaver → spider` (`README`). **Snares no calcula nada nuevo**: junta lo que Weaver y Spider ya saben (pendientes de sí, checks, validación) y decide si el commit o el PR pasa.
-- **Anchor sigue siendo el único que escribe archivos de agentes, de git y de CI.** El pre-commit y la plantilla de GitHub los instala `install`, no Snares (D3, D5). Snares conoce el comando; Anchor, el archivo.
-- `init` va por **Spider** (escribe registros) y no por Anchor: Anchor nunca toca `.beacon/` (Fase 3, D10).
-- Un git hook se salta con `git commit --no-verify`: el pre-commit es un recordatorio fuerte, no la garantía. **La garantía es el CI y la review del PR** (`deltas`).
+- Instalador de skills de terceros, lenguaje de plantillas propio, skills que dupliquen comandos de Beacon (`KETSET.md`, sección 15).
+- Cursor, Codex y los demás agentes antes de que Claude Code esté probado a fondo (K11).
 
 ## 2. Decisiones
 
-D1 a D10 se cerraron con la persona el 2026-11-27, y D11 a D19, que eran propuestas del plan, las aprobó el mismo día.
+D1 a D12 quedaron aprobadas el 2026-11-27, con los ajustes que se indican. D13 a D18 son nuevas de ese día (D18 llegó con K1).
 
-### D1. Todo en la Fase 4, en cuatro bloques
+### D1. Los packs viven en Anchor
 
-- **Decisión:** pre-commit, `snares ci`, el arranque, `attest` y `verify` van en una sola fase, ordenados por dependencias: atestar y verificar, Snares, arranque, uso propio.
-- **Por qué:** `snares ci` verifica síes y riesgo, que Weaver calcula; y el arranque se prueba mejor cuando el CI ya existe.
-- **Afecta a:** todos los pasos.
+Anchor ya instala con marcas idempotentes, copias y `--preview`. No se crea una pieza nueva. Los fuentes van en `source/anchor/internal/assets/packs/<pack>/` (`rules/` y `skills/`; `bindings/` llega con K8).
 
-### D2. `verify` corre los checks, calcula el riesgo y arma un paquete de revisión
+### D2. Nombres de seis letras y prefijo `beacon-`
 
-- **Decisión:** `beacon verify` corre los checks relacionados, calcula el riesgo (D12) y, si es alto, imprime un **paquete de revisión**: las promesas tocadas con su estado y el diff clasificado por nivel, para que lo revise un agente con contexto limpio o una persona. **No lanza ningún agente.**
-- **Por qué:** lanzar un revisor ataría el binario a un agente y gastaría tokens; el paquete funciona con cualquiera.
-- **Afecta a:** paso 3.
+Todo nombre de rule y de skill es una palabra de seis letras en minúsculas. Los packs tienen nombres cortos a propósito, porque se escriben en `--pack`. Una skill no puede llamarse como un comando de Beacon. Los archivos instalados llevan el prefijo `beacon-`. Una prueba lo comprueba.
 
-### D3. El pre-commit lo instala `install` y bloquea lo que debilita
+### D3. Tres packs, solo `core` por defecto
 
-- **Decisión:** `beacon install` instala el pre-commit como un bloque gestionado en el hook de git (con copia de seguridad y `--uninstall`). Bloquea el commit si hay un cambio de nivel 3 sin sello, un registro inválido o un check relacionado en rojo. La deriva solo avisa. `--skip precommit` lo omite.
-- **Por qué:** una sola instalación para el agente y para git, y `--no-verify` queda como la salida de emergencia de git, no de Beacon.
-- **Afecta a:** pasos 4 y 5.
+| Pack | Contenido |
+|---|---|
+| `core` | Rules `record`, `pledge`, `frugal`, `locale`, `vendor`, y `format`, `errors`, `secure` cuando hay binding del stack; las nueve skills |
+| `git` | Rules `commit`, `branch` y los `deny` de `git push` y `git pull` |
+| `arch` | Rule `domain` |
 
-### D4. El CI instala `beacon` con `go install`
+Antes eran cinco. `flow` y `code` se retiraron: las rules con `paths:` no cargan hasta que se tocan sus archivos, y medir una pieza no necesita un pack (se hace con `--skip` en el arnés).
 
-- **Decisión:** la plantilla instala el binario con `go install github.com/ronz204/beacon/cmd/beacon@<versión>`. No se publican Releases en esta fase.
-- **Detalle (verificado el 2026-11-27):** `install --ci github` escribe como versión la del binario que lo ejecuta, con `runtime/debug.ReadBuildInfo`. Con Go 1.24 o más, una compilación local dentro de un repo git **ya no da `(devel)`**: estampa una pseudoversión (`v0.0.0-20261127145601-c96620ea8bf8`, medida sobre el binario de este repo), que `go install` acepta si ese commit está en el remoto, y con una etiqueta (`go install ...@v1.2.3`) da la etiqueta. Si termina en `+dirty` no se puede instalar: se usa `latest` y el resumen avisa. La persona agregará etiquetas y Releases más adelante; con ellas la versión queda fija sin cambiar nada de esto.
-- **Afecta a:** paso 7.
+### D4. El binario renderiza con `text/template`; el binding vive en `config.yaml`
 
-### D5. La plantilla de GitHub se entrega con `beacon install --ci github`
+Sin agente en el renderizado, para que sea determinista e idempotente. Biblioteca estándar, sin dependencias nuevas. Los huecos son claves del binding; si una rule necesita más que sustitución y secciones opcionales, no es agnóstica.
 
-- **Decisión:** un flag escribe `.github/workflows/beacon.yml` como archivo gestionado (copia de seguridad y `--uninstall`). Sin el flag, `install` no toca nada de CI.
-- **Por qué:** cambiar el CI es intrusivo y se pide a propósito.
-- **Afecta a:** paso 7.
+### D5. `packs:` en `config.yaml` es de nivel 3 (decidido)
 
-### D6. `beacon init` reconoce Go, Bun, Node y Python
+Una rule no ejecuta nada, pero decide qué recibe el agente, y la sección cambia pocas veces. Para `config.yaml` solo existen el nivel 1 y el 3 (el 2 es para promesas y decisiones nuevas), así que la propuesta inicial de nivel 2 no aplicaba. La regla mecánica de `deltas` ya se amplió en la KB. Cuando una persona ejecuta `install` en una terminal, el comando es el sí y se sella a su nombre (`ledger`, Actor); sin terminal, un agente recibe el código 2 y pide el sí con `--approve`. Decidido el 2026-11-27.
 
-- **Decisión:** el arranque (`method`) es un comando, `beacon init`, con un escaneo mecánico del stack, los paquetes y el comando de test de **Go, Bun (el principal), Node y Python**. Sirve para **proponer los ejecutores** (`runners` de `config.yaml`, que son los comandos que corren los checks) y las carpetas candidatas a capability.
-- **Los ejecutores entran con el sí de siempre:** son de nivel 3 porque corren código en el CI. `init` crea `config.yaml` solo con `schema: 1` y muestra los propuestos; la persona los aprueba con `record --approve` de tipo `config` (Fase 2, D13).
-- **Afecta a:** pasos 8 y 9.
+### D6. `tailor` propone el binding; no escribe rules
 
-### D7. Qué escribe `init`
+El cambio a `packs:` entra por `beacon record` y espera el sí de la persona (el mismo camino que ya usa `config.yaml`). El agente nunca reescribe una rule.
 
-- **Decisión:** `config.yaml` con `schema: 1`; una `question` abierta para la meta; y una capability **sin promesas** por cada carpeta candidata (tope de 10; el resto se resume en una sola pregunta), cada una con su `question`. **Nada queda `active`.**
-- **Sin inventar:** el campo `intent` es obligatorio (`ledger`), así que `init` escribe un hecho verificable (`Code in <ruta>; its purpose is an open question.`) y deja la pregunta para la persona.
-- **Afecta a:** paso 9.
+### D7. Las señales nombran una skill solo si está instalada
 
-### D8. `snares ci` recalcula todo; `--scope touched` es opcional
+Mismo criterio que P7. El mensaje es una línea con el nombre; el texto de la skill no se inyecta. `doctor` comprueba que cada skill nombrada exista.
 
-- **Decisión:** `beacon snares ci` corre por defecto **todos** los checks (la fuente compartida de verdad, `pledge`). `--scope touched` limita a las capabilities tocadas por el PR, para suites lentas.
-- **Afecta a:** paso 6.
+### D8. Esqueleto y topes
 
-### D9. `record --file`
+- Skill: cuándo, pasos, compuerta, alarmas, cierre. Hasta 60 líneas. Descripción de unos 120 caracteres (cifra a medir).
+- Rule: el formato de las actuales. Hasta 40 líneas, con `domain` como única excepción documentada.
+- Una prueba comprueba los topes y la lista de excepciones.
 
-- **Decisión:** `beacon record --file <ruta>` lee el payload de un archivo. `record -` sigue igual. Pasar los dos o ninguno es un error de uso.
-- **Por qué:** en Windows el agente usa PowerShell, y una tubería hacia `beacon` no la cubre la regla de permiso `PowerShell(beacon *)`: lo comprobó el paso 10 de la Fase 3.
-- **Afecta a:** paso 1.
+### D9. Aceptación contra este repo
 
-### D10. Beacon se usa en su propio repo, al final
+Renderizar los packs con el binding de Beacon debe reproducir las seis rules actuales de `.claude/rules/`, salvo diferencias decididas y anotadas. Si alguna no encaja, esa se queda a mano. Decidido el 2026-11-27.
 
-- **Decisión:** el último paso de la fase corre `init` e `install` sobre este repo, con la meta y las capabilities reales (Spider, Weaver, Anchor, Snares y el router). Los síes los da la persona.
-- **Por qué:** es la primera prueba en un repo real, y D4 de la Fase 3 la pospuso hasta que el arranque existiera.
-- **Afecta a:** paso 11.
+### D10. Primero solo Claude Code
 
-### D11. `attest`: un comando que lista y atestigua
+La segunda ola de agentes (K11) trae sus propios formatos. `paths:` en rules es de Claude Code.
 
-- **Decisión:** `beacon attest` sin argumentos lista las promesas **manuales cuyo código cambió** desde la base (`pledge`), con una pregunta de sí o no por cada una, que el agente hace de una en una. `beacon attest <promesa>... [--evidence <ref>]` las atestigua. El sello usa las mismas reglas que `approved` (D13 de la Fase 3): `by` es la persona y `via` es el agente si el sí llega sin terminal. `attested` suma `via` (opcional) a `{by, at, commit, evidence}`.
-- **`commit`:** el commit `HEAD` del momento. Si hay cambios sin commitear en los `paths` de la promesa, la atestación queda con deriva, como cualquier resultado (`pledge`).
-- **Afecta a:** paso 2.
+### D11. Los packs se miden
 
-### D12. Cómo se calcula y se muestra el riesgo
+El benchmark de fricción suma la condición E (C más `core`). La ablación de una pieza se hace con `--skip`. Lo que no mejore una métrica se borra. El piloto no se ha corrido, así que hasta entonces los packs son una hipótesis.
 
-- **Decisión:** el riesgo es **alto** si hay un cambio de nivel 3 (incluye ejecutores, esquema y capturas base) o se toca una capability con promesas en rojo o con deriva; si no, **bajo** (`deltas`). `verify` lo calcula y `diff` lo muestra en una línea. El agente puede subirlo (`verify --risk high`), nunca bajarlo.
-- **Código de salida de `verify`:** 2 si algún check queda en rojo; con riesgo alto sin rojos sale 0 y el `hint` pide la revisión. La revisión nunca hace commit ni push.
-- **Afecta a:** paso 3.
+### D12. Un commit por paso, y los docs aparte
 
-### D13. En el CI los ejecutores son los de la base
+Se sigue `git-commit-policy`: un commit por fase de trabajo, archivos agrupados por concern, sin `git add -A`. Los documentos de los packs, la KB y el código van en commits separados.
 
-- **Decisión:** `snares ci` lee los `runners` de `config.yaml` de la **rama base** (`git show <base>:.beacon/config.yaml`). Solo usa los de la rama del PR si su `config.yaml` trae un `approved` fresco (la regla del sí fresco, Fase 2, D19). Si el PR cambia los ejecutores sin sello, las promesas que dependen de ellos **no se ejecutan** y el comando falla con código 2 y `runners_unapproved`.
-- **Por qué:** un PR no puede ejecutar ejecutores que él mismo introduce (`snares`).
-- **Afecta a:** paso 6.
+**Excepción de rama:** por preferencia de la persona (2026-11-27), todo el plan va en `feat/add-skills-and-rules`, aunque `git-branch-policy` prefiere ramas cortas. Es una excepción anotada, no un cambio de la política.
 
-### D14. Cómo verifica los síes el CI
+### D13. Los archivos instalados llevan LF y `.gitattributes`
 
-- **Decisión:** reutiliza los pendientes de sí de `diff` (Fase 2, D19) calculados contra la base del evento: en `pull_request`, el merge-base; en `merge_group`, la base que trae el propio evento, pasada con `--base`. Un pendiente sale con código 2 y el comentario lo lista. Es un marcado: la garantía real es la review (`deltas`).
-- **Afecta a:** paso 6.
+La huella de D18 ignora los saltos de línea, así que CRLF no cuenta como edición. Pero Claude Code podría no leer un encabezado con CRLF (sin confirmar) y la rule cargaría siempre. `install` agrega a `.gitattributes` las líneas `text eol=lf` de `.claude/rules/beacon-*` y `.claude/skills/beacon-*/**`, como ya hace con `.beacon/**`.
 
-### D15. El pre-commit compara con `HEAD` y corre solo lo relacionado
+### D14. Experiencia de desarrollo
 
-- **Decisión:** compara el árbol de trabajo con `HEAD` (lo que el commit está por sumar, sin importar qué se añadió al índice) y corre los checks de las capabilities tocadas respecto de la base (`check` sin argumentos), no todos. Un check en rojo, un nivel 3 sin sello o un registro inválido salen con código 2. Es un cálculo parecido al del CI, con menos alcance, para que el commit no tarde.
-- **Límite anotado:** comparar con el árbol de trabajo y no con el índice puede bloquear por un archivo que no se va a commitear; se acepta por simplicidad y se afina con el uso.
-- **Afecta a:** paso 4.
+Criterio de aceptación de K1, K2 y K7: cero preguntas por defecto, `--preview` antes de escribir, resumen final de lo instalado y de cómo quitarlo, actualizar volviendo a instalar sin pisar lo editado, y todo visible en `doctor`. El detalle está en `KETSET.md`, sección 8, y en `packs.md`.
 
-### D16. La guía suma `attest` y `--file`
+### D15. `install` crece sin romper lo existente
 
-- **Decisión:** el bloque de guía del método (`anchor`) cambia dos frases: la regla 4 recomienda `beacon record --file <ruta>` para textos largos, y la regla 7 pide, al terminar, preguntarle a la persona por las promesas manuales con `beacon attest`. Sigue por debajo de 30 líneas. El hook `Stop` sigue sin existir.
-- **Afecta a:** paso 10.
+`--pack <nombre>` es nuevo. `--skip` hoy acepta `hooks` y `reinject`; pasa a aceptar también el nombre de una pieza. Los comportamientos actuales de `install` no cambian. `--approve` es nuevo y solo se usa cuando un agente sin terminal cambia `packs:` (D5). `--skip <pieza>` se guarda en `packs.skip`; `hooks` y `reinject` siguen valiendo solo para esa ejecución.
 
-### D17. Los ejecutores de UI son documentación
+### D16. El modelo invoca 7 skills; `tailor` y `refute` solo la persona
 
-- **Decisión:** los ejemplos de `test-e2e` (Playwright) y `visual` (con su `baseline`) se documentan en la KB y en el `README` con Bun como ejemplo principal; `init` no los propone, porque no puede saber si el proyecto tiene UI ni dónde guarda sus capturas.
-- **Afecta a:** paso 10.
+El modelo puede invocar `elicit`, `ensure`, `locate`, `finish`, `digest`, `review` y `divide`. `tailor` y `refute` llevan `disable-model-invocation: true`: `tailor` cambia la configuración y `refute` lanza un revisor aparte que gasta tokens. Sus señales van dirigidas a la persona. Si el modelo intenta invocar una skill desactivada sin que la persona la nombre, Claude Code lo bloquea (documentación de Claude Code). Restringir no ahorra contexto: el listado usa hasta el 1% de la ventana, y nueve descripciones de unos 120 caracteres pesan poco. Los mensajes de las señales se redactan como hechos, no como órdenes.
 
-### D18. `init` no escribe la clave `agents`
+### D17. La forma de `packs:`
 
-- **Decisión:** con un solo agente soportado la clave no informa nada, y Anchor no toca `.beacon/`. Se retoma en la Fase 6, cuando haya más de un adaptador.
-- **Afecta a:** paso 9.
+```yaml
+packs:
+  enabled: [core, git]
+  skip: [refute]
+  stacks: [go]
+  language:
+    code: en
+    ui: es
+  commit:
+    min: 40
+    max: 50
+```
 
-### D19. `snares ci` entrega un comentario y un resumen
+- `install` escribe todo explícito la primera vez, para que dos clones obtengan las mismas rules. `stacks` es una lista (admite monorepos) con los nombres que ya detecta `init`: `go`, `bun`, `node` y `python`. `commit` es opcional y por defecto vale 40 y 50.
+- Al cargar se valida la forma: nombres en minúsculas, números positivos y `min` sin pasar de `max`. Un pack o una pieza que no existen fallan al instalar (`pack_unknown`, `piece_unknown`) y `doctor` los cruzará en K7; un stack desconocido no falla, solo no trae binding.
+- El orden canónico es `enabled`, `skip`, `stacks`, `language`, `commit`, con las listas en línea.
+- **Dónde toca el código (K2):** decodificar y validar en `source/spider/internal/driver/record/config.go`; el orden en `canonical.go` (`configKeys` y las listas en línea); y el nivel 3 en `source/weaver/internal/domain/deltas` (`configGuardedFields`, un `ReasonPacksChanged` nuevo y `configReasons`). El CI solo trata `runners_changed` aparte; un cambio de `packs:` debe pasar por `unapproved_change`.
 
-- **Decisión:** `--comment <ruta>` escribe el comentario en Markdown (el diff por nivel, los pendientes, los rojos y el riesgo); la plantilla lo publica con `gh pr comment` solo en `pull_request` y lo copia al resumen del job. El binario no habla con la API de GitHub.
-- **Afecta a:** pasos 6 y 7.
+### D18. La huella decide qué es de Beacon
+
+Cada archivo instalado lleva en el encabezado una línea `beacon: <huella>`: los primeros 16 caracteres del SHA-256 del contenido sin esa línea y con saltos LF. `install` actualiza un archivo si la huella coincide, y lo conserva si no coincide o si no la tiene. `--uninstall` borra solo los que coinciden. Se eligió sobre comparar con lo que se escribiría hoy porque una versión nueva de Beacon puede actualizar un archivo viejo que nadie tocó, y los archivos propios con el mismo nombre nunca se pisan.
 
 ## 3. Estructura objetivo
 
-Lo que **se agrega o cambia** en la Fase 4. Los números son el paso que crea cada parte, y los tests van junto a cada archivo.
-
 ```text
-beacon/
-├─ source/
-│  ├─ router/internal/handle/
-│  │  ├─ record.go                    # 1 · --file
-│  │  ├─ attest.go                    # 2
-│  │  ├─ verify.go                    # 3
-│  │  ├─ snares.go                    # 4 · pre-commit · 6 · ci
-│  │  ├─ install.go                   # 5 · --skip precommit · 7 · --ci github
-│  │  └─ init.go                      # 9
-│  │
-│  ├─ spider/
-│  │  ├─ attest.go                    # 2 · promesas manuales y escritura de `attested`
-│  │  ├─ base.go                      # 6 · los runners de una revisión
-│  │  ├─ scan.go                      # 8 · Scan
-│  │  ├─ init.go                      # 9 · Init
-│  │  └─ internal/
-│  │     ├─ action/
-│  │     │  ├─ attest.go              # 2
-│  │     │  └─ init.go                # 9
-│  │     └─ driver/
-│  │        ├─ record/                # 2 · Draft.Attest
-│  │        └─ scan/                  # 8 · Go, Bun, Node, Python
-│  │
-│  ├─ weaver/
-│  │  ├─ attest.go                    # 2
-│  │  ├─ verify.go                    # 3
-│  │  └─ internal/
-│  │     ├─ domain/deltas/
-│  │     │  └─ risk_policies.go       # 3 · RiskOf
-│  │     └─ action/
-│  │        ├─ attest.go              # 2
-│  │        └─ verify.go              # 3
-│  │
-│  ├─ snares/
-│  │  ├─ snares.go                    # 4 · fachada pública de la pieza
-│  │  ├─ views.go                     # 4
-│  │  └─ internal/action/
-│  │     ├─ precommit.go              # 4
-│  │     ├─ ci.go                     # 6
-│  │     └─ comment.go                # 6 · Markdown del PR
-│  │
-│  └─ anchor/internal/
-│     ├─ agents/git/                  # 5 · el hook de pre-commit en el directorio de git
-│     ├─ agents/github/               # 7 · .github/workflows/beacon.yml
-│     └─ assets/
-│        └─ beacon.yml                # 7 · plantilla
-│
-└─ testing/integration/
-   ├─ record_test.go                  # 1
-   ├─ attest_test.go                  # 2
-   ├─ verify_test.go                  # 3
-   ├─ precommit_test.go               # 4 y 5
-   ├─ ci_test.go                      # 6 y 7
-   └─ init_test.go                    # 8 y 9
+source/anchor/
+├─ internal/
+│  ├─ assets/
+│  │  └─ packs/
+│  │     └─ <pack>/
+│  │        ├─ rules/    # <nombre>.md o <nombre>.md.tmpl
+│  │        └─ skills/   # <nombre>/SKILL.md
+│  ├─ domain/blocks/      # la huella de los archivos gestionados (K1)
+│  ├─ driver/catalog/     # lee y renderiza los assets de los packs (K1)
+│  └─ action/             # plan y apply, junto a lo existente
+└─ ...
 ```
 
-### Dónde va cada tipo de código
+En K1 la huella vive en el contexto `blocks` y el catálogo en `driver/catalog`. El contexto de dominio `packs` (nombres, packs y binding validados sin leer archivos, `code-domain-layer`) llega con K2, cuando `packs:` necesita validarse; la lectura de `config.yaml` irá en `driver`, como en el resto de Anchor.
 
-| Si el código... | Va en |
+## 4. Pasos
+
+Cada paso deja el repositorio funcionando. El tamaño es relativo: S pequeño, M mediano, L grande.
+
+| Paso | Tamaño | Contenido | Verificación | Commit sugerido |
+|---|---|---|---|---|
+| **K0** | S | Aprobar `KETSET.md`, este plan y la KB, y resolver las preguntas que bloqueaban (hecho el 2026-11-27) | La persona dice sí (hecho) | `docs(packs): record packs proposal and its plan` |
+| **K1 (hecho)** | L | Mecánica de instalación de rules y skills en Anchor, solo Claude Code: plantilla, instalar, `--preview`, `--uninstall`, copia de seguridad, prefijo `beacon-`, `--pack`, `--skip <pieza>` y las líneas de `.gitattributes` (D13). Con una rule y una skill mínimas de prueba | Pruebas de `install` con archivos de referencia; idempotencia; desinstalar borra solo lo idéntico; D14 | `feat(anchor): install pack rules and skills` |
+| **K2 (hecho)** | M | Sección `packs:` con la forma de D17: decodificar y validar, orden canónico y nivel 3; detección de stack con el escaneo de `init`; el sello del sí desde una terminal y el código 2 sin ella, con `--approve` (D5) | Pruebas del esquema; `fmt` estable; un `packs:` inválido falla al cargar; un cambio sin sí se bloquea en `record` y se comprueba que el CI lo trate por `unapproved_change` | `feat(anchor): add pack config and stack scan` |
+| **K3 (hecho)** | M | Rules universales y paramétricas (`record` se hizo en K1): `pledge`, `frugal`, `locale`, `vendor`, `commit`, `branch`; `frugal` y `locale` con los `paths:` del binding, `commit` y `branch` sin ellos | La prueba de D9 sobre las rules que ya existen; la prueba de nombres y topes (D2, D8); una prueba renderiza cada rule y comprueba que su encabezado se lee (si no, carga siempre) | `feat(anchor): add core and git pack rules` |
+| **K4 (hecho)** | M | Skills `elicit`, `ensure`, `finish`: las que ya tienen comandos que las respaldan; `elicit` se escribe desde cero. Antes, un spike en el proyecto de pruebas: ¿un hook que nombra una skill hace que el modelo la invoque?, y ¿una skill con `disable-model-invocation` conserva su descripción en `/context`? | Una sesión real en el proyecto de pruebas por skill | `feat(anchor): add elicit ensure finish skills` |
+| **K5 (hecho)** | M | Skills `locate`, `digest`, `tailor`; `digest` se escribe desde cero | Ídem; `tailor` produce un cambio de `config.yaml` que pasa por `record` | `feat(anchor): add locate digest tailor skills` |
+| **K6 (hecho)** | M | Skills `review`, `refute`, `divide` | Ídem | `feat(anchor): add review refute divide skills` |
+| **K7** | M | Solo si el spike de K4 funciona (si no, los mensajes piden a la persona que ejecute el comando): señales que apuntan a skills en `brief`, `check` y `context`, y la comprobación en `doctor` (avisos de piezas editadas, rules omitidas y skills no instaladas) | Una prueba por mensaje: nombra una skill solo si está instalada (D7) | `feat(weaver): point signals to pack skills` |
+| **K8** | L | Rules ligadas al stack: `format`, `errors`, `secure`, `domain`; binding de Go; revisar la excepción de tamaño de `domain` | Renderizado contra `golang-style` y `domain-layer` (D9) | `feat(anchor): add go stack-bound pack rules` |
+| **K9** | M | Condición E del benchmark, ablación con `--skip` y primera medición | Resultado del piloto; si no mejora, se recorta | `test(benchmark): add pack condition to harness` |
+| **K10** | L | Rules compiladas en comprobaciones: `commit-msg`, nombre de rama, linter de largo de línea, import del dominio | Cada una con su promesa y su ejecutor | `feat(snares): compile pack rules into checks` |
+| **K11** | L | Segunda ola: Cursor, Codex y el resto, con su formato de reglas. Un commit por agente | Por agente, según su documentación | `feat(anchor): add pack support for cursor` |
+| **K12** | S | Cierre: pasar a la KB lo que cambió al construir, revisar `packs.md`, `anchor.md`, `weaver.md` y `status.md`, actualizar el README, y retirar `KETSET.md` | La KB no cita nada inexistente; `KETSET.md` ya no tiene hechos que `packs.md` no tenga | `docs(kb): close the packs phase` |
+
+### Dependencias
+
+- K1 antes de todo. K2 antes de K3, que necesita los huecos.
+- K4 a K6 se pueden hacer en cualquier orden después de K1; K4 primero porque depende de comandos ya existentes.
+- K7 necesita las skills de K4 a K6 instaladas para poder nombrarlas.
+- K9 necesita al menos K4, K5 y K6. K10 y K11 son independientes entre sí.
+- K12 es el último y depende de que lo construido esté estable.
+
+### Lo que K1 a K6 dejaron y sus límites
+
+K1 se hizo el 2026-11-27 (commit `5a2a167`), K2 el mismo día (commit `dc66f2e`), y K3 a K6 también, con las pruebas unitarias y de integración y `golangci-lint` en verde. Los atajos tienen un límite conocido y un paso para dejarlos:
+
+- **Resueltos en K2:** `--skip <pieza>` ahora se guarda en `packs.skip` y retira lo ya instalado (la conciliación); `enabled` hace explícito qué packs hay; el binding sale de `config.yaml`.
+- **Resuelto en K3:** `stacks` ya se lee. El catálogo traduce cada stack a rutas (`Binding.Code`, `Tests`, `Manifests`) y las rules `frugal`, `locale` (código), `pledge` (pruebas) y `vendor` (manifiestos) cargan solo al tocar esos archivos; sin stack conocido cargan siempre. `commit` y `branch` no llevan `paths:`.
+- **Las rutas por stack viven en una tabla del catálogo** (`go`, `bun`, `node`, `python`), no en `config.yaml`. Se mueve a la config si alguien necesita otras rutas.
+- **El `deny` de `git push` y `git pull` llegó con la revisión posterior a K4:** el pack `git` lo añade a `.claude/settings.json` (Bash y PowerShell) y `--uninstall` lo quita. Límite: si se quita el pack `git` de `packs:` el `deny` se queda, porque la conciliación solo retira archivos; se quita a mano o con `--uninstall`.
+- **D9 (aceptación contra este repo) se cumple a medias:** las rules de los packs son versiones condensadas a 40 líneas o menos, no copias; `code-change-size` se redujo (quita el cierre largo y los no-objetivos) y `branch` omite la variante `phase-<n>`. La comparación línea a línea se cierra en K8 con `golang-style` y `domain-layer`.
+- **Los packs y los skips solo crecen con las flags.** Quitar uno se hace editando `packs:` con `beacon record` (nivel 3); el siguiente `install` concilia.
+- **`doctor` no cruza aún los nombres de `packs:` con los packs que existen.** Llega con K7.
+- **`language.ui` y `commit` no los escribe `install`.** Los añade `tailor` (hecho en K5) o la persona.
+- **Sin proyecto Beacon, mandan las flags** y no se guarda nada (el modo de K1: `core` por defecto).
+- **Cambio de comportamiento:** la primera instalación en un proyecto Beacon, ejecutada por un agente sin terminal, sale con código 2 hasta recibir `--approve`. Es D5; dos pruebas de integración existentes pasan ahora `--approve`.
+- **Resuelto en K4:** al quitar el `SKILL.md` de una skill se borra su carpeta si queda vacía (solo bajo `skills/`).
+- **La prueba de choque con los comandos de Beacon** (D2) es de integración y lee la lista de comandos del binario real, así que no se desactualiza.
+- **Spike de K4 (una corrida por caso, `claude -p` en un proyecto de prueba con `core` instalado):** las tres skills se listan con su sello en el encabezado. Con un hook `UserPromptSubmit` cuyo `additionalContext` dice que la skill `beacon-elicit` atiende el caso, el modelo abrió su `SKILL.md` (con `Read`, no con la herramienta `Skill`); sin el hook no lo abrió. Es una señal de que el texto empuja, no una prueba. K5 lo midió con `tailor` (ver abajo).
+- **Spike de K5 (una corrida por caso):** `beacon-tailor`, con `disable-model-invocation`, no aparece en el listado del modelo y sí responde a `/beacon-tailor`; las demás skills sí aparecen. K6 lo repitió con `refute` (mismo resultado; el listado muestra las otras siete). El flujo de `tailor` se comprobó a mano: `beacon record --file` con `{"type":"config",...}` sale con código 2 (`packs_changed`), con `--approve` guarda, y `beacon install` vuelve a renderizar la rule `locale` con el idioma nuevo.
+- **`tailor`, `refute` y las demás skills no se probaron dentro de una sesión completa con una persona.** De `refute` solo se comprobó que se invoca, y su paso del subagente de contexto limpio no se ejercitó. Las demás skills tampoco se probaron en una sesión de trabajo completa: solo que se listan y que la señal las abre. El benchmark (K9) decide si se quedan.
+- **Rules por `paths:`, comprobado en una sesión real (`claude -p`, una corrida por caso):** al empezar solo cargaron `commit` y `branch`; tras leer un `.go` cargaron además `frugal` y `locale`, y `pledge` y `vendor` siguieron fuera. Un encabezado vacío (`---` y `---`) es válido.
+- **CRLF (corregido tras K4):** con `autocrlf`, un clon en Windows dejaba las plantillas con CRLF y las rules instaladas heredaban el CRLF que D13 quería evitar. Ahora el catálogo normaliza a LF al renderizar y `.gitattributes` fija LF para los packs.
+- **La prueba de topes no tiene excepciones.** `domain` entra con la suya en K8.
+
+### Cómo se escribe cada skill y cada rule
+
+1. Se parte del esqueleto de D8 y del origen indicado en `KETSET.md`.
+2. Se escribe el texto en inglés, sin copiar el de las fuentes.
+3. Se comprueba contra los topes y la prueba de nombres.
+4. Las skills se prueban en una sesión real; lo observado se anota en el commit.
+
+## 5. Riesgos
+
+| Riesgo | Qué hacer |
 |---|---|
-| Calcula el riesgo o el nivel de un cambio | `weaver/internal/domain/deltas` |
-| Escribe `attested` en un registro | Spider (`driver/record`, `action/attest.go`) |
-| Decide si un commit o un PR pasa | `snares/internal/action` |
-| Lee la estructura del repo para el arranque | `spider/internal/driver/scan` |
-| Escribe un archivo de git o de CI | Anchor (`agents/git`, `agents/github`) |
-| Arma el Markdown del comentario | `snares/internal/action/comment.go` |
+| **K1 es más grande de lo previsto** | Se corta en dos commits: plantilla y packs, luego instalación y desinstalación. No se avanza a K3 sin K1 idempotente. |
+| El renderizado se convierte en un lenguaje | D4: solo sustitución y secciones opcionales. Más que eso manda la rule al nivel 3 de adaptación. |
+| Las rules actuales no se reproducen | Se ajusta la plantilla o se deja la rule fuera de los packs. No se fuerza. |
+| Skills de baja calidad | Cada una se prueba en una sesión real antes de su commit; el benchmark decide si se queda. |
+| Saturar al agente | Topes, `paths:` y la condición E. |
+| Medir sin línea base | El piloto no se ha corrido. K9 espera a que se corra o lo corre junto con la Fase 6. |
+| Un hook no logra que el modelo invoque la skill | Spike en K4; si no funciona, K7 pide a la persona que ejecute el comando. |
+| Un `paths:` mal escrito vuelve la rule permanente | Una prueba renderiza cada rule y comprueba su encabezado (K3). |
+| Cambiar `--skip` rompe a quien lo usa | D15: lo existente no cambia; solo se añade. Una prueba lo cubre. |
+| Agentes cambiantes | K11 verifica cada agente contra su documentación, como ya exige `anchor.md`. |
+| La KB y este plan se desincronizan | K12 revisa todo; mientras tanto, cada paso que cambie una decisión actualiza `packs.md` en el mismo commit. |
 
-### Quién puede importar a quién
+## 6. Preguntas que bloquean pasos
 
-```text
-cmd/beacon → router → snares.go → action → weaver.go → spider.go
-                │                  
-                ├──→ weaver.go     (attest, verify, record)
-                ├──→ spider.go     (init)
-                └──→ anchor.go     (install)
-```
+No queda ninguna pregunta abierta. Quedan dos verificaciones al construir, ambas en el spike de K4: si un hook puede hacer que el modelo invoque una skill por su nombre, y si una skill desactivada conserva su descripción en el contexto.
 
-`snares` solo importa `weaver` y `spider` por sus paquetes raíz. `anchor` no importa ninguno de los dos.
+Resueltas el 2026-11-27: el nivel de `packs:` (3), los tres packs, la fase (4b), el sello del sí de `install` (ejecutarlo en una terminal es el sí), las skills `elicit` y `digest` (se escriben desde cero y la persona las ajusta si encuentra las de Delta), las rules de este repo como salida de los packs (D9), trabajar todo en una sola rama, la invocación de skills (D16) y la forma de `packs:` (D17).
 
-## 4. Bloque 1: atestar y verificar
+## 7. Hitos
 
-**Rama:** `feat/weaver-attest`, desde `main` actualizado (en la práctica, desde la rama del plan, que aún no estaba fusionada). **Forma de trabajo:** primero el test que falla, luego el código mínimo, y al final `go test -count=1 ./...` en verde (los tests de integración se corren sin caché).
+| Hito | Se alcanza cuando | Pasos |
+|---|---|---|
+| **Instala** | `beacon install --pack core --preview` y su desinstalación funcionan en Claude Code (alcanzado el 2026-11-27) | K1 y K2 |
+| **Rules** | Las rules de este repo se reproducen desde los packs | K3 y K8 |
+| **Skills** | Las nueve skills probadas en sesiones reales | K4 a K6 (escritas; faltan las sesiones reales) |
+| **Guía** | Las señales nombran la skill que resuelve | K7 |
+| **Medido** | El benchmark compara los packs con y sin ellos | K9 |
+| **Cerrado** | La KB y el README al día, `KETSET.md` retirado | K12 |
 
-### Paso 1. `record --file` (hecho)
+## 8. Fuera de esta rama
 
-- **Objetivo:** que el agente pase el payload sin tubería (D9).
-- **Construye:** el flag `--file` en `handle/record.go`. Lee el archivo con la ruta relativa al directorio actual; `-` y `--file` a la vez, o ninguno, dan `record_source_invalid`, con un `hint` que dice cuál usar.
-- **Hecho cuando:** `record --file` hace lo mismo que `record -` con el mismo payload (incluido `--approve`), un archivo que no existe falla con un error claro, y el e2e cubre los tres casos.
-- **Cómo quedó:** `record [-]` acepta un argumento opcional. Pasar `-` y `--file` a la vez, o ninguno, da `record_source_invalid` (código 1), y un archivo ilegible da `record_file_unreadable` con la ruta en `details`. El flujo de después es el mismo: `--approve` y los niveles funcionan igual con un archivo. La guía del método se actualiza en el paso 10.
-
-### Paso 2. `attest` (hecho)
-
-- **Objetivo:** que una promesa manual pueda llegar a `Attested` y volver a la deriva cuando cambia su código (D11).
-- **Construye:**
-  - En Spider, `ManualPromises(ctx, base)` (las manuales de las capabilities tocadas desde la base y sin atestación vigente) y `Attest(ctx, promesa, sello, commit, evidencia)`, que escribe `attested` con el mismo flujo de `Draft` que `record` (fusión sobre el archivo, escritura atómica, candado).
-  - En Weaver, `Attester`: sin ids devuelve la lista; con ids atestigua, con el sello de `Whoami` (persona o agente) y el `HEAD` del momento.
-  - El handler `beacon attest` y el sufijo `via` en `attested` (`ledger`).
-- **Cuidado:** solo se atestiguan promesas **manuales**; una promesa automática falla con `attest_not_manual` y un `hint` que manda a `beacon check`. Una atestación **no es un cambio de nivel 3** (no debilita nada).
-- **Hecho cuando:** una promesa manual tocada aparece en la lista; al atestiguarla pasa a `Attested` con su evidencia; editar un archivo de sus `paths` la vuelve a mostrar con deriva; y la persona y el agente quedan en `by` y `via`.
-- **Cómo quedó:**
-  - **Dominio:** `PromiseAttestation` suma `via` (opcional, siempre un agente) y el lector y el formateador de `attested` lo conocen: el orden canónico es `by`, `at`, `via`, `commit`, `evidence`.
-  - **Spider:** `ManualPromises(revisión)` lista las promesas manuales y `active` de las capabilities tocadas que no están atestiguadas o tienen deriva, y `Attest` escribe `attested` con el mismo `Draft` y el mismo candado que `record`. `Project.Head` da el commit corto.
-  - **Una atestación exige código commiteado:** si los `paths` de la capability tienen cambios sin commitear, `Attest` falla con `attest_uncommitted`. Esto **corrige a D11**, que decía que la atestación quedaba con deriva: un resultado de check guarda la huella de lo no commiteado, pero una atestación solo guarda un commit, y atestiguar antes de commitear habría dejado la promesa con deriva para siempre. El orden es: la persona commitea, y entonces se atestigua.
-  - **Weaver:** `Attester` usa el sello de siempre (`StampApproval`): `by` es la persona y `via` el agente cuando el sí llega sin terminal. `beacon attest` sin ids lista y deja un `hint` que le dice al agente que pregunte de una en una.
-  - **Errores:** `attest_not_manual` (promesa automática), `attest_uncommitted` y `record_missing`, cada uno con su `hint`.
-
-### Paso 3. Riesgo y `verify` (hecho)
-
-- **Objetivo:** que el riesgo lo calcule el código y que la revisión independiente tenga qué leer (D2, D12).
-- **Construye:**
-  - `deltas.RiskOf` (dominio): alto si hay un hallazgo de nivel 3 o una capability tocada con promesas en rojo o con deriva; devuelve también las razones.
-  - `action/verify.go`: reutiliza `Checker` para los checks relacionados, calcula el riesgo, y con riesgo alto arma el paquete: por promesa tocada su texto y su estado, el diff por nivel y las instrucciones para el revisor (solo promesas y diff, nunca commit ni push).
-  - `beacon verify [--risk high] [--base <ref>]`, y una línea de riesgo en `beacon diff`.
-- **Hecho cuando:** un cambio de nivel 3 da riesgo alto con su razón; uno de mantenimiento, bajo; `--risk high` sube y nunca baja; un check en rojo sale con código 2; y el paquete lista cada promesa tocada.
-- **Cómo quedó:**
-  - **Dominio:** `deltas.AssessRisk(hallazgos, zonas, subido)` devuelve `low` o `high` y sus razones, sin repetirlas: `weakening_change`, `red_promise`, `drifted_promise` y `raised_on_request`. Una zona es una capability tocada con alguna promesa `violated` o con deriva (las manuales atestiguadas incluidas).
-  - **`diff`** calcula el riesgo con las zonas del estado actual y lo muestra en la primera línea (`risk: high (weakening_change)`) y en `data.risk`.
-  - **`verify`** corre primero los checks relacionados y después calcula el riesgo, para que una promesa que acaba de arreglarse no cuente como roja. Con riesgo alto, `data.review` trae las promesas tocadas (las comprobadas y las manuales pendientes) con su texto y su estado, el diff clasificado y cuatro reglas para el revisor. El `hint` pide la revisión; con un rojo, el `hint` es el de `check` y el código es 2.
-  - **Cambio necesario:** `TouchedCapabilities` solo aceptaba un commit en hexadecimal, y `diff --since HEAD~1` se rompió al necesitarlo. Ahora resuelve cualquier nombre con `rev-parse` y rechaza lo que parezca una opción.
-  - **Los textos de las promesas** llegan a `check` por `Analysis` (`PromiseState.Text`), sin duplicar la lectura.
-
-## 5. Bloque 2: Snares
-
-**Rama:** `feat/snares-ci`, desde `main` con el Bloque 1 fusionado.
-
-### Paso 4. La pieza Snares y `snares pre-commit` (hecho)
-
-- **Objetivo:** que un commit que debilita lo prometido se bloquee sin depender del agente (D3, D15).
-- **Construye:** `source/snares` con su fachada (`snares.go`, `views.go`) y `action/precommit.go`, que llama a `Spider.Doctor`, a los pendientes de sí de Weaver contra `HEAD` y a `Check` de las capabilities tocadas. Sale con 0, o con 2 y un `hint` por cada bloqueo. Añade el grupo `beacon snares` al router.
-- **Hecho cuando:** en un repo temporal, un nivel 3 sin sello, un check en rojo y un registro inválido salen cada uno con código 2 y su `hint`; la deriva solo avisa; y un commit sin nada de eso sale con 0.
-- **Cómo quedó:**
-  - `snares.New(project)` junta `Spider.Doctor` y `Weaver` (`Diff` desde `HEAD`, `Check` de lo tocado) detrás de una interfaz `Ports`, y la acción devuelve bloqueos (`invalid_state`, `unapproved_change`, `failed_check`) con su `hint`; el router los junta y sale con 2.
-  - **Sin commits todavía:** si no hay `HEAD`, solo valida el estado y avisa. **Sin rama base:** salta los checks y avisa. Un ejecutor que no arranca avisa y no bloquea.
-
-### Paso 5. Instalar el pre-commit (hecho)
-
-- **Objetivo:** que `install` deje el hook funcionando (D3).
-- **Construye:** el agente `git` de Anchor, que contribuye un bloque gestionado al hook de pre-commit (`#!/bin/sh` si el archivo es nuevo; `beacon snares pre-commit || exit $?`). La ruta sale de `git rev-parse --git-path hooks/pre-commit`, que respeta `core.hooksPath`; el archivo queda ejecutable; el `FileStore` sabe escribir dentro de la carpeta de git. Suma `--skip precommit`, y `.beacon/** text eol=lf linguist-generated` en el bloque de `.gitattributes` (`snares`).
-- **Cuidado:** si el hook ya existe y termina con `exit 0`, el bloque se agrega antes de esa línea; si `core.hooksPath` apunta a una carpeta versionada del repo (husky), el resumen avisa de que se edita un archivo del proyecto.
-- **Hecho cuando:** `install` crea el hook ejecutable, un `git commit` real se bloquea con un nivel 3 sin sello y pasa con `--no-verify`, repetir `install` no cambia nada y `--uninstall` deja el hook como estaba.
-- **Cómo quedó:**
-  - `agents/git` entrega un bloque con `#!/bin/sh` como preámbulo del archivo nuevo; `Planner` suma `Git` (con `--skip precommit` se omite) y `CI`. En la desinstalación, un hook que queda solo con el preámbulo se borra.
-  - `blocks.Upsert` inserta el bloque antes de un `exit 0` final, y quitarlo devuelve el archivo igual que estaba. `files.Repo` conoce la ruta del hook (`git rev-parse --git-path`, que respeta `core.hooksPath`), la acepta aunque quede fuera del repo y le pone modo 0755.
-  - Si el hook es un archivo del proyecto (husky), el resumen avisa. `.gitattributes` suma `linguist-generated`.
-
-### Paso 6. Ejecutores de la base y `snares ci` (hecho)
-
-- **Objetivo:** que el CI sea la garantía (D8, D13, D14, D19).
-- **Construye:**
-  - En Spider, `RunnersAt(ctx, rev)`, que lee los `runners` de `config.yaml` en una revisión; y en Weaver, un `Check` que acepta los ejecutores de otra fuente.
-  - `action/ci.go`: elige los ejecutores (D13), recalcula los checks (`--all` por defecto, `--scope touched`), verifica los pendientes de sí contra la base, calcula el riesgo y falla con 2 si hay un rojo, un nivel 3 sin sello o ejecutores sin aprobar.
-  - `action/comment.go` y `--comment <ruta>`: el Markdown con el diff por nivel.
-  - `beacon snares ci [--base <ref>] [--scope all|touched] [--comment <ruta>]`.
-- **Hecho cuando:** en un repo temporal con una rama que cambia los ejecutores sin sello, las promesas que dependen de ellos no se ejecutan y sale con 2; con el sello, se usan los de la rama; un nivel 3 sin sello sale con 2; un PR limpio sale con 0; y el comentario lista lo que debe leer el revisor.
-- **Cómo quedó:**
-  - `Project.RunnersAt` lee `config.yaml` en una revisión (vacío si no existía) y `CheckInput.RunnersAt` hace que el `Checker` use esos ejecutores y **omita** las promesas cuyo ejecutor no existe ahí (`skipped`), en vez de fallar con `runner_missing`.
-  - `snares ci` calcula primero el diff contra la base. Si hay un cambio `runners_changed` sin sello, corre con los ejecutores de la base y bloquea con `runners_unapproved`; si lo tiene, usa los de la rama. Los demás pendientes salen como `unapproved_change`.
-  - `--base` vacío cae a `origin/HEAD`, `main`, `master`, `origin/main` y `origin/master`. `--comment` escribe el Markdown (riesgo, bloqueos, omitidas, avisos y cambios por nivel).
-
-### Paso 7. La plantilla de GitHub Actions (hecho)
-
-- **Objetivo:** que un proyecto tenga el CI con una línea (D4, D5).
-- **Verificado el 2026-11-27** en la documentación de GitHub (se anota en `snares`):
-  - **Confirmado:** el evento se llama `merge_group`, su único tipo es `checks_requested`, corre "cuando un pull request se agrega a una cola de fusión", `GITHUB_SHA` es el SHA del grupo y el workflow **debe** incluir `merge_group` como disparador para que los checks requeridos reporten. El evento es distinto de `pull_request` y `push`. `actions/checkout` trae por omisión un solo commit del SHA que disparó el workflow, y `fetch-depth: 0` trae todo el historial.
-  - **Para `gh pr comment`:** `--body-file <archivo>` lee el cuerpo de un archivo, el token va en `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`, y al declarar `permissions` lo no declarado queda en `none`, así que hacen falta `contents: read` y `pull-requests: write`. El resumen del job se escribe en `$GITHUB_STEP_SUMMARY` (tope de 1 MiB por paso). En un PR desde un fork el token es de solo lectura, así que el comentario falla ahí: la plantilla lo publica solo si el PR es del mismo repositorio.
-  - **Sin confirmar:** los campos del payload de `merge_group` (`base_sha`, `base_ref`, `head_sha`) **no aparecen en las páginas leídas**, ni el formato de `GITHUB_REF`. La plantilla usa `github.event.merge_group.base_sha` para `--base` y, mientras no se confirme, `snares ci` cae a `git merge-base HEAD origin/<rama base>` cuando `--base` llega vacío. Queda como riesgo hasta que corra en una cola real.
-  - **Versiones:** el README de `actions/checkout` y de `actions/setup-go` muestra `@v7` como la actual (no se consultó la página de releases); se vuelve a mirar al escribir el archivo.
-- **Construye:** `agents/github` de Anchor y `assets/beacon.yml`: `pull_request` y `merge_group`, `actions/checkout` con `fetch-depth: 0`, la instalación de `beacon` (D4), `beacon snares ci --base ... --comment ...`, y la publicación del comentario con `gh pr comment` solo en `pull_request`. Suma `install --ci github`.
-- **Hecho cuando:** `install --ci github` crea el archivo, repetirlo no cambia nada, `--uninstall` lo quita, el YAML tiene la forma que GitHub espera (se valida con un lector YAML en el test) y la verificación queda escrita en `snares`.
-- **No se puede probar aquí:** que el workflow corra de verdad en GitHub. Se prueba el comando que llama y la forma del archivo.
-- **Cómo quedó:**
-  - `actions/checkout` y `actions/setup-go` siguen en `@v7` (v7.0.1 y v7.1.0, consultado el 2026-11-27 en la API pública de releases).
-  - El archivo entero es un bloque gestionado (`# BEGIN BEACON` ... `# END BEACON`) con `{{version}}`, que `install` llena con `runtime/debug`; sin versión usable (`(devel)` o `+dirty`) pone `latest` y el resumen avisa.
-  - `--base` es `origin/<base_ref>` en `pull_request` y `merge_group.base_sha` en la cola; si llega vacío, no se pasa. El comentario se publica solo si el PR es del mismo repositorio. `--ci` solo acepta `github`.
-
-## 6. Bloque 3: arranque
-
-**Rama:** `feat/spider-init`, desde `main` con el Bloque 2 fusionado.
-
-### Paso 8. El escaneo mecánico (hecho)
-
-- **Objetivo:** saber qué hay en un repo sin inventar nada (D6).
-- **Verificado el 2026-11-27** con Bun 1.3.14 y Python 3.14 en esta máquina (se anota en `method`):
-  - **Bun:** `bun test <ruta> -t "<nombre>"` filtra por archivo y por nombre desde la raíz, `bun test --cwd <paquete>` corre un paquete de un workspace, y un test que falla sale con código 1. Ejecutor propuesto: `test-bun: [bun, test, --cwd, "{pkg}", "{target}"]`, con `{target}` como ruta de archivo relativa al paquete.
-  - **Python:** `python -m pytest <archivo>::<test>` elige un test y `-k` filtra por nombre; un fallo sale con 1. Ejecutor propuesto: `test-python: [python, -m, pytest, "{target}"]`. `pytest` no está instalado en esta máquina: la prueba se hizo con `uv run --with pytest`, y el ejecutor da `runner_unavailable` si falta.
-  - **Go:** `[go, test, "{pkg}", -run, "{target}"]` (ya en uso). **Node:** `[pnpm, --filter, "{pkg}", test, --, "{target}"]` (el ejemplo de la KB); npm y yarn llevan su propia variante.
-- **Construye:** `driver/scan` y `Scan` en Spider: detecta Go (`go.mod`), Bun (`bun.lock`, `bunfig.toml`, `package.json`), Node (`pnpm-lock.yaml`, `yarn.lock`, `package-lock.json`) y Python (`pyproject.toml`, `requirements.txt`); los paquetes de un monorepo (workspaces o módulos); el comando de test de cada uno como **ejecutor propuesto**; y las carpetas candidatas a capability, por tamaño.
-- **Cuidado:** solo lee; no escribe nada. Ignora `node_modules`, `.git`, `vendor`, `dist` y las carpetas ocultas.
-- **Hecho cuando:** en repos temporales de cada ecosistema, el escaneo devuelve el stack, los ejecutores y los candidatos esperados; un repo sin ninguno devuelve la lista vacía con un `hint`; y un monorepo mixto detecta los dos stacks.
-- **Cómo quedó:**
-  - `spider.Scan(carpeta)` devuelve stacks, paquetes, ejecutores propuestos y carpetas candidatas. Mira hasta 3 niveles, ignora `node_modules`, `vendor`, `dist`, `build`, `target`, `__pycache__` y las carpetas ocultas, y solo lee.
-  - **Qué marca cada stack:** `go.mod` (Go); `bun.lock`, `bun.lockb` o `bunfig.toml` (Bun); `pnpm-lock.yaml`, `yarn.lock` o `package-lock.json` (Node, y el ejecutor sale de ese gestor); `pyproject.toml` o `requirements.txt` (Python). Un `package.json` sin ningún lockfile cuenta como Bun, pero solo en la raíz.
-  - **Paquetes y candidatas:** los paquetes de un workspace salen de `package.json` o `pnpm-workspace.yaml` (globs de un nivel, con `package.json`). Las candidatas son los workspaces o, si no hay, las carpetas de primer nivel; `src`, `source`, `internal`, `pkg`, `packages`, `apps`, `lib`, `services`, `modules` y `cmd` se abren un nivel. Se ordenan por archivos de código y se omiten `docs`, `test`, `tests`, `testing`, `scripts`, `assets`, `public`, `examples` y `fixtures`.
-
-### Paso 9. `beacon init` (hecho)
-
-- **Objetivo:** dejar el repo listo para preguntar, con valor desde la primera sesión (D6, D7, D18).
-- **Construye:** `Init` en Spider y `beacon init [--preview]`: escribe `config.yaml` con `schema: 1`, la `question` de la meta, y una capability sin promesas con su `question` por candidato (tope de 10 y una pregunta resumen del resto); muestra los ejecutores propuestos y el comando para aprobarlos (`record --approve` de tipo `config`); falla con `project_exists` si ya hay `.beacon/`.
-- **Cuidado:** `init` no instala nada de agentes (`install`) y no escribe `agents`. Los registros usan el actor de siempre (Fase 3, D13).
-- **Hecho cuando:** `init` en un repo temporal deja `doctor` en verde, el `brief` ya muestra las preguntas abiertas, los ejecutores propuestos entran con `record --approve`, y `--preview` no cambia ningún byte.
-- **Cómo quedó:**
-  - `spider.Init(contexto, carpeta, preview, autor)` falla con `project_exists` si ya hay `.beacon/`, escribe `config.yaml` (`schema: 1`) y crea los registros con `Prepare` y `Save`, igual que `record`. El autor sale de `Weaver.Author`, que usa la misma identidad que `record`. Si algo falla a medio camino, borra el `.beacon/` que acababa de crear.
-  - **Qué escribe:** una `question` de la meta, y por candidata (tope de 10) una capability con `paths: [<carpeta>/**]`, `promises: []` y su `question`; el resto de carpetas va en una sola pregunta. La capability exige `promises` (aunque sea vacía), y `intent` es `Code in <carpeta>; its purpose is an open question.`
-  - **Los ejecutores propuestos** salen en `data.proposal`, ya como payload de `config`, para pasarlo a `record --approve --file`. Sin ningún stack, `init` lo dice en el `hint` y no propone nada.
-  - **Cambio necesario:** `brief` solo mostraba una pregunta si bloqueaba algo, así que las de `init` no aparecían. Ahora lista cada pregunta abierta que no bloquee nada (`Open question <id>: <texto>`, sección `question`), después de los chequeos y antes de las guides.
-
-### Paso 10. Guía y ejemplos de UI (hecho)
-
-- **Objetivo:** que el agente conozca lo nuevo y que la UI tenga ejemplos (D16, D17).
-- **Construye:** el bloque de guía con las dos frases de D16 (y su test de tamaño); los ejecutores de ejemplo `test-e2e` y `visual` con su `baseline`, con Bun como principal, en `ledger` y en el `README`; y la regla de qué cuenta como `observed` y qué pide `attest`, en `pledge`.
-- **Hecho cuando:** el bloque sigue por debajo de 30 líneas, un `install` sobre un repo ya instalado solo reemplaza el bloque de guía, y la KB no contradice los comandos nuevos.
-- **Cómo quedó:** la regla 4 recomienda `record --file <ruta>` y la regla 7 pide preguntar por las promesas manuales con `beacon attest` (15 líneas, con un test que exige menos de 30). Los ejemplos `test-e2e` y `visual` con Bun están en `ledger` y en el `README`, y `pledge` dice qué cuenta como `observed` y qué pide `attest`. La copia de la guía en `anchor.md` quedó igual que el asset. El resto de la KB (`weaver`, `status`, `method`) se sincroniza en el paso 12.
-
-## 7. Bloque 4: uso propio y cierre
-
-**Rama:** `feat/snares-adopt` para el paso 11 (los archivos de este repo y sus registros) y `docs/close-phase-4` para el paso 12.
-
-### Paso 11. Beacon en Beacon
-
-- **Objetivo:** el primer uso en serio, en un repo real (D10).
-- **Pasos:** `beacon init` en este repo; revisar los candidatos (Spider, Weaver, Anchor, Snares, router y el kernel) y las preguntas; **la persona responde la meta y aprueba los ejecutores** (`go test`); `beacon install --ci github`; escribir las primeras promesas reales con `record` (entran `proposed`).
-- **Cuidado:** los síes los da la persona desde su terminal. El agente no los fabrica, igual que en el paso 10 de la Fase 3. Este repo ya tiene `.claude/settings.json` y reglas propias: `install` fusiona, no pisa.
-- **Hecho cuando:** `beacon doctor` y `beacon check --all` pasan en este repo, el `brief` muestra la meta real, el pre-commit bloquea un nivel 3 de prueba, y la fricción que aparezca queda anotada en `status`.
-
-### Paso 12. Medición y KB
-
-- **Medir:** cuánto tarda `snares pre-commit` y `snares ci` con 500 capabilities y 5.000 promesas (el mismo repo sintético de las fases 2 y 3), y `init` sobre un repo grande. Se anota en `layout`, junto a las mediciones anteriores.
-- **Sincronizar:** `status` marca la Fase 4 como cerrada y suma las decisiones; `snares` queda con lo verificado de `merge_group`; `weaver` suma `attest`, `verify`, `init`, `snares` y `--file`; `method` con lo verificado de Bun y Python; `pledge` y `ledger` con `attested.via`; `anchor` con el hook de git y la plantilla; el `README` con la estructura de `snares`.
-- **Hecho cuando:** los números están en `layout` y la KB no contradice el código.
-
-## 8. Hitos y commits
-
-| Hito | Pasos | Rama | Resultado verificable |
-|---|---|---|---|
-| H1. Atestar y verificar | 1 a 3 | `feat/weaver-attest` | `record --file`, `attest` y `verify` con riesgo y paquete, en integración |
-| H2. Snares | 4 a 7 | `feat/snares-ci` | Un commit y un PR con un nivel 3 sin sello se bloquean; la plantilla se instala y se quita |
-| H3. Arranque | 8 a 10 | `feat/spider-init` | `init` deja un repo de cada stack listo para preguntar; la guía conoce `attest` |
-| H4. Fase 4 cerrada | 11 y 12 | `feat/snares-adopt`, `docs/close-phase-4` | Beacon en su propio repo y tiempos en `layout` |
-
-## 9. Riesgos de la Fase 4
-
-| Riesgo | Qué lo mitiga |
-|---|---|
-| El pre-commit tarda y la gente lo salta con `--no-verify` | Corre solo los checks de lo tocado (D15); se mide en el paso 12; la garantía es el CI, no el hook |
-| El pre-commit bloquea por un cambio que no se va a commitear (compara con el árbol de trabajo, D15) | Límite anotado; se afina con el uso del paso 11 |
-| Un hook existente (husky, `core.hooksPath` versionado) se edita sin querer | El bloque es gestionado, `install` guarda copia, el resumen avisa de que edita un archivo del proyecto y `--skip precommit` lo evita |
-| El CI ejecuta código del PR | Ejecutores de la base hasta que se aprueben (D13), sin shell y con parámetros que no empiezan con `-` (`pledge`) |
-| El payload de `merge_group` (`base_sha`) no se pudo confirmar en la documentación | `snares ci` cae a `git merge-base` si `--base` llega vacío; se confirma la primera vez que corra en una cola de fusión real |
-| No hay etiquetas ni Releases, así que la versión que fija la plantilla es una pseudoversión de commit (D4) | Sirve mientras el commit esté en el remoto; con `+dirty` se cae a `latest` y se avisa. La persona agregará las etiquetas más adelante |
-| El escaneo propone mal los ejecutores de Bun o Python | Los comandos se probaron en esta máquina (paso 8) y los ejecutores solo entran con un sí (D6); lo no instalado da `runner_unavailable`, no un rojo |
-| `init` genera ruido en un monorepo grande | Tope de 10 capabilities y una pregunta resumen del resto (D7) |
-| El agente fabrica un sí o una atestación | Es un marcado, no una prueba (`deltas`); la garantía es la review del PR. Los síes del paso 11 los da la persona |
-| La atestación `via` agente se toma por una verificación humana | `attest` solo afirma que una persona dijo sí; la evidencia del agente es `observed` y no cuenta (`pledge`) |
-| Sobreingeniería (`status`) | No hay otras plataformas de CI, ni lanzamiento de agentes, ni Releases en esta fase |
+- Lo de `DRAFTING.md` (la segunda dimensión de la telaraña) es independiente y no se toca aquí.
+- El piloto del benchmark de fricción es de la Fase 6.
+- Terminar la Fase 4 (Beacon en su propio repo y la medición y KB) no depende de esta rama.

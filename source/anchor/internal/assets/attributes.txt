@@ -1,3 +1,5 @@
 # BEGIN BEACON (managed block: do not edit inside)
 .beacon/** text eol=lf linguist-generated
+.claude/rules/beacon-*.md text eol=lf
+.claude/skills/beacon-*/SKILL.md text eol=lf
 # END BEACON
