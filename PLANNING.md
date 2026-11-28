@@ -160,7 +160,7 @@ Cada paso deja el repositorio funcionando. El tamaño es relativo: S pequeño, M
 | **K0** | S | Aprobar `KETSET.md`, este plan y la KB, y resolver las preguntas que bloqueaban (hecho el 2026-11-27) | La persona dice sí (hecho) | `docs(packs): record packs proposal and its plan` |
 | **K1 (hecho)** | L | Mecánica de instalación de rules y skills en Anchor, solo Claude Code: plantilla, instalar, `--preview`, `--uninstall`, copia de seguridad, prefijo `beacon-`, `--pack`, `--skip <pieza>` y las líneas de `.gitattributes` (D13). Con una rule y una skill mínimas de prueba | Pruebas de `install` con archivos de referencia; idempotencia; desinstalar borra solo lo idéntico; D14 | `feat(anchor): install pack rules and skills` |
 | **K2 (hecho)** | M | Sección `packs:` con la forma de D17: decodificar y validar, orden canónico y nivel 3; detección de stack con el escaneo de `init`; el sello del sí desde una terminal y el código 2 sin ella, con `--approve` (D5) | Pruebas del esquema; `fmt` estable; un `packs:` inválido falla al cargar; un cambio sin sí se bloquea en `record` y se comprueba que el CI lo trate por `unapproved_change` | `feat(anchor): add pack config and stack scan` |
-| **K3** | M | Rules universales y paramétricas (`record` se hizo en K1): `pledge`, `frugal`, `locale`, `vendor`, `commit`, `branch`; `frugal` y `locale` con los `paths:` del binding, `commit` y `branch` sin ellos | La prueba de D9 sobre las rules que ya existen; la prueba de nombres y topes (D2, D8); una prueba renderiza cada rule y comprueba que su encabezado se lee (si no, carga siempre) | `feat(anchor): add core and git pack rules` |
+| **K3 (hecho)** | M | Rules universales y paramétricas (`record` se hizo en K1): `pledge`, `frugal`, `locale`, `vendor`, `commit`, `branch`; `frugal` y `locale` con los `paths:` del binding, `commit` y `branch` sin ellos | La prueba de D9 sobre las rules que ya existen; la prueba de nombres y topes (D2, D8); una prueba renderiza cada rule y comprueba que su encabezado se lee (si no, carga siempre) | `feat(anchor): add core and git pack rules` |
 | **K4** | M | Skills `elicit`, `ensure`, `finish`: las que ya tienen comandos que las respaldan; `elicit` se escribe desde cero. Antes, un spike en el proyecto de pruebas: ¿un hook que nombra una skill hace que el modelo la invoque?, y ¿una skill con `disable-model-invocation` conserva su descripción en `/context`? | Una sesión real en el proyecto de pruebas por skill | `feat(anchor): add elicit ensure finish skills` |
 | **K5** | M | Skills `locate`, `digest`, `tailor`; `digest` se escribe desde cero | Ídem; `tailor` produce un cambio de `config.yaml` que pasa por `record` | `feat(anchor): add locate digest tailor skills` |
 | **K6** | M | Skills `review`, `refute`, `divide` | Ídem | `feat(anchor): add review refute divide skills` |
@@ -179,12 +179,15 @@ Cada paso deja el repositorio funcionando. El tamaño es relativo: S pequeño, M
 - K9 necesita al menos K4, K5 y K6. K10 y K11 son independientes entre sí.
 - K12 es el último y depende de que lo construido esté estable.
 
-### Lo que K1 y K2 dejaron y sus límites
+### Lo que K1 a K3 dejaron y sus límites
 
-K1 se hizo el 2026-11-27 (commit `5a2a167`) y K2 el mismo día (commit `dc66f2e`), con las pruebas unitarias y de integración y `golangci-lint` en verde. Los atajos tienen un límite conocido y un paso para dejarlos:
+K1 se hizo el 2026-11-27 (commit `5a2a167`), K2 el mismo día (commit `dc66f2e`) y K3 también, con las pruebas unitarias y de integración y `golangci-lint` en verde. Los atajos tienen un límite conocido y un paso para dejarlos:
 
 - **Resueltos en K2:** `--skip <pieza>` ahora se guarda en `packs.skip` y retira lo ya instalado (la conciliación); `enabled` hace explícito qué packs hay; el binding sale de `config.yaml`.
-- **`stacks` se guarda, pero nada lo lee todavía.** Lo usan las rules ligadas al stack (K3 y K8).
+- **Resuelto en K3:** `stacks` ya se lee. El catálogo traduce cada stack a rutas (`Binding.Code`, `Tests`, `Manifests`) y las rules `frugal`, `locale` (código), `pledge` (pruebas) y `vendor` (manifiestos) cargan solo al tocar esos archivos; sin stack conocido cargan siempre. `commit` y `branch` no llevan `paths:`.
+- **Las rutas por stack viven en una tabla del catálogo** (`go`, `bun`, `node`, `python`), no en `config.yaml`. Se mueve a la config si alguien necesita otras rutas.
+- **`commit` y `branch` aún no traen el `deny` de `git push` y `git pull`** que KETSET asigna al pack `git`; queda para quien lo pida o K7.
+- **D9 (aceptación contra este repo) se cumple a medias:** las rules de los packs son versiones condensadas a 40 líneas o menos, no copias; `code-change-size` se redujo (quita el cierre largo y los no-objetivos) y `branch` omite la variante `phase-<n>`. La comparación línea a línea se cierra en K8 con `golang-style` y `domain-layer`.
 - **Los packs y los skips solo crecen con las flags.** Quitar uno se hace editando `packs:` con `beacon record` (nivel 3); el siguiente `install` concilia.
 - **`doctor` no cruza aún los nombres de `packs:` con los packs que existen.** Llega con K7.
 - **`language.ui` y `commit` no los escribe `install`.** Los añade `tailor` (K5) o la persona.

@@ -88,7 +88,7 @@ packs:
 
 - `enabled`: todos los packs activos. La primera vez, `install` lo escribe explícito.
 - `skip`: piezas que no se instalan (opcional). Lo escribe `--skip <pieza>`.
-- `stacks`: lista con los nombres que ya detecta `init` (`go`, `bun`, `node`, `python`). Cada stack aporta su binding y los `paths:` de sus rules. Al principio solo Go trae binding: los demás stacks reciben solo las rules universales y paramétricas.
+- `stacks`: lista con los nombres que ya detecta `init` (`go`, `bun`, `node`, `python`). Cada stack aporta su binding y los `paths:` de sus rules. Los cuatro stacks traen rutas de código, de pruebas y de manifiestos (una tabla del catálogo); solo Go traerá además el binding de las rules ligadas al stack (K8). Sin un stack conocido, las rules cargan siempre.
 - `language`: `code` (`en` por defecto) y `ui` (opcional; lo añade `tailor` o la persona).
 - `commit`: opcional; por defecto `min: 40` y `max: 50`, y solo importa con `git` activo.
 - **Validación:** Al cargar se valida la forma: nombres en minúsculas, números positivos y `min` sin pasar de `max`. Un pack o una pieza que no existen fallan al instalar (`pack_unknown`, `piece_unknown`) y `doctor` los cruzará en K7; un stack desconocido no falla, solo no trae binding.
