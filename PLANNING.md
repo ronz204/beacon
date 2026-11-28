@@ -163,7 +163,7 @@ Cada paso deja el repositorio funcionando. El tamaño es relativo: S pequeño, M
 | **K3 (hecho)** | M | Rules universales y paramétricas (`record` se hizo en K1): `pledge`, `frugal`, `locale`, `vendor`, `commit`, `branch`; `frugal` y `locale` con los `paths:` del binding, `commit` y `branch` sin ellos | La prueba de D9 sobre las rules que ya existen; la prueba de nombres y topes (D2, D8); una prueba renderiza cada rule y comprueba que su encabezado se lee (si no, carga siempre) | `feat(anchor): add core and git pack rules` |
 | **K4 (hecho)** | M | Skills `elicit`, `ensure`, `finish`: las que ya tienen comandos que las respaldan; `elicit` se escribe desde cero. Antes, un spike en el proyecto de pruebas: ¿un hook que nombra una skill hace que el modelo la invoque?, y ¿una skill con `disable-model-invocation` conserva su descripción en `/context`? | Una sesión real en el proyecto de pruebas por skill | `feat(anchor): add elicit ensure finish skills` |
 | **K5 (hecho)** | M | Skills `locate`, `digest`, `tailor`; `digest` se escribe desde cero | Ídem; `tailor` produce un cambio de `config.yaml` que pasa por `record` | `feat(anchor): add locate digest tailor skills` |
-| **K6** | M | Skills `review`, `refute`, `divide` | Ídem | `feat(anchor): add review refute divide skills` |
+| **K6 (hecho)** | M | Skills `review`, `refute`, `divide` | Ídem | `feat(anchor): add review refute divide skills` |
 | **K7** | M | Solo si el spike de K4 funciona (si no, los mensajes piden a la persona que ejecute el comando): señales que apuntan a skills en `brief`, `check` y `context`, y la comprobación en `doctor` (avisos de piezas editadas, rules omitidas y skills no instaladas) | Una prueba por mensaje: nombra una skill solo si está instalada (D7) | `feat(weaver): point signals to pack skills` |
 | **K8** | L | Rules ligadas al stack: `format`, `errors`, `secure`, `domain`; binding de Go; revisar la excepción de tamaño de `domain` | Renderizado contra `golang-style` y `domain-layer` (D9) | `feat(anchor): add go stack-bound pack rules` |
 | **K9** | M | Condición E del benchmark, ablación con `--skip` y primera medición | Resultado del piloto; si no mejora, se recorta | `test(benchmark): add pack condition to harness` |
@@ -179,9 +179,9 @@ Cada paso deja el repositorio funcionando. El tamaño es relativo: S pequeño, M
 - K9 necesita al menos K4, K5 y K6. K10 y K11 son independientes entre sí.
 - K12 es el último y depende de que lo construido esté estable.
 
-### Lo que K1 a K5 dejaron y sus límites
+### Lo que K1 a K6 dejaron y sus límites
 
-K1 se hizo el 2026-11-27 (commit `5a2a167`), K2 el mismo día (commit `dc66f2e`), y K3, K4 y K5 también, con las pruebas unitarias y de integración y `golangci-lint` en verde. Los atajos tienen un límite conocido y un paso para dejarlos:
+K1 se hizo el 2026-11-27 (commit `5a2a167`), K2 el mismo día (commit `dc66f2e`), y K3 a K6 también, con las pruebas unitarias y de integración y `golangci-lint` en verde. Los atajos tienen un límite conocido y un paso para dejarlos:
 
 - **Resueltos en K2:** `--skip <pieza>` ahora se guarda en `packs.skip` y retira lo ya instalado (la conciliación); `enabled` hace explícito qué packs hay; el binding sale de `config.yaml`.
 - **Resuelto en K3:** `stacks` ya se lee. El catálogo traduce cada stack a rutas (`Binding.Code`, `Tests`, `Manifests`) y las rules `frugal`, `locale` (código), `pledge` (pruebas) y `vendor` (manifiestos) cargan solo al tocar esos archivos; sin stack conocido cargan siempre. `commit` y `branch` no llevan `paths:`.
@@ -196,8 +196,8 @@ K1 se hizo el 2026-11-27 (commit `5a2a167`), K2 el mismo día (commit `dc66f2e`)
 - **Resuelto en K4:** al quitar el `SKILL.md` de una skill se borra su carpeta si queda vacía (solo bajo `skills/`).
 - **La prueba de choque con los comandos de Beacon** (D2) es de integración y lee la lista de comandos del binario real, así que no se desactualiza.
 - **Spike de K4 (una corrida por caso, `claude -p` en un proyecto de prueba con `core` instalado):** las tres skills se listan con su sello en el encabezado. Con un hook `UserPromptSubmit` cuyo `additionalContext` dice que la skill `beacon-elicit` atiende el caso, el modelo abrió su `SKILL.md` (con `Read`, no con la herramienta `Skill`); sin el hook no lo abrió. Es una señal de que el texto empuja, no una prueba. K5 lo midió con `tailor` (ver abajo).
-- **Spike de K5 (una corrida por caso):** `beacon-tailor`, con `disable-model-invocation`, no aparece en el listado del modelo y sí responde a `/beacon-tailor`; las demás skills sí aparecen. Con `refute` en K6 se repite. El flujo de `tailor` se comprobó a mano: `beacon record --file` con `{"type":"config",...}` sale con código 2 (`packs_changed`), con `--approve` guarda, y `beacon install` vuelve a renderizar la rule `locale` con el idioma nuevo.
-- **`tailor` no se probó dentro de una sesión completa con una persona.** Solo se comprobó que se invoca y que su flujo funciona con los comandos. Las demás skills tampoco se probaron en una sesión de trabajo completa: solo que se listan y que la señal las abre. El benchmark (K9) decide si se quedan.
+- **Spike de K5 (una corrida por caso):** `beacon-tailor`, con `disable-model-invocation`, no aparece en el listado del modelo y sí responde a `/beacon-tailor`; las demás skills sí aparecen. K6 lo repitió con `refute` (mismo resultado; el listado muestra las otras siete). El flujo de `tailor` se comprobó a mano: `beacon record --file` con `{"type":"config",...}` sale con código 2 (`packs_changed`), con `--approve` guarda, y `beacon install` vuelve a renderizar la rule `locale` con el idioma nuevo.
+- **`tailor`, `refute` y las demás skills no se probaron dentro de una sesión completa con una persona.** De `refute` solo se comprobó que se invoca, y su paso del subagente de contexto limpio no se ejercitó. Las demás skills tampoco se probaron en una sesión de trabajo completa: solo que se listan y que la señal las abre. El benchmark (K9) decide si se quedan.
 - **Rules por `paths:`, comprobado en una sesión real (`claude -p`, una corrida por caso):** al empezar solo cargaron `commit` y `branch`; tras leer un `.go` cargaron además `frugal` y `locale`, y `pledge` y `vendor` siguieron fuera. Un encabezado vacío (`---` y `---`) es válido.
 - **CRLF (corregido tras K4):** con `autocrlf`, un clon en Windows dejaba las plantillas con CRLF y las rules instaladas heredaban el CRLF que D13 quería evitar. Ahora el catálogo normaliza a LF al renderizar y `.gitattributes` fija LF para los packs.
 - **La prueba de topes no tiene excepciones.** `domain` entra con la suya en K8.
@@ -237,7 +237,7 @@ Resueltas el 2026-11-27: el nivel de `packs:` (3), los tres packs, la fase (4b),
 |---|---|---|
 | **Instala** | `beacon install --pack core --preview` y su desinstalación funcionan en Claude Code (alcanzado el 2026-11-27) | K1 y K2 |
 | **Rules** | Las rules de este repo se reproducen desde los packs | K3 y K8 |
-| **Skills** | Las nueve skills probadas en sesiones reales | K4 a K6 |
+| **Skills** | Las nueve skills probadas en sesiones reales | K4 a K6 (escritas; faltan las sesiones reales) |
 | **Guía** | Las señales nombran la skill que resuelve | K7 |
 | **Medido** | El benchmark compara los packs con y sin ellos | K9 |
 | **Cerrado** | La KB y el README al día, `KETSET.md` retirado | K12 |
