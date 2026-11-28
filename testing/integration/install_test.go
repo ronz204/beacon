@@ -44,7 +44,7 @@ func TestInstallPreviewListsTheFilesAndWritesNothing(t *testing.T) {
 
 	data := runInstall(t, root, "--preview")
 
-	if !data.Preview || len(data.Changes) != 6 {
+	if !data.Preview || len(data.Changes) != 10 {
 		t.Fatalf("data = %+v", data)
 	}
 	if present(root, "AGENTS.md") || present(root, ".gitattributes") {
@@ -86,7 +86,7 @@ func TestUninstallLeavesTheRepositoryAsItWas(t *testing.T) {
 	runInstall(t, root)
 	data := runInstall(t, root, "--uninstall")
 
-	if !data.Uninstall || len(data.Changes) != 6 {
+	if !data.Uninstall || len(data.Changes) != 10 {
 		t.Fatalf("data = %+v", data)
 	}
 	if utilities.ReadFile(t, filepath.Join(root, "AGENTS.md")) != "# Mine\n" {
@@ -430,5 +430,29 @@ func TestInstallRecordsTheStacksItDetects(t *testing.T) {
 
 	if !strings.Contains(configText(t, root), "stacks: [go]") {
 		t.Errorf("config:\n%s", configText(t, root))
+	}
+}
+
+func TestInstallScopesTheRulesToTheStackAndLeavesGitAlwaysOn(t *testing.T) {
+	root := utilities.NewRepository(t)
+	utilities.WriteFile(t, root, "go.mod", "module sample\n")
+
+	runInstall(t, root, "--approve", "--pack", "core", "--pack", "git")
+
+	frugal := utilities.ReadFile(
+		t, filepath.Join(root, ".claude/rules/beacon-frugal.md"),
+	)
+	commit := utilities.ReadFile(
+		t, filepath.Join(root, ".claude/rules/beacon-commit.md"),
+	)
+
+	if !strings.Contains(frugal, `- "**/*.go"`) {
+		t.Errorf("frugal is not scoped to Go:\n%s", frugal)
+	}
+	if strings.Contains(commit, "paths:") {
+		t.Errorf("commit must load always:\n%s", commit)
+	}
+	if !strings.Contains(commit, "between 40 and 50") {
+		t.Errorf("commit lost its limits:\n%s", commit)
 	}
 }

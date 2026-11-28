@@ -286,5 +286,5 @@ func (b PackBinding) resolved() catalog.Binding {
 		binding.Commit.Max = b.CommitMax
 	}
 
-	return binding
+	return binding.ForStacks(b.Stacks)
 }

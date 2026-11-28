@@ -169,6 +169,7 @@ func optionsFor(
 		UI:        packs.Language.UI,
 		CommitMin: packs.Commit.Min,
 		CommitMax: packs.Commit.Max,
+		Stacks:    packs.Stacks,
 	}
 
 	return options

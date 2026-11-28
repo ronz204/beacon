@@ -32,8 +32,65 @@ type Commit struct {
 }
 
 type Binding struct {
-	Language Language
-	Commit   Commit
+	Language  Language
+	Commit    Commit
+	Code      []string
+	Tests     []string
+	Manifests []string
+}
+
+type reach struct {
+	code      []string
+	tests     []string
+	manifests []string
+}
+
+var stackReach = map[string]reach{
+	"go": {
+		code:      []string{"**/*.go"},
+		tests:     []string{"**/*_test.go"},
+		manifests: []string{"go.mod"},
+	},
+	"bun": {
+		code:      []string{"**/*.ts", "**/*.tsx", "**/*.js"},
+		tests:     []string{"**/*.test.*", "**/*.spec.*"},
+		manifests: []string{"package.json"},
+	},
+	"node": {
+		code:      []string{"**/*.ts", "**/*.tsx", "**/*.js"},
+		tests:     []string{"**/*.test.*", "**/*.spec.*"},
+		manifests: []string{"package.json"},
+	},
+	"python": {
+		code:      []string{"**/*.py"},
+		tests:     []string{"**/test_*.py", "**/*_test.py"},
+		manifests: []string{"pyproject.toml", "requirements.txt"},
+	},
+}
+
+func (b Binding) ForStacks(stacks []string) Binding {
+	for _, stack := range stacks {
+		found, known := stackReach[stack]
+		if !known {
+			continue
+		}
+
+		b.Code = appendNew(b.Code, found.code)
+		b.Tests = appendNew(b.Tests, found.tests)
+		b.Manifests = appendNew(b.Manifests, found.manifests)
+	}
+
+	return b
+}
+
+func appendNew(list, more []string) []string {
+	for _, item := range more {
+		if !slices.Contains(list, item) {
+			list = append(list, item)
+		}
+	}
+
+	return list
 }
 
 func DefaultBinding() Binding {

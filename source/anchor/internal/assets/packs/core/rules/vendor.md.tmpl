@@ -1,0 +1,27 @@
+---
+{{if .Manifests}}paths:
+{{range .Manifests}}  - "{{.}}"
+{{end}}{{end}}---
+
+# Beacon Dependency Conventions
+
+This governs adding, upgrading or removing a dependency. A dependency is a promise the project makes to code it does not own, so each one is a decision.
+
+---
+
+## Before adding
+
+- Try the ladder first: the code already here, then the standard library or the platform, then a dependency already installed. Never add one for a few lines.
+- Check that it is maintained, that its license fits and that it brings few transitive dependencies.
+
+## Record the decision
+
+- A new dependency is recorded with `beacon record` as a `decision`: what it solves, and the alternatives dropped and why.
+- Pin the version the manifest allows, and keep the lock file in the same change.
+
+---
+
+## Non-goals
+
+- Does not choose which library a project uses.
+- Does not ban dependencies, only the unjustified ones.

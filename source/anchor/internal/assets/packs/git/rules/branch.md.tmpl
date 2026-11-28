@@ -1,0 +1,25 @@
+---
+---
+
+# Branch Name Conventions
+
+This governs the name and lifetime of every git branch created in this repository, by a person or by an agent.
+
+---
+
+## Name
+
+- A branch is named `<type>/<slug>`, with the same types as commits: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+- The slug is lowercase ASCII words joined by hyphens, two to five words, describing the outcome and not the author, the date or the status. The whole name stays under 50 characters.
+- No spaces, uppercase letters or underscores, and no slash beyond the type separator.
+
+## One purpose, short life
+
+- One branch carries one logical change. Unrelated work gets its own branch.
+- A branch starts from the up-to-date default branch and is merged or discarded as soon as the work is checked.
+
+---
+
+## Non-goals
+
+- Does not dictate commit messages or pull request titles.

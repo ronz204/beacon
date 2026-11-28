@@ -5,6 +5,7 @@ type PackBinding struct {
 	UI        string
 	CommitMin int
 	CommitMax int
+	Stacks    []string
 }
 
 type InstallOptions struct {

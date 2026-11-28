@@ -1,0 +1,26 @@
+---
+{{if .Code}}paths:
+{{range .Code}}  - "{{.}}"
+{{end}}{{end}}---
+
+# Code Language Conventions
+
+This governs the language used in code itself: identifiers, and the strings the code produces at runtime, error messages above all.
+
+---
+
+## Language of the code
+
+- Every identifier is written in `{{.Language.Code}}`.
+- Every string the code throws, returns as an error or logs is written in `{{.Language.Code}}`, even when the class or function name already is.
+{{if .Language.UI}}
+## Language of the interface
+
+- The text a user reads on screen is written in `{{.Language.UI}}`.
+- An error shown to the user is made in two steps: the code returns an error in `{{.Language.Code}}`, and the UI layer maps it to `{{.Language.UI}}` copy. The `{{.Language.UI}}` text never lives inside the thrown error.
+{{end}}
+---
+
+## Non-goals
+
+- Says nothing about comments in conversation, commit messages or any file outside the code.

@@ -1,0 +1,35 @@
+---
+{{if .Code}}paths:
+{{range .Code}}  - "{{.}}"
+{{end}}{{end}}---
+
+# Lean-Change Conventions
+
+This governs how much code a change adds. It is a ladder of cheaper answers to try before writing new code, and it decides size only.
+
+---
+
+## Before writing
+
+- Read the code the change touches and list what it must reach: callers, tests, fixtures, config. A change that misses a caller is not smaller, only broken.
+- What no promise and no request asks for is extra: name it in one line and skip it.
+
+## The ladder
+
+Take the first rung that fully solves the task:
+
+1. Does it need to exist? A promise or an explicit request says yes.
+2. Is it already in this codebase? Use it the way the code around it does.
+3. Does the standard library or the platform do it?
+4. Does an installed dependency do it? Never add one for a few lines.
+5. Can it be one line a reader understands at a glance?
+6. Otherwise, the minimum code that works.
+
+## Never cut
+
+- Validation at trust boundaries, error handling that prevents data loss, and security.
+- One small test for new non-trivial logic.
+
+## Closing
+
+- End with one or two lines: what was skipped or left unchecked, and any risk. A shortcut with a known limit is recorded with `beacon record`, with when to upgrade it.

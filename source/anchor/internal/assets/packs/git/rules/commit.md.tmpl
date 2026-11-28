@@ -1,0 +1,30 @@
+---
+---
+
+# Commit Message Conventions
+
+This governs every git commit message written in this repository, by a person or by an agent. Pull request titles are out of scope.
+
+---
+
+## Format
+
+- The subject follows Conventional Commits: `type(scope): subject`, with a scope when one fits.
+- Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+- The whole subject line is between {{.Commit.Min}} and {{.Commit.Max}} characters, type and scope included.
+- The subject is in the imperative mood, lowercase after the colon, with no trailing period.
+- A body is optional. Separate it with a blank line and explain why, not what the diff shows.
+
+## Atomic and cohesive
+
+- One logical change per commit: a phase of work, not its smallest step.
+- Stage by explicit path, never `git add -A` or `git add .`, and review the staged diff.
+- Every commit leaves the repository working.
+- Never commit secrets or real environment files.
+- Keep refactors, renames and behavior changes in separate commits.
+
+---
+
+## Non-goals
+
+- Does not dictate branch names or pull request titles.
